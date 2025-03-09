@@ -97,6 +97,34 @@ Tools that involve long-running operations support progress reporting through ca
 - CLI: Console output with progress information
 - MCP: Structured progress updates through the MCP protocol
 
+### 5. Logging Strategy
+
+The project uses a centralized logging system through `utils/logger.ts` that maps to console methods. The logging follows a hierarchical approach:
+
+1. **Tools Layer (Highest)**
+
+   - Primary user-facing operations
+   - Final results and overall progress
+   - Example: Search queries and result counts
+
+2. **Core Components (Middle)**
+
+   - Unique operational logs
+   - Store creation and management
+   - Example: Vector store operations
+
+3. **Strategy Layer (Lowest)**
+   - Detailed progress (page crawling)
+   - Error conditions and retries
+   - Example: Individual page scraping status
+
+This hierarchy ensures:
+
+- Clear operation visibility
+- No duplicate logging between layers
+- Consistent emoji usage for better readability
+- Error logging preserved at all levels for debugging
+
 ## Benefits
 
 1. **Maintainability**

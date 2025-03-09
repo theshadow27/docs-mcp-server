@@ -2,6 +2,7 @@ import TurndownService from "turndown";
 import scrapeIt from "scrape-it";
 import { ScraperError } from "../../utils/errors";
 import { validateUrl } from "../../utils/url";
+import { logger } from "../../utils/logger";
 import type {
   ScraperConfig,
   PageResult,
@@ -148,6 +149,9 @@ export class DefaultScraperStrategy implements ScraperStrategy {
       // Only retry on 4xx errors
       if (status !== undefined && status >= 400 && status < 500) {
         for (let attempt = 1; attempt < this.MAX_RETRIES; attempt++) {
+          logger.warn(
+            `⚠️ Retry ${attempt}/${this.MAX_RETRIES - 1} for ${url} (Status: ${status})`
+          );
           try {
             await this.delay(this.BASE_DELAY * 2 ** attempt);
             return await this.scrapePageContent(url);
@@ -162,6 +166,12 @@ export class DefaultScraperStrategy implements ScraperStrategy {
               );
             }
             // Otherwise continue to next retry
+            const retryStatus = (
+              retryError as { response?: { status: number } }
+            )?.response?.status;
+            logger.warn(
+              `⚠️ Attempt ${attempt} failed (Status: ${retryStatus || "unknown"})`
+            );
           }
         }
       }
@@ -213,6 +223,10 @@ export class DefaultScraperStrategy implements ScraperStrategy {
     this.visited.add(normalizedUrl);
     this.pageCount++;
     this.reportProgress(normalizedUrl, depth);
+
+    logger.info(
+      `🌐 Crawling page ${this.pageCount}/${config.maxPages} (depth ${depth}/${config.maxDepth}): ${normalizedUrl}`
+    );
 
     const result = await this.scrapePageContentWithRetry(url, config);
     const results = [result];

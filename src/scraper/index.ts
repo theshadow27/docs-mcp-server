@@ -3,6 +3,7 @@ import type {
   ScrapingProgressCallback,
   DocContent,
 } from "../types";
+import { logger } from "../utils/logger";
 import { validateUrl } from "../utils/url";
 import { DefaultScraperStrategy } from "./strategies/default-strategy";
 import { NpmScraperStrategy } from "./strategies/npm-strategy";
@@ -51,7 +52,15 @@ export class DocumentationScraperDispatcher {
     // Validate config URL before proceeding
     validateUrl(config.url);
     const strategy = this.determineStrategy(config.url);
-    return strategy.scrape(config, progressCallback);
+
+    try {
+      return await strategy.scrape(config, progressCallback);
+    } catch (error) {
+      logger.error(
+        `❌ Scraping failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+      throw error;
+    }
   }
 }
 

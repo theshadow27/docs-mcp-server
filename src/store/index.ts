@@ -3,6 +3,7 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import path from "node:path";
 import fs from "node:fs/promises";
 import semver from "semver";
+import { logger } from "../utils/logger";
 import type { SearchResult, VectorStoreProgressCallback } from "../types";
 import type { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
@@ -46,6 +47,7 @@ export class VectorStoreManager {
     library: string,
     version: string
   ): Promise<MemoryVectorStore> {
+    logger.info(`💾 Creating store for ${library}@${version}`);
     const storePath = this.getStorePath(library, version);
     await fs.mkdir(storePath, { recursive: true });
 
@@ -56,6 +58,9 @@ export class VectorStoreManager {
     library: string,
     targetVersion?: string
   ): Promise<string | null> {
+    logger.info(
+      `🔍 Finding best version for ${library}${targetVersion ? `@${targetVersion}` : ""}`
+    );
     try {
       const libraryPath = path.join(this.baseDir, library);
       const versions = await fs.readdir(libraryPath);
@@ -79,13 +84,24 @@ export class VectorStoreManager {
         )
       ).filter((v): v is string => v !== null);
 
-      if (validVersions.length === 0) return null;
-
-      if (!targetVersion) {
-        return semver.maxSatisfying(validVersions, "*") || null;
+      if (validVersions.length === 0) {
+        logger.warn(`⚠️ No valid versions found for ${library}`);
+        return null;
       }
 
-      return semver.maxSatisfying(validVersions, `<=${targetVersion}`) || null;
+      const result = !targetVersion
+        ? semver.maxSatisfying(validVersions, "*")
+        : semver.maxSatisfying(validVersions, `<=${targetVersion}`);
+
+      if (result) {
+        logger.info(`✅ Found version ${result} for ${library}`);
+      } else {
+        logger.warn(
+          `⚠️ No matching version found for ${library}${targetVersion ? `@${targetVersion}` : ""}`
+        );
+      }
+
+      return result || null;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
@@ -95,6 +111,7 @@ export class VectorStoreManager {
   }
 
   async clearStore(library: string, version: string): Promise<void> {
+    logger.info(`🗑️ Clearing store for ${library}@${version}`);
     const storePath = this.getStorePath(library, version);
     const storeFile = path.join(storePath, STORE_FILENAME);
     try {
@@ -112,6 +129,9 @@ export class VectorStoreManager {
     version: string,
     document: Document
   ): Promise<void> {
+    logger.info(
+      `📚 Adding document: ${document.metadata.title} for ${library}@${version}`
+    );
     const store = await this.createStore(library, version);
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 4000,
@@ -125,6 +145,7 @@ export class VectorStoreManager {
 
     // Split document into smaller chunks
     const splitDocs = await splitter.splitDocuments([document]);
+    logger.info(`📄 Split document into ${splitDocs.length} chunks`);
 
     // Report progress
     if (this.onProgress) {
@@ -174,20 +195,23 @@ export class VectorStoreManager {
         k: limit * 2,
         searchType: "similarity",
       });
-      const results = await retriever.invoke(query);
-      const rerankedResults = await BM25Retriever.fromDocuments(results, {
-        k: limit,
-        includeScore: true,
-      }).invoke(query);
+      const initialResults = await retriever.invoke(query);
+      const rerankedResults = await BM25Retriever.fromDocuments(
+        initialResults,
+        {
+          k: limit,
+          includeScore: true,
+        }
+      ).invoke(query);
 
       return rerankedResults.map((doc) => ({
         content: doc.pageContent,
         score: (doc.metadata.bm25Score as number) ?? 0,
         metadata: {
-          url: doc.metadata.url,
-          title: doc.metadata.title,
-          library: doc.metadata.library,
-          version: doc.metadata.version,
+          url: doc.metadata.url as string,
+          title: doc.metadata.title as string,
+          library: doc.metadata.library as string,
+          version: doc.metadata.version as string,
         },
       }));
     } catch (error) {

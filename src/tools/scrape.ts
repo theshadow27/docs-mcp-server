@@ -6,6 +6,7 @@ import type {
   ProgressResponse,
 } from "../types/index.js";
 import { Document } from "@langchain/core/documents";
+import { logger } from "../utils/logger";
 
 export interface ScrapeOptions {
   url: string;
@@ -35,6 +36,10 @@ export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
     subpagesOnly,
   } = options;
 
+  logger.info(
+    `🕷️ Starting documentation scrape for ${library}@${version} from ${url}`
+  );
+
   const scraper = new DocumentationScraperDispatcher({
     onProgress,
   });
@@ -48,31 +53,41 @@ export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
     subpagesOnly,
   };
 
-  // Clear existing vector store data before scraping
-  await store.clearStore(library, version);
+  try {
+    // Clear existing vector store data before scraping
+    await store.clearStore(library, version);
 
-  const results = await scraper.scrape(config);
+    const results = await scraper.scrape(config);
+    let totalDocuments = 0;
 
-  let totalDocuments = 0;
+    // Convert each result to a Document and add it to the store
+    for (const result of results) {
+      const doc = new Document({
+        pageContent: result.content,
+        metadata: {
+          url: result.metadata.url,
+          title: result.metadata.title,
+          library,
+          version,
+        },
+      });
 
-  // Convert each result to a Document and add it to the store
-  for (const result of results) {
-    const doc = new Document({
-      pageContent: result.content,
-      metadata: {
-        url: result.metadata.url,
-        title: result.metadata.title,
-        library,
-        version,
-      },
-    });
+      await store.addDocument(library, version, doc);
+      totalDocuments++;
+    }
 
-    await store.addDocument(library, version, doc);
-    totalDocuments++;
+    logger.info(
+      `✨ Scraping completed: ${results.length} pages retrieved and indexed`
+    );
+
+    return {
+      pagesScraped: results.length,
+      documentsIndexed: totalDocuments,
+    };
+  } catch (error) {
+    logger.error(
+      `❌ Scraping failed: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+    throw error;
   }
-
-  return {
-    pagesScraped: results.length,
-    documentsIndexed: totalDocuments,
-  };
 };

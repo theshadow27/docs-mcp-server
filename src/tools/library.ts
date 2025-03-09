@@ -1,4 +1,5 @@
 import type { VectorStoreManager } from "../store/index.js";
+import { logger } from "../utils/logger";
 
 export interface ListLibrariesOptions {
   store: VectorStoreManager;
@@ -29,15 +30,16 @@ export const listLibraries = async (
 ): Promise<ListLibrariesResult> => {
   const { store } = options;
   const rawLibraries = await store.listLibraries();
-  return {
-    libraries: rawLibraries.map(({ library, versions }) => ({
-      name: library,
-      versions: versions.map((v) => ({
-        version: v.version,
-        indexed: v.indexed,
-      })),
+
+  const libraries = rawLibraries.map(({ library, versions }) => ({
+    name: library,
+    versions: versions.map((v) => ({
+      version: v.version,
+      indexed: v.indexed,
     })),
-  };
+  }));
+
+  return { libraries };
 };
 
 export const findVersion = async (
