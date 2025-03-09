@@ -188,6 +188,12 @@ export class DefaultScraperStrategy implements ScraperStrategy {
     }
   }
 
+  private shouldFollowLinkFn?: (
+    baseUrl: URL,
+    targetUrl: URL,
+    depth: number
+  ) => boolean;
+
   private async scrapePage(
     url: string,
     config: ScraperConfig,
@@ -198,7 +204,8 @@ export class DefaultScraperStrategy implements ScraperStrategy {
       this.visited.has(normalizedUrl) ||
       this.pageCount >= config.maxPages ||
       depth > config.maxDepth ||
-      (config.subpagesOnly !== false && !this.isSubpage(config.url, url))
+      (config.subpagesOnly !== false &&
+        !this.shouldFollowPage(config.url, url, depth))
     ) {
       return [];
     }
@@ -220,14 +227,35 @@ export class DefaultScraperStrategy implements ScraperStrategy {
     return results;
   }
 
+  private shouldFollowPage(
+    baseUrl: string,
+    targetUrl: string,
+    depth: number
+  ): boolean {
+    try {
+      if (this.shouldFollowLinkFn) {
+        return this.shouldFollowLinkFn(
+          new URL(baseUrl),
+          new URL(targetUrl),
+          depth
+        );
+      }
+      return this.isSubpage(baseUrl, targetUrl);
+    } catch {
+      return false;
+    }
+  }
+
   async scrape(
     config: ScraperConfig,
-    progressCallback?: ScrapingProgressCallback
+    progressCallback?: ScrapingProgressCallback,
+    shouldFollowLink?: (baseUrl: URL, targetUrl: URL, depth: number) => boolean
   ): Promise<DocContent[]> {
     this.visited.clear();
     this.pageCount = 0;
     this.currentConfig = config;
     this.onProgress = progressCallback;
+    this.shouldFollowLinkFn = shouldFollowLink;
 
     const results = await this.scrapePage(config.url, config, 0);
     return results.map((result) => ({

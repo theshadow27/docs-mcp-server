@@ -109,7 +109,8 @@ export function isSearchDocsParams(obj: unknown): obj is SearchDocsParams {
 export interface ScraperStrategy {
   scrape(
     config: ScraperConfig,
-    progressCallback?: ScrapingProgressCallback
+    progressCallback?: ScrapingProgressCallback,
+    shouldFollowLink?: (baseUrl: URL, targetUrl: URL, depth: number) => boolean
   ): Promise<DocContent[]>;
 }
 

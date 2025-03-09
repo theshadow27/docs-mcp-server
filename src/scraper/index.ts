@@ -7,6 +7,7 @@ import { validateUrl } from "../utils/url";
 import { DefaultScraperStrategy } from "./strategies/default-strategy";
 import { NpmScraperStrategy } from "./strategies/npm-strategy";
 import { PyPiScraperStrategy } from "./strategies/pypi-strategy";
+import { GitHubScraperStrategy } from "./strategies/github-strategy";
 
 export class DocumentationScraperDispatcher {
   private readonly onProgress?: ScrapingProgressCallback;
@@ -34,6 +35,11 @@ export class DocumentationScraperDispatcher {
       return new PyPiScraperStrategy({ onProgress: this.onProgress });
     }
 
+    // GitHub domain
+    if (hostname === "github.com" || hostname === "www.github.com") {
+      return new GitHubScraperStrategy({ onProgress: this.onProgress });
+    }
+
     // Default strategy for all other domains
     return new DefaultScraperStrategy({ onProgress: this.onProgress });
   }
@@ -53,3 +59,4 @@ export class DocumentationScraperDispatcher {
 export { DefaultScraperStrategy } from "./strategies/default-strategy";
 export { NpmScraperStrategy } from "./strategies/npm-strategy";
 export { PyPiScraperStrategy } from "./strategies/pypi-strategy";
+export { GitHubScraperStrategy } from "./strategies/github-strategy";
