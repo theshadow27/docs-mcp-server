@@ -14,6 +14,8 @@ interface VectorStoreData {
   vectors: MemoryVector[];
 }
 
+const STORE_FILENAME = "store.json";
+
 export class VectorStoreManager {
   private readonly baseDir: string;
   private onProgress?: VectorStoreProgressCallback;
@@ -64,7 +66,7 @@ export class VectorStoreManager {
           versions.map(async (v) => {
             if (!semver.valid(v)) return null;
             const fullPath = path.join(libraryPath, v);
-            const storePath = path.join(fullPath, "store.json");
+            const storePath = path.join(fullPath, STORE_FILENAME);
             try {
               const stat = await fs.stat(fullPath);
               if (!stat.isDirectory()) return null;
@@ -89,6 +91,19 @@ export class VectorStoreManager {
         return null;
       }
       throw error;
+    }
+  }
+
+  async clearStore(library: string, version: string): Promise<void> {
+    const storePath = this.getStorePath(library, version);
+    const storeFile = path.join(storePath, STORE_FILENAME);
+    try {
+      await fs.unlink(storeFile);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+      // If file doesn't exist, that's fine - we wanted to delete it anyway
     }
   }
 
@@ -133,7 +148,7 @@ export class VectorStoreManager {
     };
 
     await fs.writeFile(
-      path.join(storePath, "store.json"),
+      path.join(storePath, STORE_FILENAME),
       JSON.stringify(serialized)
     );
   }
@@ -145,7 +160,7 @@ export class VectorStoreManager {
     limit = 5
   ): Promise<SearchResult[]> {
     const storePath = this.getStorePath(library, version);
-    const storeFile = path.join(storePath, "store.json");
+    const storeFile = path.join(storePath, STORE_FILENAME);
 
     try {
       const storeData = await fs.readFile(storeFile, "utf-8");
@@ -203,7 +218,7 @@ export class VectorStoreManager {
             .map((v) => semver.coerce(v.name)?.version || null)
             .filter((v): v is string => v !== null)
             .map(async (v) => {
-              const storePath = path.join(libraryPath, v, "store.json");
+              const storePath = path.join(libraryPath, v, STORE_FILENAME);
               try {
                 await fs.access(storePath);
                 return { version: v, indexed: true };

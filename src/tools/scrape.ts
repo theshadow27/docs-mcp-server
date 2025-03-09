@@ -48,6 +48,9 @@ export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
     subpagesOnly,
   };
 
+  // Clear existing vector store data before scraping
+  await store.clearStore(library, version);
+
   const results = await scraper.scrape(config);
 
   let totalDocuments = 0;
