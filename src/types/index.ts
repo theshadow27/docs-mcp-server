@@ -106,6 +106,13 @@ export function isSearchDocsParams(obj: unknown): obj is SearchDocsParams {
   );
 }
 
+export interface ScraperStrategy {
+  scrape(
+    config: ScraperConfig,
+    progressCallback?: ScrapingProgressCallback
+  ): Promise<DocContent[]>;
+}
+
 export function isFetchDocsParams(obj: unknown): obj is FetchDocsParams {
   if (!obj || typeof obj !== "object") return false;
 

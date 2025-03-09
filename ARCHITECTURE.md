@@ -138,4 +138,88 @@ src/
 ├── store/          # Vector store implementation
 ├── scraper/        # Web scraping implementation
 └── utils/          # Shared utilities
+    └── url.ts      # URL normalization utilities
 ```
+
+## Scraper Strategy Pattern
+
+The documentation scraper uses the Strategy pattern to handle different types of documentation sources:
+
+```mermaid
+graph TD
+    A[DocumentationScraperDispatcher] --> B{Determine Strategy}
+    B -->|npmjs.org/com| C[NpmScraperStrategy]
+    B -->|pypi.org| D[PyPiScraperStrategy]
+    B -->|other domains| E[DefaultScraperStrategy]
+    C -->|extends| E
+    D -->|extends| E
+```
+
+### Scraper Components
+
+1. **DocumentationScraperDispatcher**
+
+   - Entry point for scraping operations
+   - Analyzes the target URL to determine appropriate strategy
+   - Instantiates and delegates to specific scraper strategies
+
+2. **ScraperStrategy Interface**
+
+   - Defines contract for all scraper implementations
+   - Ensures consistent scraping behavior across strategies
+
+3. **DefaultScraperStrategy**
+
+   - Base implementation for web scraping
+   - Handles generic documentation sites
+   - Can be extended by specific strategies
+
+4. **Specialized Strategies**
+   - **NpmScraperStrategy**: Optimized for npm package documentation
+     - Uses removeQuery URL normalization
+     - Extends DefaultScraperStrategy
+   - **PyPiScraperStrategy**: Handles Python Package Index docs
+     - Uses removeQuery URL normalization
+     - Extends DefaultScraperStrategy
+
+### Benefits of Strategy Pattern
+
+1. **Flexibility**
+
+   - Easy to add new strategies for different documentation sources
+   - Each strategy can implement custom scraping logic
+   - Common functionality shared through DefaultScraperStrategy
+
+2. **Maintainability**
+
+   - Clear separation of concerns
+   - Each strategy isolated and focused
+   - Easy to modify specific scraping behavior
+
+3. **Extensibility**
+   - New strategies can be added without modifying existing code
+   - Future support for sites like Mintlify, ReadMe.com planned
+
+### Error Handling & Retry Logic
+
+The scraper implements a robust error handling system with clear distinction between different types of failures:
+
+1. **Error Classification**
+
+   - **InvalidUrlError**: Validation errors for malformed URLs
+   - **ScraperError**: Base error class for scraping operations
+     - `isRetryable`: Flag indicating if error can be retried
+     - `cause`: Original error that caused the failure
+     - `statusCode`: HTTP status code if applicable
+
+2. **Retry Strategy**
+
+   - Only retry on 4xx HTTP errors
+   - Non-4xx errors fail immediately
+   - Exponential backoff between retry attempts
+   - Clear separation between scraping and retry logic
+
+3. **Implementation Pattern**
+   - `scrapePageContent`: Core scraping logic
+   - `scrapePageContentWithRetry`: Retry mechanism wrapper
+   - Clean separation of concerns for better maintainability

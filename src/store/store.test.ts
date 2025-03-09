@@ -5,16 +5,45 @@ import path from "node:path";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Document } from "@langchain/core/documents";
 
+// Define the type for memory vectors to match the implementation
+type MemoryVector = {
+  content: string;
+  embedding: number[];
+  metadata: Record<string, unknown>;
+};
+
 // Mock modules before importing anything that might use them
 vi.mock("langchain/vectorstores/memory", () => {
   return {
     MemoryVectorStore: class MockMemoryVectorStore {
+      memoryVectors: MemoryVector[] = [];
       async addDocuments() {
         return;
       }
-      async similaritySearch(query: string) {
-        // Return a mock result that matches the Document type
-        return [
+      asRetriever() {
+        return {
+          invoke: async () => [
+            {
+              pageContent: "Test document content about testing",
+              metadata: {
+                url: "http://example.com",
+                title: "Test Doc",
+                library: "test-lib",
+                version: "1.0.0",
+              },
+            },
+          ],
+        };
+      }
+    },
+  };
+});
+
+vi.mock("@langchain/community/retrievers/bm25", () => {
+  return {
+    BM25Retriever: {
+      fromDocuments: () => ({
+        invoke: async () => [
           {
             pageContent: "Test document content about testing",
             metadata: {
@@ -22,23 +51,11 @@ vi.mock("langchain/vectorstores/memory", () => {
               title: "Test Doc",
               library: "test-lib",
               version: "1.0.0",
-              similarity: 0.8,
+              bm25Score: 0.8,
             },
           },
-        ];
-      }
-      async save() {
-        return;
-      }
-      static async load() {
-        return new MockMemoryVectorStore();
-      }
-      toJSON() {
-        return {};
-      }
-      static fromJSON() {
-        return new MockMemoryVectorStore();
-      }
+        ],
+      }),
     },
   };
 });
@@ -102,8 +119,18 @@ describe("VectorStoreManager", () => {
 
     await store.addDocument(library, version, document);
     const results = await store.search(library, version, "testing");
-    expect(results).toBeDefined();
-    expect(results.length).toBeGreaterThan(0);
+    expect(results).toEqual([
+      {
+        content: "Test document content about testing",
+        score: 0.8,
+        metadata: {
+          url: "http://example.com",
+          title: "Test Doc",
+          library: "test-lib",
+          version: "1.0.0",
+        },
+      },
+    ]);
   });
 
   it("should find the best version", async () => {

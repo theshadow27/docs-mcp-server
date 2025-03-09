@@ -1,3 +1,5 @@
+import { InvalidUrlError } from "./errors";
+
 interface UrlNormalizerOptions {
   ignoreCase?: boolean;
   removeHash?: boolean;
@@ -59,6 +61,18 @@ export function normalizeUrl(
     return result;
   } catch {
     return url; // Return original URL if parsing fails
+  }
+}
+
+/**
+ * Validates if a string is a valid URL
+ * @throws {InvalidUrlError} If the URL is invalid
+ */
+export function validateUrl(url: string): void {
+  try {
+    new URL(url);
+  } catch (error) {
+    throw new InvalidUrlError(url, error);
   }
 }
 
