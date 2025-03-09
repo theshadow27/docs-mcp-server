@@ -1,0 +1,47 @@
+{
+  "name": "docs-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for fetching and searching documentation",
+  "type": "module",
+  "bin": {
+    "docs-mcp-server": "./dist/index.js",
+    "docs-mcp": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup src/",
+    "start": "npm run build && node dist/index.cjs",
+    "dev": "tsup src/ --watch",
+    "test": "vitest",
+    "lint": "biome check .",
+    "format": "biome format . --write",
+    "dev-cli": "npm run build && node dist/cli.cjs"
+  },
+  "dependencies": {
+    "@langchain/community": "^0.3.34",
+    "@langchain/openai": "^0.4.4",
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "@types/node-fetch": "^2.6.12",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "langchain": "0.3.19",
+    "scrape-it": "^6.1.4",
+    "semver": "^7.7.1",
+    "turndown": "^7.2.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^20.17.23",
+    "@types/semver": "^7.5.8",
+    "@types/turndown": "^5.0.5",
+    "happy-dom": "^17.4.0",
+    "jsdom": "^26.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.1",
+    "vitest": "^3.0.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

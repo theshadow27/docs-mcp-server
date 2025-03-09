@@ -1,0 +1,6 @@
+{
+  "$schema": "https://biomejs.dev/schema.json",
+  "files": {
+    "include": ["src/**/*.ts"]
+  }
+}
