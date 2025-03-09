@@ -9,10 +9,13 @@ import { NpmScraperStrategy } from "./strategies/npm-strategy";
 import { PyPiScraperStrategy } from "./strategies/pypi-strategy";
 
 export class DocumentationScraperDispatcher {
-  private determineStrategy(
-    url: string,
-    options?: { onProgress?: ScrapingProgressCallback }
-  ) {
+  private readonly onProgress?: ScrapingProgressCallback;
+
+  constructor(options?: { onProgress?: ScrapingProgressCallback }) {
+    this.onProgress = options?.onProgress;
+  }
+
+  private determineStrategy(url: string) {
     // Validate URL before determining strategy
     validateUrl(url);
     const { hostname } = new URL(url);
@@ -23,16 +26,16 @@ export class DocumentationScraperDispatcher {
       hostname === "npmjs.com" ||
       hostname === "www.npmjs.com"
     ) {
-      return new NpmScraperStrategy(options);
+      return new NpmScraperStrategy({ onProgress: this.onProgress });
     }
 
     // PyPI domain
     if (hostname === "pypi.org" || hostname === "www.pypi.org") {
-      return new PyPiScraperStrategy(options);
+      return new PyPiScraperStrategy({ onProgress: this.onProgress });
     }
 
     // Default strategy for all other domains
-    return new DefaultScraperStrategy(options);
+    return new DefaultScraperStrategy({ onProgress: this.onProgress });
   }
 
   async scrape(
@@ -41,9 +44,7 @@ export class DocumentationScraperDispatcher {
   ): Promise<DocContent[]> {
     // Validate config URL before proceeding
     validateUrl(config.url);
-    const strategy = this.determineStrategy(config.url, {
-      onProgress: progressCallback,
-    });
+    const strategy = this.determineStrategy(config.url);
     return strategy.scrape(config, progressCallback);
   }
 }

@@ -1,4 +1,4 @@
-import { DocumentationScraper } from "../scraper/index.js";
+import { DocumentationScraperDispatcher } from "../scraper/index.js";
 import type { VectorStoreManager } from "../store/index.js";
 import type {
   ScraperConfig,
@@ -35,12 +35,8 @@ export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
     subpagesOnly,
   } = options;
 
-  const scraper = new DocumentationScraper({
-    onProgress: (progress: ScrapingProgress) => {
-      if (onProgress) {
-        return onProgress(progress);
-      }
-    },
+  const scraper = new DocumentationScraperDispatcher({
+    onProgress,
   });
 
   const config: ScraperConfig = {
@@ -61,8 +57,8 @@ export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
     const doc = new Document({
       pageContent: result.content,
       metadata: {
-        url: result.url,
-        title: result.title,
+        url: result.metadata.url,
+        title: result.metadata.title,
         library,
         version,
       },
