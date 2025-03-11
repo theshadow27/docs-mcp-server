@@ -46,7 +46,7 @@ export const scrape = async (
       if (progress.pagesScraped > currentPage) {
         currentPage = progress.pagesScraped;
         reportProgress(
-          `🌐 Page ${currentPage}/${progress.maxPages} (depth ${progress.depth}/${progress.maxDepth}): ${progress.currentUrl}`
+          `🌐 Indexed page ${currentPage}/${progress.maxPages}: ${progress.currentUrl}`
         );
       }
     },

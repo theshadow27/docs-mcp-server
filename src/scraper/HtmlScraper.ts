@@ -3,6 +3,8 @@ import scrapeIt from "scrape-it";
 import { ScraperError } from "../utils/errors";
 import { validateUrl } from "../utils/url";
 import { logger } from "../utils/logger";
+import createDOMPurify, { type WindowLike } from "dompurify";
+import { Window } from "happy-dom";
 import type { PageResult } from "../types";
 
 export type RetryOptions = {
@@ -104,9 +106,14 @@ export class HtmlScraper {
       },
     });
 
+    // Sanitize HTML content
+    const window = new Window();
+    const purify = createDOMPurify(window as unknown as WindowLike);
+    const cleanContent = purify.sanitize(data.content);
+
     return {
       content:
-        this.turndownService.turndown(data.content).trim() ||
+        this.turndownService.turndown(cleanContent).trim() ||
         "No content available",
       title: data.title,
       url: url,

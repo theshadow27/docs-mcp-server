@@ -91,7 +91,7 @@ export class DefaultScraperStrategy implements ScraperStrategy {
     const result = await this.htmlScraper.scrapePageWithRetry(url);
 
     // Convert and emit the document immediately
-    progressCallback?.({
+    await progressCallback?.({
       pagesScraped: this.pageCount,
       maxPages: options.maxPages,
       currentUrl: normalizedUrl,

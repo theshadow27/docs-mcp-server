@@ -57,11 +57,6 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
   ): Promise<void> {
     if (!this.isProcessing) return;
 
-    // Always report page progress
-    if (this.callbacks.onProgress) {
-      await this.callbacks.onProgress(progress);
-    }
-
     // Process document if present
     if (!progress.document) return;
 
@@ -70,6 +65,11 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
         pageContent: progress.document.content,
         metadata: progress.document.metadata,
       });
+
+      // Report page progress
+      if (this.callbacks.onProgress) {
+        await this.callbacks.onProgress(progress);
+      }
     } catch (error) {
       if (this.callbacks.onError) {
         await this.callbacks.onError(

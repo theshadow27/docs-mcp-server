@@ -24,14 +24,9 @@ export const STORE_FILENAME = "store.json";
 
 export class VectorStoreManager {
   private readonly baseDir: string;
-  private onProgress?: ProgressCallback<VectorStoreProgress>;
 
-  constructor(
-    baseDir: string,
-    options?: { onProgress?: ProgressCallback<VectorStoreProgress> }
-  ) {
+  constructor(baseDir: string) {
     this.baseDir = baseDir;
-    this.onProgress = options?.onProgress;
   }
 
   private createMemoryVectorStore(): MemoryVectorStore {
@@ -234,18 +229,6 @@ export class VectorStoreManager {
     // Split document into smaller chunks
     const splitDocs = await splitter.splitDocuments([document]);
     logger.info(`📄 Split document into ${splitDocs.length} chunks`);
-
-    // Report progress
-    if (this.onProgress) {
-      this.onProgress({
-        documentsProcessed: 1,
-        totalDocuments: 1,
-        currentDocument: {
-          title: document.metadata.title as string,
-          numChunks: splitDocs.length,
-        },
-      });
-    }
 
     // Add split documents to store
     await store.addDocuments(splitDocs);
