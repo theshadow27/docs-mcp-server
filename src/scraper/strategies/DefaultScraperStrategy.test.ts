@@ -414,6 +414,82 @@ describe("DefaultScraperStrategy", () => {
         new URL("https://example.com/page2")
       );
     });
+
+    it("should add links to visited set immediately when queuing them", async () => {
+      const mockResponses = new Map<string, PageResult>([
+        [
+          "https://example.com",
+          {
+            content: "Root content",
+            title: "Root",
+            url: "https://example.com",
+            links: [
+              "https://example.com/page1",
+              "https://example.com/page2",
+              "https://example.com/page1", // Duplicate link to verify handling
+            ],
+          },
+        ],
+        [
+          "https://example.com/page1",
+          {
+            content: "Page 1 content",
+            title: "Page 1",
+            url: "https://example.com/page1",
+            links: [],
+          },
+        ],
+      ]);
+
+      const mockHtmlScraper = new MockHtmlScraper(mockResponses);
+      const strategy = new DefaultScraperStrategy({
+        htmlScraper: mockHtmlScraper,
+        shouldFollowLink: () => true,
+      });
+
+      const options: ScrapeOptions = {
+        url: "https://example.com",
+        library: "test",
+        version: "1.0",
+        maxPages: 5,
+        maxDepth: 2,
+      };
+
+      // Spy on the visited set to verify URLs are added when enqueued
+      const visitedAddSpy = vi.spyOn(
+        // @ts-expect-error Accessing private property for testing
+        strategy.visited,
+        "add"
+      );
+
+      await strategy.scrape(options);
+
+      // Root URL should be added immediately when queued
+      // Using .toHaveBeenNthCalledWith to check each call individually
+      expect(visitedAddSpy.mock.calls[0][0]).toBe("https://example.com/");
+
+      // Child URLs should be added when discovered, not when visited
+      expect(visitedAddSpy.mock.calls).toContainEqual([
+        "https://example.com/page1",
+      ]);
+      expect(visitedAddSpy.mock.calls).toContainEqual([
+        "https://example.com/page2",
+      ]);
+
+      // Verify we scraped the correct pages
+      expect(mockHtmlScraper.scrapePageWithRetry).toHaveBeenCalledWith(
+        "https://example.com"
+      );
+      expect(mockHtmlScraper.scrapePageWithRetry).toHaveBeenCalledWith(
+        "https://example.com/page1"
+      );
+      expect(mockHtmlScraper.scrapePageWithRetry).toHaveBeenCalledWith(
+        "https://example.com/page2"
+      );
+
+      // Each URL should be scraped only once despite duplicates
+      expect(mockHtmlScraper.scrapePageWithRetry).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe("Progress Callback", () => {
