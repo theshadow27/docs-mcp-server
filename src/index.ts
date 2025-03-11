@@ -5,26 +5,14 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import path from "node:path";
 import os from "node:os";
-import { VectorStoreManager } from "./store/index.js";
-import type { VectorStoreProgress } from "./types/index.js";
+import { VectorStoreManager } from "./store/VectorStoreManager.js";
 import { findVersion, listLibraries } from "./tools/library.js";
 import { search } from "./tools/search.js";
 import { scrape } from "./tools/scrape.js";
 
 // Initialize vector store
 const baseDir = path.join(os.homedir(), ".docs-mcp", "data");
-const store = new VectorStoreManager(baseDir, {
-  onProgress: (progress: VectorStoreProgress) => {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Processing document ${progress.documentsProcessed}/${progress.totalDocuments}: "${progress.currentDocument.title}" (${progress.currentDocument.numChunks} chunks)`,
-        },
-      ],
-    };
-  },
-});
+const store = new VectorStoreManager(baseDir);
 
 const server = new McpServer({
   name: "docs-mcp-server",
@@ -78,31 +66,26 @@ server.tool(
     subpagesOnly: z.boolean().optional().default(true),
   },
   async ({ url, library, version, maxPages, maxDepth, subpagesOnly }) => {
-    const result = await scrape({
-      url,
-      library,
-      version,
-      maxPages,
-      maxDepth,
-      subpagesOnly,
-      store,
-      onProgress: (progress) => ({
-        content: [
-          {
-            type: "text",
-            text:
-              `Scraping page ${progress.pagesScraped}/${progress.maxPages} ` +
-              `(depth ${progress.depth}/${progress.maxDepth}): ${progress.currentUrl}`,
-          },
-        ],
-      }),
-    });
+    const result = await scrape(
+      {
+        url,
+        library,
+        version,
+        options: {
+          maxPages,
+          maxDepth,
+        },
+      },
+      (progress) => ({
+        content: progress.content,
+      })
+    );
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully scraped ${result.pagesScraped} pages and indexed ${result.documentsIndexed} documents`,
+          text: `Successfully scraped ${result.pagesScraped} pages`,
         },
       ],
     };

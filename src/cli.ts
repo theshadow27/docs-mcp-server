@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 import "dotenv/config";
 import { Command } from "commander";
-import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { VectorStoreManager } from "./store/index.js";
-import type { VectorStoreProgress } from "./types/index.js";
-import type { DocContent } from "./types/index.js";
+import { VectorStoreManager } from "./store/VectorStoreManager.js";
 import { findVersion, listLibraries } from "./tools/library.js";
 import { search } from "./tools/search.js";
 import { scrape } from "./tools/scrape.js";
@@ -19,13 +16,7 @@ const program = new Command();
 const baseDir = path.join(os.homedir(), ".docs-mcp", "data");
 
 // Initialize the store manager
-const store = new VectorStoreManager(baseDir, {
-  onProgress: (progress: VectorStoreProgress) => {
-    console.log(
-      `Processing document ${progress.documentsProcessed}/${progress.totalDocuments}: "${progress.currentDocument.title}" (${progress.currentDocument.numChunks} chunks)`
-    );
-  },
-});
+const store = new VectorStoreManager(baseDir);
 
 program
   .name("docs-mcp")
@@ -44,25 +35,25 @@ program
   )
   .action(async (library, version, url, options) => {
     try {
-      const result = await scrape({
-        url,
-        library,
-        version,
-        maxPages: Number.parseInt(options.maxPages),
-        maxDepth: Number.parseInt(options.maxDepth),
-        subpagesOnly: options.subpagesOnly,
-        store,
-        onProgress: (progress) => {
-          console.log(
-            `Scraping page ${progress.pagesScraped}/${options.maxPages} (depth ${progress.depth}/${options.maxDepth}): ${progress.currentUrl}`
-          );
-          return undefined;
+      const result = await scrape(
+        {
+          url,
+          library,
+          version,
+          options: {
+            maxPages: Number.parseInt(options.maxPages),
+            maxDepth: Number.parseInt(options.maxDepth),
+          },
         },
-      });
-
-      console.log(
-        `Successfully scraped ${result.pagesScraped} pages and indexed ${result.documentsIndexed} documents`
+        (progress) => {
+          // Log progress messages to console
+          for (const content of progress.content) {
+            console.log(content.text);
+          }
+        }
       );
+
+      console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
     } catch (error: unknown) {
       console.error(
         "Error:",

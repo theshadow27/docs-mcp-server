@@ -1,4 +1,4 @@
-import type { VectorStoreManager } from "../store/index.js";
+import type { VectorStoreManager } from "../store/VectorStoreManager.js";
 import type { SearchResult } from "../types/index.js";
 import { logger } from "../utils/logger";
 
@@ -22,7 +22,13 @@ export const search = async (
   logger.info(`🔍 Searching ${library}@${version} for: ${query}`);
 
   try {
-    const results = await store.search(library, version, query, limit);
+    // Load the vector store for this library/version
+    const vectorStore = await store.loadStore(library, version);
+    if (!vectorStore) {
+      throw new Error(`No documentation found for ${library}@${version}`);
+    }
+
+    const results = await store.searchStore(vectorStore, query, limit);
     logger.info(`✅ Found ${results.length} matching results`);
     return { results };
   } catch (error) {

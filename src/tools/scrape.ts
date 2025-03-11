@@ -1,93 +1,74 @@
-import { DocumentationScraperDispatcher } from "../scraper/index.js";
-import type { VectorStoreManager } from "../store/index.js";
+import path from "node:path";
+import { homedir } from "node:os";
+import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
+import { VectorStoreManager } from "../store";
 import type {
-  ScraperConfig,
-  ScrapingProgress,
+  FetchDocsParams,
   ProgressResponse,
-} from "../types/index.js";
-import { Document } from "@langchain/core/documents";
+  ScrapingProgress,
+} from "../types";
 import { logger } from "../utils/logger";
 
-export interface ScrapeOptions {
-  url: string;
-  library: string;
-  version: string;
-  maxPages: number;
-  maxDepth: number;
-  subpagesOnly?: boolean;
-  store: VectorStoreManager;
-  onProgress?: (progress: ScrapingProgress) => ProgressResponse | undefined;
-}
+const DEFAULT_DOCS_DIR = path.join(homedir(), ".docs-mcp-server");
 
-export interface ScrapeResult {
+interface ScrapeResult {
   pagesScraped: number;
-  documentsIndexed: number;
 }
 
-export const scrape = async (options: ScrapeOptions): Promise<ScrapeResult> => {
-  const {
-    url,
-    library,
-    version,
-    maxPages,
-    maxDepth,
-    store,
-    onProgress,
-    subpagesOnly,
-  } = options;
+export const scrape = async (
+  params: FetchDocsParams,
+  onProgress?: (response: ProgressResponse) => void
+): Promise<ScrapeResult> => {
+  const storeManager = new VectorStoreManager(DEFAULT_DOCS_DIR);
 
-  logger.info(
-    `🕷️ Starting documentation scrape for ${library}@${version} from ${url}`
-  );
+  // Create or load vector store
+  const vectorStore =
+    (await storeManager.loadStore(params.library, params.version)) ??
+    (await storeManager.createStore(params.library, params.version));
 
-  const scraper = new DocumentationScraperDispatcher({
-    onProgress,
-  });
+  // Remove any existing documents
+  await storeManager.removeAllDocuments(vectorStore);
+  logger.info(`💾 Using clean store for ${params.library}@${params.version}`);
 
-  const config: ScraperConfig = {
-    url,
-    library,
-    version,
-    maxPages,
-    maxDepth,
-    subpagesOnly,
+  const pipeline = new DocumentProcessingPipeline(storeManager, vectorStore);
+  let currentPage = 0;
+
+  const reportProgress = (text: string) => {
+    if (onProgress) {
+      onProgress({
+        content: [{ type: "text", text }],
+      });
+    }
   };
 
-  try {
-    // Clear existing vector store data before scraping
-    await store.clearStore(library, version);
+  pipeline.setCallbacks({
+    onProgress: async (progress: ScrapingProgress) => {
+      if (progress.pagesScraped > currentPage) {
+        currentPage = progress.pagesScraped;
+        reportProgress(
+          `🌐 Page ${currentPage}/${progress.maxPages} (depth ${progress.depth}/${progress.maxDepth}): ${progress.currentUrl}`
+        );
+      }
+    },
+    onError: async (error, doc) => {
+      reportProgress(
+        `❌ Error processing ${doc?.metadata.title ?? "document"}: ${error.message}`
+      );
+    },
+  });
 
-    const results = await scraper.scrape(config);
-    let totalDocuments = 0;
+  // Start processing with config
+  await pipeline.process({
+    url: params.url,
+    library: params.library,
+    version: params.version,
+    maxPages: params.options?.maxPages ?? 100,
+    maxDepth: params.options?.maxDepth ?? 3,
+    subpagesOnly: true,
+  });
 
-    // Convert each result to a Document and add it to the store
-    for (const result of results) {
-      const doc = new Document({
-        pageContent: result.content,
-        metadata: {
-          url: result.metadata.url,
-          title: result.metadata.title,
-          library,
-          version,
-        },
-      });
-
-      await store.addDocument(library, version, doc);
-      totalDocuments++;
-    }
-
-    logger.info(
-      `✨ Scraping completed: ${results.length} pages retrieved and indexed`
-    );
-
-    return {
-      pagesScraped: results.length,
-      documentsIndexed: totalDocuments,
-    };
-  } catch (error) {
-    logger.error(
-      `❌ Scraping failed: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-    throw error;
-  }
+  // Return final statistics
+  return {
+    pagesScraped: currentPage,
+  };
 };

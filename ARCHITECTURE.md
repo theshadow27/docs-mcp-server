@@ -4,8 +4,18 @@
 
 The Documentation MCP Server is designed with a modular architecture that ensures feature parity and code reuse between its two main interfaces:
 
+### File Naming and Code Quality Conventions
+
+- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `VectorStoreManager.ts`)
+- Other files use kebab-case or regular camelCase (e.g., `index.ts`, `scraper-service.ts`)
+- Avoid type casting where possible. Never use `any` type but prefer `unknown` or `never`.
+
 1. Command Line Interface (CLI)
 2. Model Context Protocol (MCP) Server
+
+### Testing
+
+- We use `vitest` for testing.
 
 ## Core Design Principles
 
@@ -92,10 +102,12 @@ server.tool(
 
 ### 4. Progress Reporting
 
-Tools that involve long-running operations support progress reporting through callback functions. This allows both interfaces to provide appropriate feedback:
+The project uses a unified progress reporting system with typed callbacks for all long-running operations. This design:
 
-- CLI: Console output with progress information
-- MCP: Structured progress updates through the MCP protocol
+- Provides real-time feedback at multiple levels (page, document, storage)
+- Ensures consistent progress tracking across components
+- Supports different output formats for CLI and MCP interfaces
+- Enables parallel processing with individual progress tracking
 
 ### 5. Logging Strategy
 
@@ -169,85 +181,138 @@ src/
     └── url.ts      # URL normalization utilities
 ```
 
-## Scraper Strategy Pattern
+## Scraper Architecture
 
-The documentation scraper uses the Strategy pattern to handle different types of documentation sources:
+The scraper module is responsible for extracting content from various documentation sources. It employs a strategy pattern to handle different website structures and content formats.
 
 ```mermaid
 graph TD
-    A[DocumentationScraperDispatcher] --> B{Determine Strategy}
-    B -->|npmjs.org/com| C[NpmScraperStrategy]
-    B -->|pypi.org| D[PyPiScraperStrategy]
-    B -->|other domains| E[DefaultScraperStrategy]
-    C -->|extends| E
-    D -->|extends| E
+    A[ScraperService] --> B[ScraperRegistry]
+    B --> C{Select Strategy}
+    C -->|github.com| D[GitHubScraperStrategy]
+    C -->|npmjs.org| E[NpmScraperStrategy]
+    C -->|pypi.org| F[PyPiScraperStrategy]
+    C -->|other domains| G[DefaultScraperStrategy]
+    D & E & F & G --> H[HtmlScraper]
 ```
 
 ### Scraper Components
 
-1. **DocumentationScraperDispatcher**
+1. **ScraperService**
 
-   - Entry point for scraping operations
-   - Analyzes the target URL to determine appropriate strategy
-   - Instantiates and delegates to specific scraper strategies
+   - The main entry point for scraping operations.
+   - Receives a URL and delegates to the ScraperRegistry to select the appropriate scraping strategy.
+   - Handles overall scraping process and error management.
 
-2. **ScraperStrategy Interface**
+2. **ScraperRegistry**
 
-   - Defines contract for all scraper implementations
-   - Ensures consistent scraping behavior across strategies
+   - Responsible for selecting the appropriate scraping strategy based on the URL.
+   - Maintains a list of available strategies and their associated domains.
+   - Returns a default strategy if no specific strategy is found for the given URL.
 
-3. **DefaultScraperStrategy**
+3. **ScraperStrategy Interface (Implicit)**
 
-   - Base implementation for web scraping
-   - Handles generic documentation sites
-   - Can be extended by specific strategies
+   - Defines the contract for all scraper strategies.
+   - Each strategy must implement a `scrape` method that takes a URL and returns the scraped content.
 
-4. **Specialized Strategies**
-   - **NpmScraperStrategy**: Optimized for npm package documentation
-     - Uses removeQuery URL normalization
-     - Extends DefaultScraperStrategy
-   - **PyPiScraperStrategy**: Handles Python Package Index docs
-     - Uses removeQuery URL normalization
-     - Extends DefaultScraperStrategy
+4. **HtmlScraper**
+
+   - A general-purpose HTML scraper that uses `scrape-it` to extract content from web pages.
+   - Converts HTML content to Markdown using `turndown`.
+   - Implements a retry mechanism with exponential backoff to handle temporary network issues.
+   - Allows customization of content and link selectors.
+
+5. **Specialized Strategies**
+
+   - **DefaultScraperStrategy**: A base strategy that uses HtmlScraper to scrape generic web pages.
+   - **NpmScraperStrategy**: A strategy for scraping npm package documentation.
+   - **PyPiScraperStrategy**: A strategy for scraping Python Package Index documentation.
+   - **GitHubScraperStrategy**: A strategy for scraping GitHub repository documentation.
 
 ### Benefits of Strategy Pattern
 
 1. **Flexibility**
 
-   - Easy to add new strategies for different documentation sources
-   - Each strategy can implement custom scraping logic
-   - Common functionality shared through DefaultScraperStrategy
+   - New strategies can be easily added to support different documentation sources.
+   - Each strategy can be customized to handle the specific structure and content of its target website.
 
 2. **Maintainability**
 
-   - Clear separation of concerns
-   - Each strategy isolated and focused
-   - Easy to modify specific scraping behavior
+   - The scraper logic is well-organized and easy to understand.
+   - Changes to one strategy do not affect other strategies.
 
 3. **Extensibility**
-   - New strategies can be added without modifying existing code
-   - Future support for sites like Mintlify, ReadMe.com planned
 
-### Error Handling & Retry Logic
+   - The scraper can be extended to support new documentation sources without modifying existing code.
 
-The scraper implements a robust error handling system with clear distinction between different types of failures:
+## Vector Store Architecture
 
-1. **Error Classification**
+The vector store module manages document storage, retrieval, and search operations using a store-centric design that ensures clear lifecycle management and operation boundaries.
 
-   - **InvalidUrlError**: Validation errors for malformed URLs
-   - **ScraperError**: Base error class for scraping operations
-     - `isRetryable`: Flag indicating if error can be retried
-     - `cause`: Original error that caused the failure
-     - `statusCode`: HTTP status code if applicable
+```mermaid
+graph TD
+    A[DocumentProcessingPipeline] --> B[VectorStoreManager]
+    B --> C{Store Operations}
+    C -->|Create| D[createStore]
+    C -->|Load| E[loadStore]
+    C -->|Delete| F[deleteStore]
+    D & E --> G[MemoryVectorStore]
+    G --> H{Document Operations}
+    H -->|Add| I[addDocument]
+    H -->|Search| J[searchStore]
+```
 
-2. **Retry Strategy**
+### Vector Store Components
 
-   - Only retry on 4xx HTTP errors
-   - Non-4xx errors fail immediately
-   - Exponential backoff between retry attempts
-   - Clear separation between scraping and retry logic
+1. **VectorStoreManager**
 
-3. **Implementation Pattern**
-   - `scrapePageContent`: Core scraping logic
-   - `scrapePageContentWithRetry`: Retry mechanism wrapper
-   - Clean separation of concerns for better maintainability
+   - Manages store lifecycle (create, load, delete)
+   - Handles store persistence and retrieval
+   - Provides store-centric document operations
+
+2. **Store Operations**
+
+   - Clear separation between store management and document operations
+   - Explicit store lifecycle (create/load/delete)
+   - Store must exist before document operations
+
+3. **Document Operations**
+
+   - Add and search operations require existing store
+   - Ensures consistent document processing
+   - Maintains store integrity
+
+### Benefits of Store-Centric Design
+
+1. **Predictability**
+
+   - Clear store lifecycle
+   - Explicit store dependencies
+   - Consistent store state
+
+2. **Performance**
+
+   - No redundant store creation
+   - Efficient document batching
+   - Optimized search operations
+
+### Error Handling & Retry Mechanism
+
+The `HtmlScraper` implements a robust retry mechanism to handle temporary network issues and improve scraping reliability.
+
+1. **Retry Logic**
+
+   - The `scrapePageWithRetry` method attempts to scrape a page multiple times if the initial attempt fails.
+   - It uses exponential backoff to increase the delay between retries, reducing the load on the target server.
+   - The maximum number of retries and the base delay are configurable.
+
+2. **Error Classification**
+
+   - The scraper distinguishes between different types of errors to determine whether a retry is appropriate.
+   - It retries on 4xx errors, which are typically caused by temporary network issues or server overload.
+   - It does not retry on other errors, such as 5xx errors, which are typically caused by server-side problems.
+
+3. **Customizable Options**
+
+   - The retry mechanism can be customized by passing a `RetryOptions` object to the `scrapePageWithRetry` method.
+   - The `RetryOptions` object allows you to configure the maximum number of retries and the base delay.

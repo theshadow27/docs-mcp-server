@@ -1,4 +1,4 @@
-import type { VectorStoreManager } from "../store/index.js";
+import type { VectorStoreManager } from "../store/VectorStoreManager.js";
 import { logger } from "../utils/logger";
 
 export interface ListLibrariesOptions {
