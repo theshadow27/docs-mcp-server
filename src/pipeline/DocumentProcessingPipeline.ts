@@ -8,6 +8,13 @@ import type {
 } from "../types";
 import { logger } from "../utils/logger";
 
+/**
+ * Coordinates document processing workflow from scraping to storage.
+ * Manages the lifecycle of document processing including scraping, progress tracking,
+ * and storage operations. Implements a pipeline pattern with error handling and
+ * progress reporting through callbacks, ensuring reliable document processing
+ * from source to vector store.
+ */
 export class DocumentProcessingPipeline implements DocumentPipeline {
   private readonly store: VectorStoreService;
   private readonly library: string;
@@ -25,10 +32,17 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
     this.scraperService = new ScraperService(this.registry);
   }
 
+  /**
+   * Registers callback handlers for pipeline events
+   */
   setCallbacks(callbacks: DocumentPipelineCallbacks): void {
     this.callbacks = callbacks;
   }
 
+  /**
+   * Initiates document processing pipeline.
+   * Coordinates scraping and storage operations with progress tracking
+   */
   async process(options: ScrapeOptions): Promise<void> {
     if (this.isProcessing) {
       throw new Error("Pipeline is already processing");
@@ -48,6 +62,9 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
     }
   }
 
+  /**
+   * Gracefully terminates ongoing processing
+   */
   async stop(): Promise<void> {
     if (!this.isProcessing) return;
     this.isProcessing = false;

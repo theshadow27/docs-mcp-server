@@ -29,12 +29,19 @@ const server = new McpServer({
         },
       },
       search_docs: {
-        description: "Search indexed documentation",
+        description:
+          "Search indexed documentation. Examples:\n" +
+          "- {library: 'react', version: '18.0.0', query: 'hooks'} -> matches React 18.0.0 or earlier\n" +
+          "- {library: 'react', version: '18.0.0', query: 'hooks', exactMatch: true} -> only React 18.0.0\n" +
+          "- {library: 'typescript', version: '5.x', query: 'types'} -> any TypeScript 5.x.x version\n" +
+          "- {library: 'typescript', version: '5.2.x', query: 'types'} -> any TypeScript 5.2.x version",
         input: {
           library: "Name of the library",
-          version: "Version of the library",
+          version:
+            "Version of the library (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')",
           query: "Search query",
           limit: "Maximum number of results (default: 5)",
+          exactMatch: "Only use exact version match (default: false)",
         },
       },
       list_libraries: {
@@ -93,13 +100,15 @@ server.tool(
     version: z.string(),
     query: z.string(),
     limit: z.number().optional().default(5),
+    exactMatch: z.boolean().optional().default(false),
   },
-  async ({ library, version, query, limit }) => {
+  async ({ library, version, query, limit, exactMatch }) => {
     const result = await search({
       library,
       version,
       query,
       limit,
+      exactMatch,
       storeService,
     });
 

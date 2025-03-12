@@ -7,6 +7,7 @@ export interface SearchToolOptions {
   version: string;
   query: string;
   limit: number;
+  exactMatch?: boolean;
   storeService: VectorStoreService;
 }
 
@@ -17,19 +18,31 @@ export interface SearchToolResult {
 export const search = async (
   options: SearchToolOptions
 ): Promise<SearchToolResult> => {
-  const { library, version, query, limit, storeService } = options;
+  const {
+    library,
+    version,
+    query,
+    limit,
+    exactMatch = false,
+    storeService,
+  } = options;
 
-  logger.info(`🔍 Searching ${library}@${version} for: ${query}`);
+  logger.info(
+    `🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`
+  );
 
   try {
-    const exists = await storeService.exists(library, version);
-    if (!exists) {
+    // If not exact match, find best matching version
+    const bestVersion = exactMatch
+      ? version
+      : await storeService.findBestVersion(library, version);
+    if (!bestVersion) {
       throw new Error(`No documentation found for ${library}@${version}`);
     }
 
     const results = await storeService.searchStore(
       library,
-      version,
+      bestVersion,
       query,
       limit
     );

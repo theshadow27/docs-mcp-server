@@ -6,6 +6,9 @@ import type { SearchResult, VersionInfo } from "../types";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
 
+/**
+ * Provides semantic search capabilities across different versions of library documentation.
+ */
 export class VectorStoreService {
   private readonly store: DocumentStore;
 
@@ -26,6 +29,10 @@ export class VectorStoreService {
     await this.store.shutdown();
   }
 
+  /**
+   * Returns a list of all available versions for a library.
+   * Only returns versions that follow semver format.
+   */
   async listVersions(library: string): Promise<VersionInfo[]> {
     const versions = await this.store.queryUniqueVersions(library);
     return versions
@@ -40,6 +47,18 @@ export class VectorStoreService {
     return this.store.checkDocumentExists(library, version);
   }
 
+  /**
+   * Finds the most appropriate version of documentation based on the requested version.
+   * When no target version is specified, returns the latest version.
+   *
+   * Version matching behavior:
+   * - Exact versions (e.g., "18.0.0"): Matches that version or any earlier version
+   * - X-Range patterns (e.g., "5.x", "5.2.x"): Matches within the specified range
+   * - No version: Returns the latest available version
+   *
+   * For documentation, we prefer matching older versions over no match at all,
+   * since older docs are often still relevant and useful.
+   */
   async findBestVersion(
     library: string,
     targetVersion?: string
@@ -101,6 +120,10 @@ export class VectorStoreService {
     await this.store.deleteDocuments({ library, version });
   }
 
+  /**
+   * Adds a document to the store, splitting it into smaller chunks for better search results.
+   * Uses RecursiveCharacterTextSplitter to maintain markdown structure during splitting.
+   */
   async addDocument(
     library: string,
     version: string,
@@ -126,6 +149,10 @@ export class VectorStoreService {
     await this.store.addDocuments(splitDocs, { library, version });
   }
 
+  /**
+   * Searches for documentation content across versions.
+   * Results are re-ranked using BM25 algorithm for improved relevance.
+   */
   async searchStore(
     library: string,
     version: string,

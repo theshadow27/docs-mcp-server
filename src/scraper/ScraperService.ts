@@ -7,9 +7,19 @@ import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import type { ScraperRegistry } from "./ScraperRegistry";
 
+/**
+ * Orchestrates web scraping operations using registered scraping strategies.
+ * Delegates scraping to appropriate strategies based on URL patterns and provides
+ * a unified error handling layer, wrapping domain-specific errors into ScraperErrors
+ * for consistent error management throughout the application.
+ */
 export class ScraperService {
   constructor(private registry: ScraperRegistry) {}
 
+  /**
+   * Executes scraping using appropriate strategy for given URL.
+   * Provides progress tracking and error handling wrapper
+   */
   async scrape(
     options: ScrapeOptions,
     progressCallback?: ProgressCallback<ScrapingProgress>

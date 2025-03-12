@@ -32,6 +32,12 @@ export type HtmlScraperOptions = {
   linksSelector?: string;
 };
 
+/**
+ * Handles HTML content extraction and conversion to markdown with retry capabilities.
+ * Implements robust scraping with configurable selectors, sanitization, and automatic
+ * retries for resilient web scraping. Uses Turndown for HTML-to-markdown conversion
+ * with customized rules for code blocks and tables.
+ */
 export class HtmlScraper {
   private turndownService: TurndownService;
   private readonly contentSelector: string;
@@ -82,6 +88,10 @@ export class HtmlScraper {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /**
+   * Performs single attempt at scraping page content and converting to markdown.
+   * Handles HTML sanitization and URL normalization
+   */
   public async scrapePage(url: string): Promise<PageResult> {
     validateUrl(url);
 
@@ -129,6 +139,10 @@ export class HtmlScraper {
     };
   }
 
+  /**
+   * Implements exponential backoff retry logic for resilient scraping.
+   * Retries on 4xx errors with configurable attempts and delays
+   */
   public async scrapePageWithRetry(
     url: string,
     options?: RetryOptions

@@ -69,8 +69,19 @@ program
 
 program
   .command("search <library> <version> <query>")
-  .description("Search documents in a library")
+  .description(
+    "Search documents in a library. Version matching examples:\n" +
+      "  - search react 18.0.0 'hooks' -> matches docs for React 18.0.0 or earlier versions\n" +
+      "  - search react 18.0.0 'hooks' --exact-match -> only matches React 18.0.0\n" +
+      "  - search typescript 5.x 'types' -> matches any TypeScript 5.x.x version\n" +
+      "  - search typescript 5.2.x 'types' -> matches any TypeScript 5.2.x version"
+  )
   .option("-l, --limit <number>", "Maximum number of results", "5")
+  .option(
+    "-e, --exact-match",
+    "Only use exact version match (e.g., '18.0.0' matches only 18.0.0, not 17.x.x) (default: false)",
+    false
+  )
   .action(async (library, version, query, options) => {
     try {
       const result = await search({
@@ -78,6 +89,7 @@ program
         version,
         query,
         limit: Number.parseInt(options.limit),
+        exactMatch: options.exactMatch,
         storeService: store,
       });
       console.log(formatOutput(result.results));
