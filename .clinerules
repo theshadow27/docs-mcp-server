@@ -5,3 +5,4 @@
 - Follow programming principles such as DRY, KISS, YAGNI, and SOLID
 - Always use the latest version of the programming language and libraries.
 - Always prefer the simplest solution.
+- NEVER update any files in the following directories: .git, node_modules

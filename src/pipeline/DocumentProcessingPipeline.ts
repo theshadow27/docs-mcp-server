@@ -1,4 +1,3 @@
-import type { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { ScraperRegistry, ScraperService } from "../scraper";
 import type { VectorStoreManager } from "../store";
 import type {
@@ -11,15 +10,17 @@ import { logger } from "../utils/logger";
 
 export class DocumentProcessingPipeline implements DocumentPipeline {
   private readonly store: VectorStoreManager;
-  private readonly vectorStore: MemoryVectorStore;
+  private readonly library: string;
+  private readonly version: string;
   private callbacks: DocumentPipelineCallbacks = {};
   private isProcessing = false;
   private registry: ScraperRegistry;
   private scraperService: ScraperService;
 
-  constructor(store: VectorStoreManager, vectorStore: MemoryVectorStore) {
+  constructor(store: VectorStoreManager, library: string, version: string) {
     this.store = store;
-    this.vectorStore = vectorStore;
+    this.library = library;
+    this.version = version;
     this.registry = new ScraperRegistry();
     this.scraperService = new ScraperService(this.registry);
   }
@@ -61,7 +62,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
     if (!progress.document) return;
 
     try {
-      await this.store.addDocument(this.vectorStore, {
+      await this.store.addDocument(this.library, this.version, {
         pageContent: progress.document.content,
         metadata: progress.document.metadata,
       });

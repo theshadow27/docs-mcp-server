@@ -12,11 +12,26 @@ const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
 const program = new Command();
 
-// Use the same data directory as the MCP server
-const baseDir = path.join(os.homedir(), ".docs-mcp", "data");
-
 // Initialize the store manager
-const store = new VectorStoreManager(baseDir);
+const store = new VectorStoreManager();
+
+// Function to ensure store is shutdown before exiting
+const cleanupAndExit = async (error?: unknown) => {
+  await store.shutdown();
+  if (error) {
+    console.error(
+      "Error:",
+      error instanceof Error ? error.message : String(error)
+    );
+    process.exit(1);
+  }
+  process.exit(0);
+};
+
+// Handle cleanup on SIGINT
+process.on("SIGINT", () => {
+  cleanupAndExit();
+});
 
 program
   .name("docs-mcp")
@@ -35,31 +50,20 @@ program
   )
   .action(async (library, version, url, options) => {
     try {
-      const result = await scrape(
-        {
-          url,
-          library,
-          version,
-          options: {
-            maxPages: Number.parseInt(options.maxPages),
-            maxDepth: Number.parseInt(options.maxDepth),
-          },
+      const result = await scrape({
+        storeManager: store,
+        url,
+        library,
+        version,
+        options: {
+          maxPages: Number.parseInt(options.maxPages),
+          maxDepth: Number.parseInt(options.maxDepth),
         },
-        (progress) => {
-          // Log progress messages to console
-          for (const content of progress.content) {
-            console.log(content.text);
-          }
-        }
-      );
-
+      });
       console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
-    } catch (error: unknown) {
-      console.error(
-        "Error:",
-        error instanceof Error ? error.message : String(error)
-      );
-      process.exit(1);
+      await cleanupAndExit();
+    } catch (error) {
+      await cleanupAndExit(error);
     }
   });
 
@@ -74,15 +78,12 @@ program
         version,
         query,
         limit: Number.parseInt(options.limit),
-        store,
+        storeManager: store,
       });
       console.log(formatOutput(result.results));
-    } catch (error: unknown) {
-      console.error(
-        "Error:",
-        error instanceof Error ? error.message : String(error)
-      );
-      process.exit(1);
+      await cleanupAndExit();
+    } catch (error) {
+      await cleanupAndExit(error);
     }
   });
 
@@ -91,14 +92,11 @@ program
   .description("List all available libraries and their versions")
   .action(async () => {
     try {
-      const result = await listLibraries({ store });
+      const result = await listLibraries({ storeManager: store });
       console.log(formatOutput(result.libraries));
-    } catch (error: unknown) {
-      console.error(
-        "Error:",
-        error instanceof Error ? error.message : String(error)
-      );
-      process.exit(1);
+      await cleanupAndExit();
+    } catch (error) {
+      await cleanupAndExit(error);
     }
   });
 
@@ -107,19 +105,19 @@ program
   .description("Find the best matching version for a library")
   .action(async (library, targetVersion) => {
     try {
-      const version = await findVersion({ store, library, targetVersion });
+      const version = await findVersion({
+        storeManager: store,
+        library,
+        targetVersion,
+      });
       if (version) {
         console.log(version);
+        await cleanupAndExit();
       } else {
-        console.error("No matching version found");
-        process.exit(1);
+        await cleanupAndExit("No matching version found");
       }
-    } catch (error: unknown) {
-      console.error(
-        "Error:",
-        error instanceof Error ? error.message : String(error)
-      );
-      process.exit(1);
+    } catch (error) {
+      await cleanupAndExit(error);
     }
   });
 

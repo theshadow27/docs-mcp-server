@@ -51,6 +51,41 @@ Build the server:
 npm run build
 ```
 
+### Docker Compose
+
+The project includes a Docker Compose setup with PostgreSQL (with pgvector extension) and pgAdmin for development:
+
+1. Create a `.env` file based on `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+2. Update the environment variables in `.env`:
+
+- `POSTGRES_PASSWORD`: Choose a secure password for PostgreSQL
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `PGADMIN_EMAIL`: Email for pgAdmin login (default: admin@example.com)
+- `PGADMIN_PASSWORD`: Password for pgAdmin login (default: admin)
+
+3. Start the services:
+
+```bash
+docker compose up -d
+```
+
+4. Access pgAdmin:
+
+- Open http://localhost:5050 in your browser
+- Login with PGADMIN_EMAIL and PGADMIN_PASSWORD
+- Add a new server in pgAdmin:
+  - Name: docs-mcp
+  - Host: postgres
+  - Port: 5432
+  - Database: docs_mcp
+  - Username: mcp_user
+  - Password: (use POSTGRES_PASSWORD from .env)
+
 For development with auto-rebuild:
 
 ```bash

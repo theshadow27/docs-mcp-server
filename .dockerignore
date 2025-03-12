@@ -1,0 +1,12 @@
+# Docker specific
+Dockerfile
+.dockerignore
+
+# Version control
+.git
+
+# Already in gitignore but explicitly listed for Docker context
+node_modules
+dist
+*.log
+.env*

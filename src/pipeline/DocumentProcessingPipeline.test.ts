@@ -1,34 +1,19 @@
-import type { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { DocumentProcessingPipeline } from "./DocumentProcessingPipeline";
 import { ScraperRegistry, ScraperService } from "../scraper";
 import { VectorStoreManager } from "../store";
 import { logger } from "../utils/logger";
-import type { DocContent, ScrapeOptions, ScrapingProgress } from "../types";
+import type { ScrapingProgress, ScrapeOptions } from "../types";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Mock implementations
 const mockScrape = vi.fn();
 const mockAddDocument = vi.fn();
 
-// Mock vector store with required interface members
-const mockVectorStore = vi.fn(() => ({
-  memoryVectors: [],
-  addDocuments: vi.fn(),
-  asRetriever: vi.fn(),
-  embeddings: vi.fn(),
-  similaritySearchVectorWithScore: vi.fn(),
-  addVectors: vi.fn(),
-  _vectorstoreType: () => "memory",
-  FilterType: {},
-  similarity: vi.fn(),
-}))() as unknown as MemoryVectorStore;
-
 // Create VectorStoreManager instance and extend with mocked methods
-const vectorStoreManager = new VectorStoreManager("/mock/base/dir");
+const vectorStoreManager = new VectorStoreManager();
 const mockedManager = Object.assign(vectorStoreManager, {
-  loadStore: vi.fn(),
-  createStore: vi.fn(),
-  deleteStore: vi.fn(),
+  initialize: vi.fn(),
+  exists: vi.fn(),
   addDocument: mockAddDocument,
   searchStore: vi.fn(),
 });
@@ -80,11 +65,12 @@ describe("DocumentProcessingPipeline", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedManager.createStore.mockResolvedValue(mockVectorStore);
-    mockedManager.loadStore.mockResolvedValue(mockVectorStore);
+    mockedManager.initialize.mockResolvedValue(undefined);
+    mockedManager.exists.mockResolvedValue(true);
     pipeline = new DocumentProcessingPipeline(
       vectorStoreManager,
-      mockVectorStore
+      "test-lib",
+      "1.0.0"
     );
   });
 
@@ -110,7 +96,8 @@ describe("DocumentProcessingPipeline", () => {
     );
     expect(onProgress).toHaveBeenCalledWith(mockProgress);
     expect(mockAddDocument).toHaveBeenCalledWith(
-      mockVectorStore,
+      "test-lib",
+      "1.0.0",
       expect.any(Object)
     );
     expect(logger.info).toHaveBeenCalledWith("✅ Pipeline processing complete");

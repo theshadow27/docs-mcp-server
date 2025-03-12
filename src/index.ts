@@ -3,16 +3,13 @@ import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import path from "node:path";
-import os from "node:os";
 import { VectorStoreManager } from "./store/VectorStoreManager.js";
 import { findVersion, listLibraries } from "./tools/library.js";
 import { search } from "./tools/search.js";
 import { scrape } from "./tools/scrape.js";
 
 // Initialize vector store
-const baseDir = path.join(os.homedir(), ".docs-mcp", "data");
-const store = new VectorStoreManager(baseDir);
+const storeManager = new VectorStoreManager();
 
 const server = new McpServer({
   name: "docs-mcp-server",
@@ -65,21 +62,17 @@ server.tool(
     maxDepth: z.number().optional().default(3),
     subpagesOnly: z.boolean().optional().default(true),
   },
-  async ({ url, library, version, maxPages, maxDepth, subpagesOnly }) => {
-    const result = await scrape(
-      {
-        url,
-        library,
-        version,
-        options: {
-          maxPages,
-          maxDepth,
-        },
+  async ({ url, library, version, maxPages, maxDepth }) => {
+    const result = await scrape({
+      storeManager,
+      url,
+      library,
+      version,
+      options: {
+        maxPages,
+        maxDepth,
       },
-      (progress) => ({
-        content: progress.content,
-      })
-    );
+    });
 
     return {
       content: [
@@ -107,7 +100,7 @@ server.tool(
       version,
       query,
       limit,
-      store,
+      storeManager,
     });
 
     return {
@@ -122,8 +115,8 @@ server.tool(
 );
 
 // List libraries tool
-server.tool("list_libraries", "", async () => {
-  const result = await listLibraries({ store });
+server.tool("list_libraries", {}, async () => {
+  const result = await listLibraries({ storeManager });
 
   return {
     content: [
@@ -143,7 +136,11 @@ server.tool(
     targetVersion: z.string().optional(),
   },
   async ({ library, targetVersion }) => {
-    const version = await findVersion({ store, library, targetVersion });
+    const version = await findVersion({
+      storeManager: storeManager,
+      library,
+      targetVersion,
+    });
 
     if (!version) {
       return {
@@ -174,6 +171,8 @@ server.connect(transport);
 console.error("Documentation MCP server running on stdio");
 
 // Handle cleanup
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
+  await storeManager.shutdown();
+  await server.close();
   process.exit(0);
 });

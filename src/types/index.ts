@@ -36,37 +36,6 @@ export interface SearchResult {
   };
 }
 
-export class NoLocalDocsError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NoLocalDocsError";
-  }
-}
-
-export class StoreNotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StoreNotFoundError";
-  }
-}
-
-export interface SearchDocsParams {
-  library: string;
-  version?: string;
-  query: string;
-  limit?: number;
-}
-
-export interface FetchDocsParams {
-  library: string;
-  version: string;
-  url: string;
-  options?: {
-    maxPages?: number;
-    maxDepth?: number;
-  };
-}
-
 export interface ScrapingProgress {
   pagesScraped: number;
   maxPages: number;
@@ -74,15 +43,6 @@ export interface ScrapingProgress {
   depth: number;
   maxDepth: number;
   document?: DocContent;
-}
-
-export interface VectorStoreProgress {
-  documentsProcessed: number;
-  totalDocuments: number;
-  currentDocument: {
-    title: string;
-    numChunks: number;
-  };
 }
 
 export interface ProgressResponse {

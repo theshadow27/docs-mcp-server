@@ -247,53 +247,47 @@ graph TD
 
 ## Vector Store Architecture
 
-The vector store module manages document storage, retrieval, and search operations using a store-centric design that ensures clear lifecycle management and operation boundaries.
+The vector store module uses a layered architecture to manage document storage and retrieval:
 
 ```mermaid
 graph TD
-    A[DocumentProcessingPipeline] --> B[VectorStoreManager]
-    B --> C{Store Operations}
-    C -->|Create| D[createStore]
-    C -->|Load| E[loadStore]
-    C -->|Delete| F[deleteStore]
-    D & E --> G[MemoryVectorStore]
-    G --> H{Document Operations}
-    H -->|Add| I[addDocument]
-    H -->|Search| J[searchStore]
+    A[Tools] --> B[VectorStoreManager]
+    B --> C[DocumentStore]
+    C --> D[Postgres/PGVector]
 ```
 
 ### Vector Store Components
 
-1. **VectorStoreManager**
+1. **DocumentStore**
 
-   - Manages store lifecycle (create, load, delete)
-   - Handles store persistence and retrieval
-   - Provides store-centric document operations
+   - Encapsulates database operations
+   - Manages Postgres connection and PGVector store
+   - Handles document metadata and versioning
+   - Direct interaction with database layer
 
-2. **Store Operations**
+2. **VectorStoreManager**
+   - High-level API for document operations
+   - Manages document preprocessing (splitting, chunking)
+   - Provides version selection logic
+   - Library/version-based access control
 
-   - Clear separation between store management and document operations
-   - Explicit store lifecycle (create/load/delete)
-   - Store must exist before document operations
+### Benefits of Layered Design
 
-3. **Document Operations**
+1. **Separation of Concerns**
 
-   - Add and search operations require existing store
-   - Ensures consistent document processing
-   - Maintains store integrity
+   - Database operations isolated in DocumentStore
+   - Business logic centralized in VectorStoreManager
+   - Clean interface for tools layer
 
-### Benefits of Store-Centric Design
+2. **Maintainability**
 
-1. **Predictability**
+   - Simplified testing through abstraction
+   - Centralized database access
+   - Consistent document handling
 
-   - Clear store lifecycle
-   - Explicit store dependencies
-   - Consistent store state
-
-2. **Performance**
-
-   - No redundant store creation
+3. **Performance**
    - Efficient document batching
+   - Connection pooling at database layer
    - Optimized search operations
 
 ### Error Handling & Retry Mechanism
