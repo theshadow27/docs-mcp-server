@@ -6,7 +6,7 @@ import type { SearchResult, VersionInfo } from "../types";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
 
-export class VectorStoreManager {
+export class VectorStoreService {
   private readonly store: DocumentStore;
 
   constructor() {

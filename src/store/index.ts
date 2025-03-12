@@ -1,1 +1,1 @@
-export { VectorStoreManager } from "./VectorStoreManager";
+export { VectorStoreService } from "./VectorStoreService";

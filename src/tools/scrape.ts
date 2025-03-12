@@ -1,12 +1,12 @@
 import path from "node:path";
 import { homedir } from "node:os";
 import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
-import type { VectorStoreManager } from "../store";
+import type { VectorStoreService } from "../store";
 import type { ProgressResponse, ScrapingProgress } from "../types";
 import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {
-  storeManager: VectorStoreManager;
+  storeService: VectorStoreService;
   library: string;
   version: string;
   url: string;
@@ -25,7 +25,7 @@ export const scrape = async (
   options: ScrapeToolOptions
 ): Promise<ScrapeResult> => {
   const {
-    storeManager,
+    storeService,
     library,
     version,
     url,
@@ -34,14 +34,14 @@ export const scrape = async (
   } = options;
 
   // Initialize the store
-  await storeManager.initialize();
+  await storeService.initialize();
 
   // Remove any existing documents for this library/version
-  await storeManager.removeAllDocuments(library, version);
+  await storeService.removeAllDocuments(library, version);
   logger.info(`💾 Using clean store for ${library}@${version}`);
 
   const pipeline = new DocumentProcessingPipeline(
-    storeManager,
+    storeService,
     library,
     version
   );

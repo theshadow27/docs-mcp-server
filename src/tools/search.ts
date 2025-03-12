@@ -1,4 +1,4 @@
-import type { VectorStoreManager } from "../store/VectorStoreManager.js";
+import type { VectorStoreService } from "../store/VectorStoreService.js";
 import type { SearchResult } from "../types/index.js";
 import { logger } from "../utils/logger";
 
@@ -7,7 +7,7 @@ export interface SearchToolOptions {
   version: string;
   query: string;
   limit: number;
-  storeManager: VectorStoreManager;
+  storeService: VectorStoreService;
 }
 
 export interface SearchToolResult {
@@ -17,17 +17,17 @@ export interface SearchToolResult {
 export const search = async (
   options: SearchToolOptions
 ): Promise<SearchToolResult> => {
-  const { library, version, query, limit, storeManager } = options;
+  const { library, version, query, limit, storeService } = options;
 
   logger.info(`🔍 Searching ${library}@${version} for: ${query}`);
 
   try {
-    const exists = await storeManager.exists(library, version);
+    const exists = await storeService.exists(library, version);
     if (!exists) {
       throw new Error(`No documentation found for ${library}@${version}`);
     }
 
-    const results = await storeManager.searchStore(
+    const results = await storeService.searchStore(
       library,
       version,
       query,

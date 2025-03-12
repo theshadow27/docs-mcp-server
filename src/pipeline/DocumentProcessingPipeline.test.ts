@@ -1,6 +1,6 @@
 import { DocumentProcessingPipeline } from "./DocumentProcessingPipeline";
 import { ScraperRegistry, ScraperService } from "../scraper";
-import { VectorStoreManager } from "../store";
+import { VectorStoreService } from "../store";
 import { logger } from "../utils/logger";
 import type { ScrapingProgress, ScrapeOptions } from "../types";
 import { describe, it, expect, beforeEach, vi } from "vitest";
@@ -9,9 +9,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const mockScrape = vi.fn();
 const mockAddDocument = vi.fn();
 
-// Create VectorStoreManager instance and extend with mocked methods
-const vectorStoreManager = new VectorStoreManager();
-const mockedManager = Object.assign(vectorStoreManager, {
+// Create VectorStoreService instance and extend with mocked methods
+const vectorStoreService = new VectorStoreService();
+const mockedService = Object.assign(vectorStoreService, {
   initialize: vi.fn(),
   exists: vi.fn(),
   addDocument: mockAddDocument,
@@ -65,10 +65,10 @@ describe("DocumentProcessingPipeline", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedManager.initialize.mockResolvedValue(undefined);
-    mockedManager.exists.mockResolvedValue(true);
+    mockedService.initialize.mockResolvedValue(undefined);
+    mockedService.exists.mockResolvedValue(true);
     pipeline = new DocumentProcessingPipeline(
-      vectorStoreManager,
+      vectorStoreService,
       "test-lib",
       "1.0.0"
     );

@@ -6,7 +6,7 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 
 ### File Naming and Code Quality Conventions
 
-- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `VectorStoreManager.ts`)
+- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `VectorStoreService.ts`)
 - Other files use kebab-case or regular camelCase (e.g., `index.ts`, `scraper-service.ts`)
 - Avoid type casting where possible. Never use `any` type but prefer `unknown` or `never`.
 
@@ -251,7 +251,7 @@ The vector store module uses a layered architecture to manage document storage a
 
 ```mermaid
 graph TD
-    A[Tools] --> B[VectorStoreManager]
+    A[Tools] --> B[VectorStoreService]
     B --> C[DocumentStore]
     C --> D[Postgres/PGVector]
 ```
@@ -265,7 +265,7 @@ graph TD
    - Handles document metadata and versioning
    - Direct interaction with database layer
 
-2. **VectorStoreManager**
+2. **VectorStoreService**
    - High-level API for document operations
    - Manages document preprocessing (splitting, chunking)
    - Provides version selection logic
@@ -276,7 +276,7 @@ graph TD
 1. **Separation of Concerns**
 
    - Database operations isolated in DocumentStore
-   - Business logic centralized in VectorStoreManager
+   - Business logic centralized in VectorStoreService
    - Clean interface for tools layer
 
 2. **Maintainability**

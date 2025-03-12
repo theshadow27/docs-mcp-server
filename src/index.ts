@@ -3,13 +3,13 @@ import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { VectorStoreManager } from "./store/VectorStoreManager.js";
+import { VectorStoreService } from "./store/VectorStoreService.js";
 import { findVersion, listLibraries } from "./tools/library.js";
 import { search } from "./tools/search.js";
 import { scrape } from "./tools/scrape.js";
 
 // Initialize vector store
-const storeManager = new VectorStoreManager();
+const storeService = new VectorStoreService();
 
 const server = new McpServer({
   name: "docs-mcp-server",
@@ -64,7 +64,7 @@ server.tool(
   },
   async ({ url, library, version, maxPages, maxDepth }) => {
     const result = await scrape({
-      storeManager,
+      storeService,
       url,
       library,
       version,
@@ -100,7 +100,7 @@ server.tool(
       version,
       query,
       limit,
-      storeManager,
+      storeService,
     });
 
     return {
@@ -116,7 +116,7 @@ server.tool(
 
 // List libraries tool
 server.tool("list_libraries", {}, async () => {
-  const result = await listLibraries({ storeManager });
+  const result = await listLibraries({ storeService });
 
   return {
     content: [
@@ -137,7 +137,7 @@ server.tool(
   },
   async ({ library, targetVersion }) => {
     const version = await findVersion({
-      storeManager: storeManager,
+      storeService: storeService,
       library,
       targetVersion,
     });
@@ -172,7 +172,7 @@ console.error("Documentation MCP server running on stdio");
 
 // Handle cleanup
 process.on("SIGINT", async () => {
-  await storeManager.shutdown();
+  await storeService.shutdown();
   await server.close();
   process.exit(0);
 });

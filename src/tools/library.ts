@@ -1,8 +1,8 @@
-import type { VectorStoreManager } from "../store/VectorStoreManager.js";
+import type { VectorStoreService } from "../store/VectorStoreService.js";
 import { logger } from "../utils/logger";
 
 export interface ListLibrariesToolOptions {
-  storeManager: VectorStoreManager;
+  storeService: VectorStoreService;
 }
 
 export interface LibraryVersion {
@@ -20,7 +20,7 @@ export interface ListLibrariesResult {
 }
 
 export interface FindVersionToolOptions {
-  storeManager: VectorStoreManager;
+  storeService: VectorStoreService;
   library: string;
   targetVersion?: string;
 }
@@ -28,8 +28,8 @@ export interface FindVersionToolOptions {
 export const listLibraries = async (
   options: ListLibrariesToolOptions
 ): Promise<ListLibrariesResult> => {
-  const { storeManager } = options;
-  const rawLibraries = await storeManager.listLibraries();
+  const { storeService } = options;
+  const rawLibraries = await storeService.listLibraries();
 
   const libraries = rawLibraries.map(({ library, versions }) => ({
     name: library,
@@ -45,6 +45,6 @@ export const listLibraries = async (
 export const findVersion = async (
   options: FindVersionToolOptions
 ): Promise<string | null> => {
-  const { storeManager: store, library, targetVersion } = options;
-  return store.findBestVersion(library, targetVersion);
+  const { storeService, library, targetVersion } = options;
+  return storeService.findBestVersion(library, targetVersion);
 };

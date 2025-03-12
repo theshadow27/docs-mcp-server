@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { Document } from "@langchain/core/documents";
-import type { VersionInfo } from "../types";
-import { VectorStoreManager } from "./VectorStoreManager";
-import { DocumentStore } from "./DocumentStore";
+import { VectorStoreService } from "./VectorStoreService";
 
 // Mock document store
 let mockDocuments: Document[] = [];
@@ -50,29 +48,29 @@ vi.mock("../utils/logger", () => ({
   },
 }));
 
-describe("VectorStoreManager", () => {
-  let storeManager: VectorStoreManager;
+describe("VectorStoreService", () => {
+  let storeService: VectorStoreService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDocuments = [];
     process.env.POSTGRES_CONNECTION =
       "postgres://user:pass@localhost:5432/testdb";
-    storeManager = new VectorStoreManager();
+    storeService = new VectorStoreService();
   });
 
   afterEach(async () => {
-    await storeManager.shutdown();
+    await storeService.shutdown();
   });
 
   it("should initialize correctly", async () => {
-    await storeManager.initialize();
+    await storeService.initialize();
     expect(mockStore.initialize).toHaveBeenCalled();
   });
 
   it("should handle empty store existence check", async () => {
     mockStore.checkDocumentExists.mockResolvedValue(false);
-    const exists = await storeManager.exists("test-lib", "1.0.0");
+    const exists = await storeService.exists("test-lib", "1.0.0");
     expect(exists).toBe(false);
   });
 
@@ -99,9 +97,9 @@ describe("VectorStoreManager", () => {
       },
     ]);
 
-    await storeManager.addDocument(library, version, document);
+    await storeService.addDocument(library, version, document);
 
-    const results = await storeManager.searchStore(library, version, "testing");
+    const results = await storeService.searchStore(library, version, "testing");
     expect(mockStore.addDocuments).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ pageContent: document.pageContent }),
@@ -126,7 +124,7 @@ describe("VectorStoreManager", () => {
     const library = "test-lib";
     const version = "1.0.0";
 
-    await storeManager.removeAllDocuments(library, version);
+    await storeService.removeAllDocuments(library, version);
     expect(mockStore.deleteDocuments).toHaveBeenCalledWith({
       library,
       version,
@@ -136,7 +134,7 @@ describe("VectorStoreManager", () => {
   describe("listVersions", () => {
     it("should return an empty array if the library has no documents", async () => {
       mockStore.queryUniqueVersions.mockResolvedValue([]);
-      const versions = await storeManager.listVersions("nonexistent-lib");
+      const versions = await storeService.listVersions("nonexistent-lib");
       expect(versions).toEqual([]);
     });
 
@@ -148,7 +146,7 @@ describe("VectorStoreManager", () => {
         "1.2.0",
       ]);
 
-      const versions = await storeManager.listVersions(library);
+      const versions = await storeService.listVersions(library);
       expect(versions).toEqual([
         { version: "1.0.0", indexed: true },
         { version: "1.1.0", indexed: true },
@@ -167,7 +165,7 @@ describe("VectorStoreManager", () => {
         "2.0.0",
       ]);
 
-      const bestVersion = await storeManager.findBestVersion(library, "1.5.0");
+      const bestVersion = await storeService.findBestVersion(library, "1.5.0");
       expect(bestVersion).toBe("1.1.0");
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
@@ -180,10 +178,10 @@ describe("VectorStoreManager", () => {
         "1.1.1",
       ]);
 
-      expect(await storeManager.findBestVersion(library, "1.5.0")).toBe(
+      expect(await storeService.findBestVersion(library, "1.5.0")).toBe(
         "1.1.1"
       );
-      expect(await storeManager.findBestVersion(library, "2.0.0")).toBe(
+      expect(await storeService.findBestVersion(library, "2.0.0")).toBe(
         "1.1.1"
       );
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
@@ -193,10 +191,10 @@ describe("VectorStoreManager", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0"]);
 
-      expect(await storeManager.findBestVersion(library, "invalid")).toBeNull();
-      expect(await storeManager.findBestVersion(library, "1.x.2")).toBeNull();
+      expect(await storeService.findBestVersion(library, "invalid")).toBeNull();
+      expect(await storeService.findBestVersion(library, "1.x.2")).toBeNull();
       expect(
-        await storeManager.findBestVersion(library, "1.2.3-alpha")
+        await storeService.findBestVersion(library, "1.2.3-alpha")
       ).toBeNull();
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
@@ -210,7 +208,7 @@ describe("VectorStoreManager", () => {
       ]);
       mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
 
-      const result = await storeManager.listLibraries();
+      const result = await storeService.listLibraries();
       expect(result).toEqual([
         {
           library: "lib1",
@@ -228,7 +226,7 @@ describe("VectorStoreManager", () => {
 
     it("should return an empty array if there are no libraries", async () => {
       mockStore.queryLibraryVersions.mockResolvedValue(new Map());
-      const result = await storeManager.listLibraries();
+      const result = await storeService.listLibraries();
       expect(result).toEqual([]);
     });
   });

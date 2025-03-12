@@ -3,7 +3,7 @@ import "dotenv/config";
 import { Command } from "commander";
 import path from "node:path";
 import os from "node:os";
-import { VectorStoreManager } from "./store/VectorStoreManager.js";
+import { VectorStoreService } from "./store/VectorStoreService.js";
 import { findVersion, listLibraries } from "./tools/library.js";
 import { search } from "./tools/search.js";
 import { scrape } from "./tools/scrape.js";
@@ -13,7 +13,7 @@ const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 const program = new Command();
 
 // Initialize the store manager
-const store = new VectorStoreManager();
+const store = new VectorStoreService();
 
 // Function to ensure store is shutdown before exiting
 const cleanupAndExit = async (error?: unknown) => {
@@ -51,7 +51,7 @@ program
   .action(async (library, version, url, options) => {
     try {
       const result = await scrape({
-        storeManager: store,
+        storeService: store,
         url,
         library,
         version,
@@ -78,7 +78,7 @@ program
         version,
         query,
         limit: Number.parseInt(options.limit),
-        storeManager: store,
+        storeService: store,
       });
       console.log(formatOutput(result.results));
       await cleanupAndExit();
@@ -92,7 +92,7 @@ program
   .description("List all available libraries and their versions")
   .action(async () => {
     try {
-      const result = await listLibraries({ storeManager: store });
+      const result = await listLibraries({ storeService: store });
       console.log(formatOutput(result.libraries));
       await cleanupAndExit();
     } catch (error) {
@@ -106,7 +106,7 @@ program
   .action(async (library, targetVersion) => {
     try {
       const version = await findVersion({
-        storeManager: store,
+        storeService: store,
         library,
         targetVersion,
       });

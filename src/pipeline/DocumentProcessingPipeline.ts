@@ -1,5 +1,5 @@
 import { ScraperRegistry, ScraperService } from "../scraper";
-import type { VectorStoreManager } from "../store";
+import type { VectorStoreService } from "../store";
 import type {
   DocumentPipeline,
   DocumentPipelineCallbacks,
@@ -9,7 +9,7 @@ import type {
 import { logger } from "../utils/logger";
 
 export class DocumentProcessingPipeline implements DocumentPipeline {
-  private readonly store: VectorStoreManager;
+  private readonly store: VectorStoreService;
   private readonly library: string;
   private readonly version: string;
   private callbacks: DocumentPipelineCallbacks = {};
@@ -17,7 +17,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
   private registry: ScraperRegistry;
   private scraperService: ScraperService;
 
-  constructor(store: VectorStoreManager, library: string, version: string) {
+  constructor(store: VectorStoreService, library: string, version: string) {
     this.store = store;
     this.library = library;
     this.version = version;
