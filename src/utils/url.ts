@@ -72,7 +72,7 @@ export function validateUrl(url: string): void {
   try {
     new URL(url);
   } catch (error) {
-    throw new InvalidUrlError(url, error);
+    throw new InvalidUrlError(url, error instanceof Error ? error : undefined);
   }
 }
 

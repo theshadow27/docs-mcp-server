@@ -60,9 +60,6 @@ describe("DocumentProcessingPipeline", () => {
         version: "1.0.0",
         title: "Test Doc",
         url: "https://example.com/page",
-        hierarchy: ["Test Doc"],
-        level: 1,
-        path: ["Test Doc"],
       },
     },
   };

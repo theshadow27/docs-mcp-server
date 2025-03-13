@@ -1,6 +1,16 @@
+/**
+ * Metadata available during the scraping phase
+ */
+export interface ScraperMetadata {
+  url: string;
+  title: string;
+  library: string;
+  version: string;
+}
+
 export interface DocContent {
   content: string;
-  metadata: DocumentMetadata;
+  metadata: ScraperMetadata;
 }
 
 export interface ScrapeOptions {

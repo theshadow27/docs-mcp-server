@@ -36,7 +36,7 @@ export class ScraperService {
         throw new ScraperError(
           `Failed to scrape ${options.url}: ${error instanceof Error ? error.message : "Unknown error"}`,
           false,
-          error
+          error as Error
         );
       }
       throw error;

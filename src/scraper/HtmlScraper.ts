@@ -212,12 +212,7 @@ export class HtmlScraper {
 
     const markdown = this.turndownService.turndown(cleanedContent || "").trim();
     if (!markdown) {
-      throw new ScraperError(
-        `No valid content found at ${url}`,
-        false,
-        null,
-        204 // No Content
-      );
+      throw new ScraperError(`No valid content found at ${url}`, false);
     }
 
     return {
@@ -273,8 +268,7 @@ export class HtmlScraper {
               throw new ScraperError(
                 `Failed to scrape ${url} after ${maxRetries} retries`,
                 true,
-                retryError,
-                status
+                retryError instanceof Error ? retryError : undefined
               );
             }
             // Otherwise continue to next retry
@@ -292,8 +286,7 @@ export class HtmlScraper {
       throw new ScraperError(
         `Failed to scrape ${url}: ${message}`,
         false,
-        error,
-        status
+        error instanceof Error ? error : undefined
       );
     }
   }

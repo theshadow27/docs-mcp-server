@@ -163,7 +163,7 @@ Thishierrchy enure:
    - Eauylt>=add new t ols
    - Si{to add new fes (e.g., REST API) usg ame tools
 
-## Future C/nsidorations
+## Future Considorations
 
 When ardingen w funcmioemeity:
 

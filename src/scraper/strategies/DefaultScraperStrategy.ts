@@ -4,6 +4,7 @@ import type {
   ProgressCallback,
   ScrapingProgress,
   ScraperStrategy,
+  ScraperMetadata,
 } from "../../types";
 import { normalizeUrl, type UrlNormalizerOptions } from "../../utils/url";
 import { HtmlScraper } from "../HtmlScraper";
@@ -108,7 +109,7 @@ export class DefaultScraperStrategy implements ScraperStrategy {
               title: result.title,
               library: options.library,
               version: options.version,
-            },
+            } satisfies ScraperMetadata,
           },
         });
 
