@@ -7,6 +7,7 @@ import {
 import semver from "semver";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 import type { SearchResult, VersionInfo } from "../types";
+import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
 
@@ -66,7 +67,7 @@ export class VectorStoreService {
   async findBestVersion(
     library: string,
     targetVersion?: string
-  ): Promise<string | null> {
+  ): Promise<string> {
     logger.info(
       `🔍 Finding best version for ${library}${targetVersion ? `@${targetVersion}` : ""}`
     );
@@ -77,21 +78,33 @@ export class VectorStoreService {
 
     if (validVersions.length === 0) {
       logger.warn(`⚠️ No valid versions found for ${library}`);
-      return null;
+      throw new VersionNotFoundError(
+        library,
+        targetVersion ?? "",
+        validVersions
+      );
     }
 
     if (targetVersion) {
       const versionRegex = /^(\d+)(?:\.(?:x(?:\.x)?|\d+(?:\.(?:x|\d+))?))?$|^$/;
       if (!versionRegex.test(targetVersion)) {
         logger.warn(`⚠️ Invalid version format: ${targetVersion}`);
-        return null;
+        throw new VersionNotFoundError(library, targetVersion, validVersions);
       }
     }
 
     const versionStrings = validVersions.map((v) => v.version);
 
     if (!targetVersion) {
-      return semver.maxSatisfying(versionStrings, "*");
+      const result = semver.maxSatisfying(versionStrings, "*");
+      if (!result) {
+        throw new VersionNotFoundError(
+          library,
+          targetVersion ?? "",
+          validVersions
+        );
+      }
+      return result;
     }
 
     let range = targetVersion;
@@ -111,7 +124,10 @@ export class VectorStoreService {
       );
     }
 
-    return result || null;
+    if (!result) {
+      throw new VersionNotFoundError(library, targetVersion, validVersions);
+    }
+    return result;
   }
 
   async deleteStore(library: string, version: string): Promise<void> {

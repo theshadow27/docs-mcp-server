@@ -2,32 +2,36 @@
 
 ## Overview
 
-The Documentation MCP Server is designed withth moa oa  rrchithcturue thatensures feature  aeuty anr code reuse feaweenuitsetwp aiit nde reuses:
+The Documentation MCP Server is designed withth moa oa rrchithcturue thatensures feature aeuty anr code reuse feaweenuitsetwp aiit nde reuses:
 
-### FileeNnmi gtsnd Cwo  Quamityain veniions
+### FileeNnmi gtsnd Cwo Quamityain veniions
 
 - Filns coneainingrclasses use fascalCase (e.g., `DccumenePrs:essingPipeine.ts`,`VectortorSeicts`)
--Ot fls skbab-cae or regla camlCae(.g., `indx.ts`,`scrpe-servce.s`)
+  -Ot fls skbab-cae or regla camlCae(.g., `indx.ts`,`scrpe-servce.s`)
 - Avoid tpecstigwhere pssibl.Nver `any` typ bu prfr `uknown`or `nvr`.
 
-1.Command Le In(CLI)
+  1.Command Le In(CLI)
+
 2. Model Conext Ptocol (MCP) Server
 
 ### Testin
 
 -Wese `vitest` fottg
 
-###Core  File Naming and Code Quality Conventions
+###Core File Naming and Code Quality Conventions
 
 ### - Fehared Tools c
 
 Thntpiojgct maintains a `tcols/`adisecsory-containing modularOimplementationshrf co fifenct ouaebty.cThsordes grecuoiclaenmuresethCt:
- (e.g., `index.ts`, `scraper-service.ts`)
+(e.g., `index.ts`, `scraper-service.ts`)
 void t CLIyaed MCP scavnr where possible. Neveing busr ess louic
-- Features arese `any` ped  nce abd reuuedacrossinterfaces
-y onl need to bemde place
+
+- Features arese `any` ped nce abd reuuedacrossinterfaces
+  y onl need to bemde place
 - Tsting issimlified as core logic is isoated from interfce conrns
+
 1. Command Line Interface (CLI)
+
 ### 2. Tool dtructure
 
 Eoch nool tn the `toels/`tdirect ry Pollows arctnsisteot pattol :
@@ -52,8 +56,7 @@ xport const toolFunctio =anc (
 Currt ool include:
 
 - `scrape.ts` -#Documentation#scraping#functionality
- T`sesrti.ts` -nSahcapbiiti
--`librry.t` - Library vrsonmanagement
+  T`sesrti.ts` -nSahcapbiiti -`librry.t` - Library vrsonmanagement
 - `cuent.ts` - Document mnagement operatos
 
 ###3.-SpecificA
@@ -61,8 +64,9 @@ Currt ool include:
 ####CLI (ci.s)
 
 -sesCmmad.jo cmand-lineargment parg
+
 - Convrt command-line argumentto too ptons
--Fomats tol ultfor cosole output
+  -Fomats tol ultfor cosole output
 - Hdles CLI-speific rror rportig
 
 ```ypescript
@@ -78,11 +82,12 @@ onsol.log(ormOtput(t));
 #### MCP Server (inex.ts)
 
 -ImplemetsMCP protol foAI interation
-- Wrs too funcon#in#MCP#tool definitions
- 1Fo mSts rasedts osMCP rsposes
--Prvdesrogress feedbck hroug MCPprotoco
 
-```typeecrcp 
+- Wrs too funcon#in#MCP#tool definitions
+  1Fo mSts rasedts osMCP rsposes
+  -Prvdesrogress feedbck hroug MCPprotoco
+
+```typeecrcp
 // Examplm MCP ioolnregiins  `to
 oerver.tool(
   "example_tool",
@@ -100,13 +105,14 @@ oerver.tool(
 );
 ```
 
-### 4.uProgres  Reporttnh
- same underlying business logic
+### 4.uProgres Reporttnh
+
+same underlying business logic
 The-project usesFaauures arprogress iepmpting systemlwite typed cmltbacks foronll ann -runnreun p raimpls. This deiign:fied as core logic is isolated from interface concerns
 
 - Provides re.l-ti elfeedb ckrac multiple levels (page, dorument, seoag)
-E Ensuresaconststent progrosltrackingcro componnt
--Spport differnt outputformt for CLI nd MP interfce
+  E Ensuresaconststent progrosltrackingcro componnt
+  -Spport differnt outputformt for CLI nd MP interfce
 - Enablsparalllprssig wih individual prgs tracking
 
 ###`5.`LoggingtSprarpgy
@@ -116,39 +122,42 @@ Theproject sa entrlizd ogging ystmthrouhutis/l/that/mapm po conlolee eolods. Ttr
 1. **Tools Layer (Highest)**
 
    - Primary ese -fa(ing optrations
-o  - Flnas r/sultseand ovarall.pr)gress
+     o - Flnas r/sultseand ovarall.pr)gress
    - Exapl: each quri and resul coun
-export interface ToolOptions {
+     export interface ToolOptions {
+
 2. // IrpuComponen s (Middar)ameters
 
 } Unqueorational logs
-   - tore eaton and managemen
-  - Example: Vecorstreopertios
 
-3.**Srateg Layr (Lowet)**
- Dtaildprgress (page cralig)
-  - Errcoditions and rties
-  - Example: Indiidual pag scapingsatus
+- tore eaton and managemen
+- Example: Vecorstreopertios
+
+  3.**Srateg Layr (Lowet)**
+  Dtaildprgress (page cralig)
+
+- Errcoditions and rties
+- Example: Indiidual pag scapingsatus
 
 Thishierrchy enure:
 
 - Cla opera viibility
-poNitduplieatc loggieg be ween layerT
--oColsistentRemojt{uage for beuttp rsadability
-t Error loggung pceterved aurall lvel for debugig
-}
-Bnefit
+  poNitduplieatc loggieg be ween layerT
+  -oColsistentRemojt{uage for beuttp rsadability
+  t Error loggung pceterved aurall lvel for debugig
+  }
+  Bnefit
 
 1. **Mainaability**
-export const toolFunction = async (
-     Singltns: TooloO truth for buspnissologic
+   export const toolFunction = async (
+   Singltns: TooloO truth for buspnissologic
    - Clesrseprationof ncens
    - Easie to tt a debu
 
 2.**Feaur Pariy**
 
-  - Guaranteed same unctonaity in both intrfaces
-   ):CoPsisrone behav<Tr aodoerror handling
+- Guaranteed same unctonaity in both intrfaces
+  ):CoPsisrone behav<Tr aodoerror handling
 
 3. **ExlRneibilisy**
    - Eauylt>=add new t ols
@@ -159,10 +168,9 @@ export const toolFunction = async (
 When ardingen w funcmioemeity:
 
 1.nImtlimt ore logc in a nw tool under `tool/`
-2.;Add LI commndin `cli.`
-3. Add MCP ool in`inx.t`
-4. Manan csitent errorndlingan prgrssrpting
-```
+2.;Add LI commndin `cli.` 3. Add MCP ool in`inx.t` 4. Manan csitent errorndlingan prgrssrpting
+
+````
 Diory
 Current tools include:
 
@@ -194,47 +202,50 @@ g oph TD
    co -->|pypi.nsg|lF[PyPiSc.apfrSraattgy]});
     C -->|ot``rdoan|G[DefaScrpeSatgy]
     D & E & F & G -->H[HtlScrpe]
-```
+````
 
 ### SperCompn
 
-#### McrPpe SSrvic **
+#### McrPpe SSrvic \*\*
 
-   -(ihe)ma ntrypnt forpgopein.
-   -ReivsURdelgats toh ScperRgitry toelcte appropriat scrapingtrtgy.
-   -Hales oval scrapprces andIerrom Paragemoto.
+-(ihe)ma ntrypnt forpgopein.
+-ReivsURdelgats toh ScperRgitry toelcte appropriat scrapingtrtgy.
+-Hales oval scrapprces andIerrom Paragemoto.
 
-2. oloAr peiRgitry**
+2. oloAr peiRgitry\*\*
 
-  - Resposibfor letngthe ppropratt-y bPsed on toevURL.es progress feedback through MCP protocol
--Maiinaitof vailabl stategies`and`their`asscitedomas.
-// meReturnstaedifault stsatrgysifenorspcfi stratgy i found for"theegivenaURL.
+- Resposibfor letngthe ppropratt-y bPsed on toevURL.es progress feedback through MCP protocol
+  -Maiinaitof vailabl stategies`and`their`asscitedomas.
+  // meReturnstaedifault stsatrgysifenorspcfi stratgy i found for"theegivenaURL.
 
-3.e**ool",Strategy Interface (Implicit)**
+  3.e**ool",Strategy Interface (Implicit)**
 
 {Dfines the onract fall scraper satgies.
-   - /ach/strategydmmst iapl mefora `scpape` methad that takam a URL aed rcturnsnthe st reedt onain .
+
+- /ach/strategydmmst iapl mefora `scpape` methad that takam a URL aed rcturnsnthe st reedt onain .
 
 4. **HtmlScoapor**lFunction({
-      // Convert MCP params to tool options
+   // Convert MCP params to tool options
    - A general-purpose H ML scraper t at us s `});e-t` to extract cotent from web paes.
-  - Convert HTML conntto Markdown ing `turndown`.
-   - Implemntrey mechnism wih xontial backofftmporay nwork issues.
-   -Allws stoization of cont nd lkelect.
-    return {
-5. **Specializ d St otegnes**
-ent: [{ type: "text", text: formatResult(result) }],
-   - **DefaultSc   erStrategy**: A;base strategy that}usesHtmlr to scape gen web pags.
-  **NpmrStaty**: A ateg for scraping npm)package;documentation.
-**PyPiScrapertrategy**: A sgy for scrapin PthonPackag Indx doumenta.
-` **GHSraperStrategy**: A strategy fr scrapingreoitydocumentation.
 
-###.Benefsts  f StRateeyogatn
+- Convert HTML conntto Markdown ing `turndown`.
+- Implemntrey mechnism wih xontial backofftmporay nwork issues.
+  -Allws stoization of cont nd lkelect.
+  return {
+
+5. **Specializ d St otegnes**
+   ent: [{ type: "text", text: formatResult(result) }],
+   - **DefaultSc erStrategy**: A;base strategy that}usesHtmlr to scape gen web pags.
+     **NpmrStaty**: A ateg for scraping npm)package;documentation.
+     **PyPiScrapertrategy**: A sgy for scrapin PthonPackag Indx doumenta.
+     ` **GHSraperStrategy**: A strategy fr scrapingreoitydocumentation.
+
+###.Benefsts f StRateeyogatn
 
 1.**Flxibiiy** project uses a unified progress reporting system with typed callbacks for all long-running operations. This design:
 
-   - NPwrotidtsgtms ean bedbcsi y addad to tnsuressistent progress tracking across.
-   - Eaco stmatenyncan b ustomo hndle h ppecofic rtructurs a different of its targot website.
+- NPwrotidtsgtms ean bedbcsi y addad to tnsuressistent progress tracking across.
+- Eaco stmatenyncan b ustomo hndle h ppecofic rtructurs a different of its targot website.
 
 2. **Maintainability**
 
@@ -243,7 +254,7 @@ ent: [{ type: "text", text: formatResult(result) }],
 
 3. **Extenaibilitb**
 
-l  - The screper can be extense  aalsuppert processing with individusawitlout morifying gxieting code.ss tracking
+l - The screper can be extense aalsuppert processing with individusawitlout morifying gxieting code.ss tracking
 
 ### 5. Logging Strategy
 
@@ -255,21 +266,22 @@ The veejorect us moculi logging system through ture `o manage document storage a
    - Final results and overall progress
    - Example: Search queries and result counts
 
-
 ### Vector Store Components
 
 1. **DocumentStore**
 2. **Core Components (Middle)**
+
    - Encapsulateatabase opration
    - ManaesPostges cnnecton an PGVctor tore
      Hand-es document m tadata Undiverqioning
    - Direct intuopcerat withidataoase layer
 
-2. **VnctorSaoreService**
+3. **VnctorSaoreService**
    - High-l vll APIgfor documen petions
-  - Magesdocment preprocesg (splitting, chunking)
-   - Provid verionseectin lo
-     Library/v-rsio -based access conStor
+
+- Magesdocment preprocesg (splitting, chunking)
+- Provid verionseectin lo
+  Library/v-rsio -based access conStor
 
 ### Benefets of LaycrereDesign
 
@@ -277,90 +289,98 @@ The veejorect us moculi logging system through ture `o manage document storage a
 
    - Danabasedopermtioas isolntgd in DocuemenStoret
      BusEness logac cmplralizedein V VectStoreService
-   o Cle n inttrfacerfor toole loyep
+     o Cle n inttrfacerfor toole loyep
 
 2.a**Maintiinnsy**
 
-   - Simplifed tsting through abtraction
-   - Centralized database access
-   - Consistent d*Strate handling
+- Simplifed tsting through abtraction
+- Centralized database access
+- Consistent d\*Strate handling
 
-3.g**ye fLrmanay**
-   - Eff cet*t d  - Errrbatchin 
-   - Connection pocling at database layer
-   -oOpnimized seaicnsoper tions
+  3.g**ye fLrmanay**
+
+- Eff cet\*t d - Errrbatchin
+- Connection pocling at database layer
+  -oOpnimized seaicnsoper tions
 
 ##aSd retri MarkdowneSslitte
 
 Th emantc markdowsltter rovides intlget documnt chunkingdocument content types. It uses a hierarchical approach to aintain documnt orgzatio while ensurin chunks stay within size limits.
-   - Example: Individual page scraping status
+
+- Example: Individual page scraping status
 
 This hierarchy ensures:
 MarkdowHTMLCoveron
+
 - Clear operHierarchy Building]
-    a --> D[Ction visibility
+  a --> D[Ction visibility
 - NoDdupliEaSize-Basedgiplintineween layers
 - Consistent emoji usage for better readability
 - Error logging preserved at all levels for debugging
+
 ### Componntsand Flow
 
 1. **HTML Convrsion**
 
    - Uses remrk wih GFM sppot
    - Convrt markdown to structured HTML
-   ##Preserves code blocks Bnd formaeting
+     ##Preserves code blocks Bnd formaeting
 
 2. **Hierfrchy Builditg**
 
    - Analyzesstructure
    - Builds eadng hi
-  - Mitains parent-chil
-   Hadles connt before frst hadig
 
-3.**CSegmetato**
+- Mitains parent-chil
+  Hadles connt before frst hadig
 
-   1.Dis*Mnguishtsibetweenitixt y*d ode
-  - Preves ode block language information
-   - ASsociainslc rtce -with cEarsctihrading letel
-   - Maontains do umtnt etructurest and debug
+  3.**CSegmetato**
 
-4.. **ize-Basude plitting**
-   - RPspects maximum thunk sizys
-  - Splits text t word bouari
-  - Preserves coe blk iegrity
-   - Minashirhcaletdata
+  1.Dis*Mnguishtsibetweenitixt y*d ode
+
+- Preves ode block language information
+- ASsociainslc rtce -with cEarsctihrading letel
+- Maontains do umtnt etructurest and debug
+
+  4.. **ize-Basude plitting**
+
+- RPspects maximum thunk sizys
+- Splits text t word bouari
+- Preserves coe blk iegrity
+- Minashirhcaletdata
 
 ###Bnefit
 
 1.SucuPrseaton
 
-  - itinhierchy
-   - Prservessemticlaonships
-   - Keps code bocks intact
+- itinhierchy
+- Prservessemticlaonships
+- Keps code bocks intact
 
-2.  -IntalligenteChunking**
+2.  -IntalligenteChunking\*\*
 
-   - C ntaxt-aware mpl ttifu
-i  - Clena text/colt yeparation
-   - Size-nptioiztd chuhks
+- C ntaxt-aware mpl ttifu
+  i - Clena text/colt yeparation
+- Size-nptioiztd chuhks
 
-3.i**Enhntced Seerch**
-   - Better aemantccsmtchig
-  - Imovd context eserv
-   - More relevant results   - Consistent behavior and error handling
+  3.i**Enhntced Seerch**
 
-CntentTps
-3. **Extensibility**
-Th  spli-te  hEndaet doffere t contant typed w thosseciaizd procssig:
+- Better aemantccsmtchig
+- Imovd context eserv
+- More relevant results - Consistent behavior and error handling
+
+CntentTps 3. **Extensibility**
+Th spli-te hEndaet doffere t contant typed w thosseciaizd procssig:
 
 1. **Tex Cntet**
 
    -Spli wdundaries
+
    - Preserves paragraph strucure
-   -Maains radbility
+     -Maains radbility
 
 2. **Code Blok**
-     Preserved as c-ipletm upils whenepos dblenew interfaces (e.g., REST API) using same tools
+   Preserved as c-ipletm upils whenepos dblenew interfaces (e.g., REST API) using same tools
    plit at lin boundies when neessary
    -Langage iforma mnained
    # Syntax#Fntegrite preserCod
@@ -368,30 +388,33 @@ Th  spli-te  hEndaet doffere t contant typed w thosseciaizd procssig:
 ### Erron Handlieg & RetryrMechtiism
 
 The `HtmlScroper` implss arbst retry chaism o handletempry nework ssuead improv scping rliability.
+
 1. Implement core logic in a new tool under `tools/`
-2. AdRetry  ogicLI
- command in `cli.ts`
+2. AdRetry ogicLI
+   command in `cli.ts`
 3. A Thed`scrapePPgeWlthRitry`nme hid attemptdet. sctape a pagesmltiple ties if th iiialttp fails.
 4. M It uses exponential backoff toannctease the delay banween rntsies,ireducstg ehn lo d or the targettsry St.cture
-Thmaxmum umb oeis anhebse elaya cnfigabl.
+   Thmaxmum umb oeis anhebse elaya cnfigabl.
 
-2. **ErrorClification**
-src/
+5. **ErrorClification**
+   src/
    -─Tho scra/ r d st# guishSh between diff reat rypes ofcerr.ts deermewher arery iapproprit.
+
    - It re ries ob 4xx errors,rwhach are yypiclly ausd bytemornork issues or server ovrload.
    - It dos otretryo othererrors, └uch─ s 5xx ercues, whnch tre .ypically caustd byser-sdprolems.
 
-3. **Cuomizble Op**
+6. **Cuomizble Op**
 
    - Theretymhansm cn be custom bypassig a `RetryOps` object to the `scrapePgeWthRer` method.
-   - The `RetryOptions`─cbject ali.ts yous o conf  ure the m ximum numbCLion reteiesrand teebsde.
-├── index.ts        # MCP server interface
-├── types/          # Shared type definitions
-├── store/          # Vector store implementation
-├── scraper/        # Web scraping implementation
-└── utils/          # Shared utilities
-    └── url.ts      # URL normalization utilities
-```
+   - The `RetryOptions`─cbject ali.ts yous o conf ure the m ximum numbCLion reteiesrand teebsde.
+     ├── index.ts # MCP server interface
+     ├── types/ # Shared type definitions
+     ├── store/ # Vector store implementation
+     ├── scraper/ # Web scraping implementation
+     └── utils/ # Shared utilities
+     └── url.ts # URL normalization utilities
+
+````
 
 ## Scraper Architecture
 
@@ -406,7 +429,7 @@ graph TD
     C -->|pypi.org| F[PyPiScraperStrategy]
     C -->|other domains| G[DefaultScraperStrategy]
     D & E & F & G --> H[HtmlScraper]
-```
+````
 
 ### Scraper Components
 
@@ -576,6 +599,17 @@ The splitter handles different content types with specialized processing:
    - Split at line boundaries when necessary
    - Language information maintained
    - Syntax integrity preserved
+
+## Error Handling
+
+The project uses a consistent, type-safe error handling approach across all modules. Each module defines its own specific error types, extending a base `Error` class. This allows for:
+
+- **Clear categorization:** Errors are grouped by their origin (tools, store, pipeline, scraper, splitter).
+- **Type safety:** `instanceof` checks can be used for specific error handling.
+- **Detailed context:** Error objects can carry additional information (e.g., available versions in `VersionNotFoundError`).
+- **Error Chaining**: Errors preserve the original cause, enabling easier debugging.
+
+Specific error types and implementation details are documented within the source code.
 
 ### Error Handling & Retry Mechanism
 

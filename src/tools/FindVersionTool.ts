@@ -1,4 +1,5 @@
-import type { VectorStoreService } from "../store/VectorStoreService.js";
+import type { VectorStoreService } from "../store";
+import { VersionNotFoundError } from "./errors";
 import { logger } from "../utils/logger";
 
 export interface FindVersionToolOptions {
@@ -19,6 +20,15 @@ export class FindVersionTool {
 
   async execute(options: FindVersionToolOptions): Promise<string | null> {
     const { library, targetVersion } = options;
-    return this.storeService.findBestVersion(library, targetVersion);
+
+    try {
+      return await this.storeService.findBestVersion(library, targetVersion);
+    } catch (error) {
+      if (error instanceof VersionNotFoundError) {
+        logger.info(`ℹ️ Version not found: ${error.message}`);
+        return null;
+      }
+      throw error;
+    }
   }
 }

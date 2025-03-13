@@ -4,6 +4,7 @@ import { VectorStoreService } from "../store";
 import { logger } from "../utils/logger";
 import type { ScrapingProgress, ScrapeOptions } from "../types";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { DocumentProcessingError, PipelineStateError } from "./errors";
 
 // Mock implementations
 const mockScrape = vi.fn();
@@ -113,14 +114,19 @@ describe("DocumentProcessingPipeline", () => {
 
     const firstProcess = pipeline.process(mockScrapeOptions);
     await expect(pipeline.process(mockScrapeOptions)).rejects.toThrow(
-      "Pipeline is already processing"
+      PipelineStateError
     );
     await firstProcess;
   });
 
   it("should handle document processing errors", async () => {
     const mockError = new Error("Storage error");
-    const progressWithDocument = { ...mockProgress };
+    const progressWithDocument = {
+      ...mockProgress,
+      document: {
+        ...mockProgress.document,
+      },
+    };
 
     mockScrape.mockImplementation((_, callback) => {
       callback(progressWithDocument);
@@ -135,9 +141,14 @@ describe("DocumentProcessingPipeline", () => {
     await pipeline.process(mockScrapeOptions);
 
     expect(onError).toHaveBeenCalledWith(
-      mockError,
+      expect.any(DocumentProcessingError),
       progressWithDocument.document
     );
+    const error = onError.mock.calls[0][0];
+    expect(error).toBeInstanceOf(DocumentProcessingError);
+    expect(error.message).toContain("Storage error");
+    expect(error.documentId).toBe(progressWithDocument.document.metadata?.url);
+    expect(error.cause).toBe(mockError);
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to process document")
     );

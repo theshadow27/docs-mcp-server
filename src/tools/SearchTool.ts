@@ -1,5 +1,6 @@
-import type { VectorStoreService } from "../store/VectorStoreService.js";
-import type { SearchResult } from "../types/index.js";
+import type { VectorStoreService } from "../store";
+import type { SearchResult } from "../types";
+import { VersionNotFoundError } from "./errors";
 import { logger } from "../utils/logger";
 
 export interface SearchToolOptions {
@@ -12,11 +13,16 @@ export interface SearchToolOptions {
 
 export interface SearchToolResult {
   results: SearchResult[];
+  error?: {
+    message: string;
+    availableVersions: Array<{ version: string; indexed: boolean }>;
+  };
 }
 
 /**
  * Tool for searching indexed documentation.
  * Supports exact version matches and version range patterns.
+ * Returns available versions when requested version is not found.
  */
 export class SearchTool {
   private storeService: VectorStoreService;
@@ -33,13 +39,9 @@ export class SearchTool {
     );
 
     try {
-      // If not exact match, find best matching version
       const bestVersion = exactMatch
         ? version
         : await this.storeService.findBestVersion(library, version);
-      if (!bestVersion) {
-        throw new Error(`No documentation found for ${library}@${version}`);
-      }
 
       const results = await this.storeService.searchStore(
         library,
@@ -51,6 +53,17 @@ export class SearchTool {
 
       return { results };
     } catch (error) {
+      if (error instanceof VersionNotFoundError) {
+        logger.info(`ℹ️ Version not found: ${error.message}`);
+        return {
+          results: [],
+          error: {
+            message: error.message,
+            availableVersions: error.availableVersions,
+          },
+        };
+      }
+
       logger.error(
         `❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`
       );

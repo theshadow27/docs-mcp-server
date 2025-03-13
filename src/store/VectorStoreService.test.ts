@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { Document } from "@langchain/core/documents";
 import { VectorStoreService } from "./VectorStoreService";
+import { VersionNotFoundError } from "../tools/errors";
 
 // Mock document store
 let mockDocuments: Document[] = [];
@@ -260,16 +261,44 @@ describe("VectorStoreService", () => {
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
 
-    it("should handle invalid version strings", async () => {
+    it("should throw VersionNotFoundError for invalid version strings", async () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0"]);
+      const validVersions = [
+        { version: "1.0.0", indexed: true },
+        { version: "1.1.0", indexed: true },
+      ];
 
-      expect(await storeService.findBestVersion(library, "invalid")).toBeNull();
-      expect(await storeService.findBestVersion(library, "1.x.2")).toBeNull();
-      expect(
-        await storeService.findBestVersion(library, "1.2.3-alpha")
-      ).toBeNull();
+      await expect(
+        storeService.findBestVersion(library, "invalid")
+      ).rejects.toThrow(VersionNotFoundError);
+      await expect(
+        storeService.findBestVersion(library, "1.x.2")
+      ).rejects.toThrow(VersionNotFoundError);
+      await expect(
+        storeService.findBestVersion(library, "1.2.3-alpha")
+      ).rejects.toThrow(VersionNotFoundError);
+
+      const error = await storeService
+        .findBestVersion(library, "invalid")
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(VersionNotFoundError);
+      expect(error.library).toBe(library);
+      expect(error.requestedVersion).toBe("invalid");
+      expect(error.availableVersions).toEqual(validVersions);
+
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
+    });
+
+    it("should throw VersionNotFoundError when no versions exist", async () => {
+      const library = "test-lib";
+      mockStore.queryUniqueVersions.mockResolvedValue([]);
+
+      const promise = storeService.findBestVersion(library, "1.0.0");
+      await expect(promise).rejects.toThrow(VersionNotFoundError);
+
+      const error = await promise.catch((e) => e);
+      expect(error.availableVersions).toEqual([]);
     });
   });
 

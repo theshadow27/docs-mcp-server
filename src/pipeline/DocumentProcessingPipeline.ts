@@ -7,6 +7,7 @@ import type {
   ScrapingProgress,
 } from "../types";
 import { logger } from "../utils/logger";
+import { DocumentProcessingError, PipelineStateError } from "./errors";
 
 /**
  * Coordinates document processing workflow from scraping to storage.
@@ -45,7 +46,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
    */
   async process(options: ScrapeOptions): Promise<void> {
     if (this.isProcessing) {
-      throw new Error("Pipeline is already processing");
+      throw new PipelineStateError("Pipeline is already processing");
     }
 
     this.isProcessing = true;
@@ -91,7 +92,16 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
     } catch (error) {
       if (this.callbacks.onError) {
         await this.callbacks.onError(
-          error instanceof Error ? error : new Error(String(error)),
+          error instanceof Error
+            ? new DocumentProcessingError(
+                error.message,
+                progress.document.metadata.url,
+                error
+              )
+            : new DocumentProcessingError(
+                String(error),
+                progress.document.metadata.url
+              ),
           progress.document
         );
       }

@@ -1,28 +1,52 @@
-/**
- * Base error class for scraper-related errors
- */
-export class ScraperError extends Error {
+class ScraperError extends Error {
   constructor(
     message: string,
     public readonly isRetryable: boolean = false,
-    public readonly cause?: unknown,
-    public readonly statusCode?: number
+    public readonly cause?: Error
   ) {
     super(message);
-    this.name = "ScraperError";
-    // Ensure the error's stack trace includes the cause if available
-    if (cause instanceof Error) {
+    this.name = this.constructor.name;
+    if (cause?.stack) {
       this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
     }
   }
 }
 
-/**
- * Thrown when a URL is invalid or cannot be parsed
- */
-export class InvalidUrlError extends ScraperError {
-  constructor(url: string, cause?: unknown) {
-    super(`Invalid URL: ${url}`, false, cause);
-    this.name = "InvalidUrlError";
+class NetworkError extends ScraperError {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+    cause?: Error
+  ) {
+    super(message, true, cause);
   }
 }
+
+class RateLimitError extends ScraperError {
+  constructor(
+    message: string,
+    public readonly retryAfter?: number
+  ) {
+    super(message, true);
+  }
+}
+
+class InvalidUrlError extends ScraperError {
+  constructor(url: string, cause?: Error) {
+    super(`Invalid URL: ${url}`, false, cause);
+  }
+}
+
+class ParsingError extends ScraperError {
+  constructor(message: string, cause?: Error) {
+    super(`Failed to parse content: ${message}`, false, cause);
+  }
+}
+
+export {
+  ScraperError,
+  NetworkError,
+  RateLimitError,
+  InvalidUrlError,
+  ParsingError,
+};
