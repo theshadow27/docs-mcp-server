@@ -1,5 +1,9 @@
 import type { Document } from "@langchain/core/documents";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import {
+  SemanticMarkdownSplitter,
+  type MarkdownChunk,
+  type ContentSegment,
+} from "../splitter";
 import semver from "semver";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 import type { SearchResult, VersionInfo } from "../types";
@@ -122,7 +126,8 @@ export class VectorStoreService {
 
   /**
    * Adds a document to the store, splitting it into smaller chunks for better search results.
-   * Uses RecursiveCharacterTextSplitter to maintain markdown structure during splitting.
+   * Uses SemanticMarkdownSplitter to maintain markdown structure and content types during splitting.
+   * Preserves hierarchical structure of documents and distinguishes between text and code segments.
    */
   async addDocument(
     library: string,
@@ -131,18 +136,35 @@ export class VectorStoreService {
   ): Promise<void> {
     logger.info(`📚 Adding document: ${document.metadata.title}`);
 
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 4000,
-      chunkOverlap: 200,
-      separators: ["\n\n", "\n", " ", ""], // Respect markdown structure
+    const splitter = new SemanticMarkdownSplitter({
+      maxChunkSize: 4000,
+      minChunkSize: 1000,
+      includeHierarchy: true,
     });
 
     if (!document.pageContent.trim()) {
       throw new Error("Document content cannot be empty");
     }
 
-    // Split document into smaller chunks
-    const splitDocs = await splitter.splitDocuments([document]);
+    // Split document into semantic chunks
+    const chunks = await splitter.splitText(document.pageContent);
+
+    // Convert semantic chunks to documents
+    const splitDocs = chunks.map((chunk: MarkdownChunk) => ({
+      pageContent: chunk.segments
+        .map((segment: ContentSegment) => {
+          if (segment.type === "code") {
+            return `\`\`\`${segment.language || ""}\n${segment.content}\n\`\`\``;
+          }
+          return segment.content;
+        })
+        .join("\n\n"),
+      metadata: {
+        ...document.metadata,
+        hierarchy: chunk.hierarchy,
+        title: chunk.metadata.title,
+      },
+    }));
     logger.info(`📄 Split document into ${splitDocs.length} chunks`);
 
     // Add split documents to store

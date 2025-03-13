@@ -6,4 +6,14 @@
 - Always use the latest version of the programming language and libraries.
 - Always prefer the simplest solution.
 - NEVER update any files in the following directories: .git, node_modules
-- Add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting invidiual parameters or return values if their use can easily be derived from their name.
+- Add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
+
+## Architecture Documentation Guidelines
+
+Keep ARCHITECTURE.md high-level:
+
+- Focus on system concepts and component relationships
+- Include design principles and code conventions
+- Use simple MermaidJS diagrams for visualization
+- Put implementation details in source code
+- Update when architecture changes

@@ -1,1 +1,1 @@
-export { DocumentProcessingPipeline } from "./DocumentProcessingPipeline";
+export * from "./DocumentProcessingPipeline";

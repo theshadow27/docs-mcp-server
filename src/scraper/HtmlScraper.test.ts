@@ -207,4 +207,103 @@ describe("HtmlScraper", () => {
       "https://example.com/link2",
     ]);
   });
+
+  it("should remove elements matching defaultSelectorsToRemove", async () => {
+    const mockData = {
+      title: "Test",
+      content: `
+        <nav>Navigation content</nav>
+        <div class="ads">Advertisement</div>
+        <main>
+          <p>Main content</p>
+        </main>`,
+      links: [],
+    };
+
+    const mockScrapeResult: ScrapeResult<{
+      title: string;
+      content: string;
+      links: { url: string }[];
+    }> = {
+      data: mockData,
+      status: 200,
+      statusText: "OK",
+      $: () => {},
+      body: "",
+    };
+
+    mockedScrapeIt.mockResolvedValue(mockScrapeResult);
+
+    const url = "https://example.com";
+    const result = await htmlScraper.scrapePage(url);
+
+    expect(result.content).toBe("Main content");
+  });
+
+  it("should preserve content of unknown tags", async () => {
+    const mockData = {
+      title: "Test",
+      content: `
+        <div>
+          <custom-element>Custom content</custom-element>
+        </div>
+        <div>
+          <another-custom attr="value">More content</another-custom>
+        </div>`,
+      links: [],
+    };
+
+    const mockScrapeResult: ScrapeResult<{
+      title: string;
+      content: string;
+      links: { url: string }[];
+    }> = {
+      data: mockData,
+      status: 200,
+      statusText: "OK",
+      $: () => {},
+      body: "",
+    };
+
+    mockedScrapeIt.mockResolvedValue(mockScrapeResult);
+
+    const url = "https://example.com";
+    const result = await htmlScraper.scrapePage(url);
+
+    expect(result.content).toBe("Custom content\n\nMore content");
+  });
+
+  it("should handle nested elements correctly", async () => {
+    const mockData = {
+      title: "Test",
+      content: `
+        <nav>
+          <p>Nav text</p>
+          <div class="important">Important info</div>
+        </nav>
+        <main>
+          <p>Main content</p>
+        </main>`,
+      links: [],
+    };
+
+    const mockScrapeResult: ScrapeResult<{
+      title: string;
+      content: string;
+      links: { url: string }[];
+    }> = {
+      data: mockData,
+      status: 200,
+      statusText: "OK",
+      $: () => {},
+      body: "",
+    };
+
+    mockedScrapeIt.mockResolvedValue(mockScrapeResult);
+
+    const url = "https://example.com";
+    const result = await htmlScraper.scrapePage(url);
+
+    expect(result.content).toBe("Main content");
+  });
 });

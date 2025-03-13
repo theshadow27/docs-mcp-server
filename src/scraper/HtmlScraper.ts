@@ -30,7 +30,74 @@ function validateRetryOptions(options?: RetryOptions) {
 export type HtmlScraperOptions = {
   contentSelector?: string;
   linksSelector?: string;
+  removeSelectors?: string[];
 };
+
+/**
+ * Default selectors to remove from HTML content before conversion to markdown.
+ * These target non-content elements like navigation, ads, scripts, etc.
+ */
+const defaultSelectorsToRemove = [
+  "nav",
+  "footer",
+  "script",
+  "style",
+  "noscript",
+  "svg",
+  "link",
+  "meta",
+  "iframe",
+  "header",
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "form",
+  ".ads",
+  ".advertisement",
+  ".banner",
+  ".cookie-banner",
+  ".cookie-consent",
+  ".hidden",
+  ".hide",
+  ".modal",
+  ".nav-bar",
+  ".overlay",
+  ".popup",
+  ".promo",
+  ".mw-editsection",
+  ".side-bar",
+  ".social-share",
+  ".sticky",
+  "#ads",
+  "#banner",
+  "#cookieBanner",
+  "#modal",
+  "#nav",
+  "#overlay",
+  "#popup",
+  "#sidebar",
+  "#socialMediaBox",
+  "#stickyHeader",
+  "#ad-container",
+  ".ad-container",
+  ".login-form",
+  ".signup-form",
+  ".tooltip",
+  ".dropdown-menu",
+  ".alert",
+  ".breadcrumb",
+  ".pagination",
+  '[role="alert"]',
+  '[role="banner"]',
+  '[role="dialog"]',
+  '[role="alertdialog"]',
+  '[role="region"][aria-label*="skip" i]',
+  '[aria-modal="true"]',
+  ".noprint",
+  "figure",
+  "sup",
+];
 
 /**
  * Handles HTML content extraction and conversion to markdown with retry capabilities.
@@ -42,6 +109,7 @@ export class HtmlScraper {
   private turndownService: TurndownService;
   private readonly contentSelector: string;
   private readonly linksSelector: string;
+  private readonly selectorsToRemove: string[];
   private readonly MAX_RETRIES = 6;
   private readonly BASE_DELAY = 1000; // 1 second
 
@@ -50,6 +118,8 @@ export class HtmlScraper {
       options?.contentSelector ||
       "article, .content, .documentation, main, [role='main'], body";
     this.linksSelector = options?.linksSelector || "a[href]";
+    this.selectorsToRemove =
+      options?.removeSelectors ?? defaultSelectorsToRemove;
 
     this.turndownService = new TurndownService({
       headingStyle: "atx",
@@ -119,11 +189,30 @@ export class HtmlScraper {
     // Sanitize HTML content
     const window = new Window();
     const purify = createDOMPurify(window as unknown as WindowLike);
-    const cleanContent = purify.sanitize(data.content);
+    const cleanContent = purify.sanitize(data.content, {
+      WHOLE_DOCUMENT: true,
+      RETURN_DOM: true,
+    });
+
+    // Remove unwanted elements using selectorsToRemove
+    if (cleanContent instanceof window.HTMLElement) {
+      for (const selector of this.selectorsToRemove) {
+        const elements = cleanContent.querySelectorAll(selector);
+        for (const el of elements) {
+          el.remove();
+        }
+      }
+    }
+
+    // Convert back to string
+    const finalContent =
+      cleanContent instanceof window.HTMLElement
+        ? cleanContent.innerHTML
+        : cleanContent.textContent;
 
     return {
       content:
-        this.turndownService.turndown(cleanContent).trim() ||
+        this.turndownService.turndown(finalContent || "").trim() ||
         "No content available",
       title: data.title,
       url: url,

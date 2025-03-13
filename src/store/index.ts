@@ -1,1 +1,1 @@
-export { VectorStoreService } from "./VectorStoreService";
+export * from "./VectorStoreService";
