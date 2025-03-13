@@ -1,11 +1,6 @@
 export interface DocContent {
   content: string;
-  metadata: {
-    url: string;
-    title: string;
-    library: string;
-    version: string;
-  };
+  metadata: DocumentMetadata;
 }
 
 export interface ScrapeOptions {
@@ -25,15 +20,23 @@ export interface PageResult {
   links: string[];
 }
 
+/**
+ * Common metadata fields shared across document chunks
+ */
+export interface DocumentMetadata {
+  url: string;
+  title: string;
+  library: string;
+  version: string;
+  hierarchy: string[];
+  level: number;
+  path: string[];
+}
+
 export interface SearchResult {
   content: string;
   score: number;
-  metadata: {
-    url: string;
-    title: string;
-    library: string;
-    version: string;
-  };
+  metadata: DocumentMetadata;
 }
 
 export interface ScrapingProgress {

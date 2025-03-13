@@ -162,7 +162,9 @@ export class VectorStoreService {
       metadata: {
         ...document.metadata,
         hierarchy: chunk.hierarchy,
+        level: chunk.level,
         title: chunk.metadata.title,
+        path: chunk.metadata.path,
       },
     }));
     logger.info(`📄 Split document into ${splitDocs.length} chunks`);
@@ -197,6 +199,9 @@ export class VectorStoreService {
         title: doc.metadata.title as string,
         library: doc.metadata.library as string,
         version: doc.metadata.version as string,
+        hierarchy: doc.metadata.hierarchy as string[],
+        level: doc.metadata.level as number,
+        path: doc.metadata.path as string[],
       },
     }));
   }

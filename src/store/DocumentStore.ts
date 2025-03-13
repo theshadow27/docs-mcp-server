@@ -1,8 +1,7 @@
 import { PGVectorStore } from "@langchain/community/vectorstores/pgvector";
 import type { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import type { PoolConfig } from "pg";
-import { Pool } from "pg";
+import pg from "pg";
 
 /**
  * Manages document storage and retrieval using pgvector for vector similarity search.
@@ -12,17 +11,17 @@ import { Pool } from "pg";
  * and searches.
  */
 export class DocumentStore {
-  private readonly pool: Pool;
+  private readonly pool: pg.Pool;
   private vectorStore: PGVectorStore | null = null;
 
   constructor(connectionString: string) {
     if (!connectionString) {
       throw new Error("Connection string is required");
     }
-    this.pool = new Pool(this.parseConnectionString(connectionString));
+    this.pool = new pg.Pool(this.parseConnectionString(connectionString));
   }
 
-  private parseConnectionString(connectionString: string): PoolConfig {
+  private parseConnectionString(connectionString: string): pg.PoolConfig {
     const url = new URL(connectionString);
     return {
       type: "postgres",
@@ -31,7 +30,7 @@ export class DocumentStore {
       user: url.username,
       password: url.password,
       database: url.pathname.slice(1),
-    } as PoolConfig;
+    } as pg.PoolConfig;
   }
 
   /**
@@ -47,7 +46,10 @@ export class DocumentStore {
    * Gracefully closes database connections and cleans up resources
    */
   async shutdown(): Promise<void> {
-    await this.pool.end();
+    if (this.vectorStore) {
+      // This will close the underlying pool as well
+      await this.vectorStore.end();
+    }
     this.vectorStore = null;
   }
 
@@ -101,7 +103,11 @@ export class DocumentStore {
    * Retrieves a mapping of all libraries to their available versions
    */
   async queryLibraryVersions(): Promise<Map<string, Set<string>>> {
-    const result = await this.pool.query(
+    interface QueryResult {
+      library: string;
+      version: string;
+    }
+    const result = await this.pool.query<QueryResult>(
       "SELECT DISTINCT metadata->>'library' as library, metadata->>'version' as version FROM documents"
     );
     const libraryMap = new Map<string, Set<string>>();

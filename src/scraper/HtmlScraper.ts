@@ -189,15 +189,15 @@ export class HtmlScraper {
     // Sanitize HTML content
     const window = new Window();
     const purify = createDOMPurify(window as unknown as WindowLike);
-    const cleanContent = purify.sanitize(data.content, {
+    const purifiedContent = purify.sanitize(data.content, {
       WHOLE_DOCUMENT: true,
       RETURN_DOM: true,
     });
 
     // Remove unwanted elements using selectorsToRemove
-    if (cleanContent instanceof window.HTMLElement) {
+    if (purifiedContent instanceof window.HTMLElement) {
       for (const selector of this.selectorsToRemove) {
-        const elements = cleanContent.querySelectorAll(selector);
+        const elements = purifiedContent.querySelectorAll(selector);
         for (const el of elements) {
           el.remove();
         }
@@ -205,15 +205,23 @@ export class HtmlScraper {
     }
 
     // Convert back to string
-    const finalContent =
-      cleanContent instanceof window.HTMLElement
-        ? cleanContent.innerHTML
-        : cleanContent.textContent;
+    const cleanedContent =
+      purifiedContent instanceof window.HTMLElement
+        ? purifiedContent.innerHTML
+        : purifiedContent.textContent;
+
+    const markdown = this.turndownService.turndown(cleanedContent || "").trim();
+    if (!markdown) {
+      throw new ScraperError(
+        `No valid content found at ${url}`,
+        false,
+        null,
+        204 // No Content
+      );
+    }
 
     return {
-      content:
-        this.turndownService.turndown(finalContent || "").trim() ||
-        "No content available",
+      content: markdown,
       title: data.title,
       url: url,
       links: data.links

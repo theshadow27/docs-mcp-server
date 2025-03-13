@@ -8,13 +8,13 @@
     "docs-mcp": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsup src/",
-    "start": "npm run build && node dist/index.cjs",
-    "dev": "tsup src/ --watch",
+    "build": "tsup",
+    "start": "npm run build && node dist/index.js",
+    "dev": "tsup --watch",
     "test": "vitest",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "dev-cli": "npm run build && node dist/cli.cjs"
+    "dev-cli": "npm run build && node dist/cli.js"
   },
   "dependencies": {
     "@langchain/community": "^0.3.34",

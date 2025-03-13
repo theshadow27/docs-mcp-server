@@ -59,6 +59,9 @@ describe("DocumentProcessingPipeline", () => {
         version: "1.0.0",
         title: "Test Doc",
         url: "https://example.com/page",
+        hierarchy: ["Test Doc"],
+        level: 1,
+        path: ["Test Doc"],
       },
     },
   };
@@ -136,7 +139,7 @@ describe("DocumentProcessingPipeline", () => {
       progressWithDocument.document
     );
     expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to process document Test Doc")
+      expect.stringContaining("Failed to process document")
     );
   });
 

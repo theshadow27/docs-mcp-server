@@ -96,7 +96,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
         );
       }
       logger.error(
-        `❌ Failed to process document ${progress.document.metadata.title}: ${error}`
+        `❌ Failed to process document ${progress.document.metadata.url}: ${error}`
       );
     }
   }

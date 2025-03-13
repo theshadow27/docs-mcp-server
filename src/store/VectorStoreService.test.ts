@@ -25,12 +25,15 @@ vi.mock("@langchain/community/retrievers/bm25", () => {
       fromDocuments: () => ({
         invoke: async () => [
           {
-            pageContent: "Test document content about testing",
+            pageContent: "More testing content",
             metadata: {
-              url: "http://example.com",
-              title: "Test Doc",
+              url: "http://example.com/docs",
+              title: "Root Doc",
               library: "test-lib",
               version: "1.0.0",
+              hierarchy: ["Chapter 1", "Section 1.1"],
+              level: 2,
+              path: ["Chapter 1", "Section 1.1"],
               bm25Score: 0.8,
             },
           },
@@ -74,50 +77,120 @@ describe("VectorStoreService", () => {
     expect(exists).toBe(false);
   });
 
-  it("should add and search documents", async () => {
-    const library = "test-lib";
-    const version = "1.0.0";
-    const document = new Document({
-      pageContent: "Test document content about testing",
-      metadata: {
-        url: "http://example.com",
-        title: "Test Doc",
-      },
-    });
-
-    mockStore.search.mockResolvedValue([
-      {
+  describe("document processing", () => {
+    it("should add and search documents with basic metadata", async () => {
+      const library = "test-lib";
+      const version = "1.0.0";
+      const document = new Document({
         pageContent: "Test document content about testing",
         metadata: {
           url: "http://example.com",
           title: "Test Doc",
-          library,
-          version,
         },
-      },
-    ]);
+      });
 
-    await storeService.addDocument(library, version, document);
+      mockStore.search.mockResolvedValue([
+        {
+          pageContent: "Test document content about testing",
+          metadata: {
+            url: "http://example.com",
+            title: "Test Doc",
+            library,
+            version,
+          },
+        },
+      ]);
 
-    const results = await storeService.searchStore(library, version, "testing");
-    expect(mockStore.addDocuments).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ pageContent: document.pageContent }),
-      ]),
-      { library, version }
-    );
-    expect(results).toEqual([
-      {
-        content: "Test document content about testing",
-        score: 0.8,
+      await storeService.addDocument(library, version, document);
+
+      const results = await storeService.searchStore(
+        library,
+        version,
+        "testing"
+      );
+      expect(mockStore.addDocuments).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ pageContent: document.pageContent }),
+        ]),
+        { library, version }
+      );
+      expect(results).toEqual([
+        {
+          content: "More testing content",
+          score: 0.8,
+          metadata: {
+            url: "http://example.com/docs",
+            title: "Root Doc",
+            library: "test-lib",
+            version: "1.0.0",
+            hierarchy: ["Chapter 1", "Section 1.1"],
+            level: 2,
+            path: ["Chapter 1", "Section 1.1"],
+          },
+        },
+      ]);
+    });
+
+    it("should preserve semantic metadata when processing markdown documents", async () => {
+      const library = "test-lib";
+      const version = "1.0.0";
+      const document = new Document({
+        pageContent:
+          "# Chapter 1\nTest content\n## Section 1.1\nMore testing content",
         metadata: {
-          url: "http://example.com",
-          title: "Test Doc",
-          library: "test-lib",
-          version: "1.0.0",
+          url: "http://example.com/docs",
+          title: "Root Doc",
         },
-      },
-    ]);
+      });
+
+      // Mock the search result to match what would actually be stored after processing
+      mockStore.search.mockResolvedValue([
+        {
+          pageContent: "More testing content",
+          metadata: {
+            url: "http://example.com/docs",
+            title: "Root Doc", // Should match the original document metadata
+            library,
+            version,
+            hierarchy: ["Chapter 1", "Section 1.1"],
+            level: 2,
+            path: ["Chapter 1", "Section 1.1"],
+          },
+        },
+      ]);
+
+      await storeService.addDocument(library, version, document);
+
+      // Verify the documents were stored with semantic metadata
+      expect(mockStore.addDocuments).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            metadata: expect.objectContaining({
+              hierarchy: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
+              level: 2,
+              path: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
+            }),
+          }),
+        ]),
+        { library, version }
+      );
+
+      // Verify search results preserve metadata
+      const results = await storeService.searchStore(
+        library,
+        version,
+        "testing"
+      );
+      expect(results[0].metadata).toEqual({
+        url: "http://example.com/docs",
+        title: "Root Doc",
+        library: "test-lib",
+        version: "1.0.0",
+        hierarchy: ["Chapter 1", "Section 1.1"],
+        level: 2,
+        path: ["Chapter 1", "Section 1.1"],
+      });
+    });
   });
 
   it("should remove all documents for a specific library and version", async () => {

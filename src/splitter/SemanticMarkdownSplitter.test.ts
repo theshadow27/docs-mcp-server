@@ -7,7 +7,7 @@ describe("SemanticMarkdownSplitter", () => {
     maxChunkSize: 100,
   });
 
-  it("should split content into hierarchical chunks", async () => {
+  it("should split content with complete metadata extraction", async () => {
     const markdown = `# Title 1
 Some content here.
 
@@ -24,9 +24,85 @@ Final content.`;
 
     const chunks = await splitter.splitText(markdown);
 
-    expect(chunks.length).toBeGreaterThan(0);
-    expect(chunks[0].hierarchy).toContain("Title 1");
-    expect(chunks[1].metadata.path).toEqual(["Title 1", "Section 1.1"]);
+    // Test root level chunk
+    expect(chunks[0]).toEqual(
+      expect.objectContaining({
+        hierarchy: ["Title 1"],
+        level: 1,
+        metadata: {
+          title: "Title 1",
+          path: ["Title 1"],
+        },
+      })
+    );
+
+    // Test first subsection
+    expect(chunks[1]).toEqual(
+      expect.objectContaining({
+        hierarchy: ["Title 1", "Section 1.1"],
+        level: 2,
+        metadata: {
+          title: "Section 1.1",
+          path: ["Title 1", "Section 1.1"],
+        },
+      })
+    );
+
+    // Test second subsection
+    expect(chunks[2]).toEqual(
+      expect.objectContaining({
+        hierarchy: ["Title 1", "Section 1.2"],
+        level: 2,
+        metadata: {
+          title: "Section 1.2",
+          path: ["Title 1", "Section 1.2"],
+        },
+      })
+    );
+  });
+
+  it("should track heading levels correctly in metadata", async () => {
+    const markdown = `# H1 Title
+Content 1
+
+## H2 Section
+Content 2
+
+### H3 Subsection
+Content 3
+
+#### H4 Deep
+Content 4
+
+##### H5 Deeper
+Content 5
+
+###### H6 Deepest
+Content 6`;
+
+    const chunks = await splitter.splitText(markdown);
+
+    // Verify each heading level is tracked correctly
+    expect(
+      chunks.map((c) => ({ title: c.metadata.title, level: c.level }))
+    ).toEqual([
+      { title: "H1 Title", level: 1 },
+      { title: "H2 Section", level: 2 },
+      { title: "H3 Subsection", level: 3 },
+      { title: "H4 Deep", level: 4 },
+      { title: "H5 Deeper", level: 5 },
+      { title: "H6 Deepest", level: 6 },
+    ]);
+
+    // Verify path includes full hierarchy
+    expect(chunks[5].metadata.path).toEqual([
+      "H1 Title",
+      "H2 Section",
+      "H3 Subsection",
+      "H4 Deep",
+      "H5 Deeper",
+      "H6 Deepest",
+    ]);
   });
 
   it("should distinguish between text and code content", async () => {
@@ -82,10 +158,33 @@ ${Array(20).fill("More long text.").join(" ")}`;
     expect(codeSegments[0].content).toContain("const y = 2");
   });
 
-  it("should handle empty content gracefully", async () => {
+  it("should handle empty content gracefully with proper metadata", async () => {
     const markdown = "";
     const chunks = await splitter.splitText(markdown);
     expect(chunks).toEqual([]);
+
+    const whitespaceMarkdown = "   \n\t\n   ";
+    const whitespaceChunks = await splitter.splitText(whitespaceMarkdown);
+    expect(whitespaceChunks).toEqual([]);
+  });
+
+  it("should filter out empty and whitespace-only content", async () => {
+    const markdown = `# Empty Section
+    
+## Whitespace Section
+   
+   
+## Valid Section
+Some actual content.
+
+## Another Empty Section
+\t  \n`;
+
+    const chunks = await splitter.splitText(markdown);
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].hierarchy).toContain("Valid Section");
+    expect(chunks[0].segments.length).toBe(1);
+    expect(chunks[0].segments[0].content).toBe("Some actual content.");
   });
 
   it("should preserve hierarchical structure with nested headings", async () => {

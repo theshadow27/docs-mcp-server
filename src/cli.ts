@@ -14,23 +14,23 @@ import {
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
 async function main() {
-  const store = new VectorStoreService();
+  const storeService = new VectorStoreService();
 
   try {
-    await store.initialize();
+    await storeService.initialize();
 
     const tools = {
-      listLibraries: new ListLibrariesTool(store),
-      findVersion: new FindVersionTool(store),
-      scrape: new ScrapeTool(store),
-      search: new SearchTool(store),
+      listLibraries: new ListLibrariesTool(storeService),
+      findVersion: new FindVersionTool(storeService),
+      scrape: new ScrapeTool(storeService),
+      search: new SearchTool(storeService),
     };
 
     const program = new Command();
 
     // Handle cleanup on SIGINT
     process.on("SIGINT", async () => {
-      await store.shutdown();
+      await storeService.shutdown();
       process.exit(0);
     });
 
@@ -50,27 +50,16 @@ async function main() {
         true
       )
       .action(async (library, version, url, options) => {
-        try {
-          const result = await tools.scrape.execute({
-            url,
-            library,
-            version,
-            options: {
-              maxPages: Number.parseInt(options.maxPages),
-              maxDepth: Number.parseInt(options.maxDepth),
-            },
-          });
-          console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
-          await store.shutdown();
-          process.exit(0);
-        } catch (error) {
-          await store.shutdown();
-          console.error(
-            "Error:",
-            error instanceof Error ? error.message : String(error)
-          );
-          process.exit(1);
-        }
+        const result = await tools.scrape.execute({
+          url,
+          library,
+          version,
+          options: {
+            maxPages: Number.parseInt(options.maxPages),
+            maxDepth: Number.parseInt(options.maxDepth),
+          },
+        });
+        console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
       });
 
     program
@@ -89,83 +78,51 @@ async function main() {
         false
       )
       .action(async (library, version, query, options) => {
-        try {
-          const result = await tools.search.execute({
-            library,
-            version,
-            query,
-            limit: Number.parseInt(options.limit),
-            exactMatch: options.exactMatch,
-          });
-          console.log(formatOutput(result.results));
-          await store.shutdown();
-          process.exit(0);
-        } catch (error) {
-          await store.shutdown();
-          console.error(
-            "Error:",
-            error instanceof Error ? error.message : String(error)
-          );
-          process.exit(1);
-        }
+        const result = await tools.search.execute({
+          library,
+          version,
+          query,
+          limit: Number.parseInt(options.limit),
+          exactMatch: options.exactMatch,
+        });
+        console.log(formatOutput(result.results));
       });
 
     program
       .command("list-libraries")
       .description("List all available libraries and their versions")
       .action(async () => {
-        try {
-          const result = await tools.listLibraries.execute();
-          console.log(formatOutput(result.libraries));
-          await store.shutdown();
-          process.exit(0);
-        } catch (error) {
-          await store.shutdown();
-          console.error(
-            "Error:",
-            error instanceof Error ? error.message : String(error)
-          );
-          process.exit(1);
-        }
+        const result = await tools.listLibraries.execute();
+        console.log(formatOutput(result.libraries));
       });
 
     program
       .command("find-version <library> [targetVersion]")
       .description("Find the best matching version for a library")
       .action(async (library, targetVersion) => {
-        try {
-          const version = await tools.findVersion.execute({
-            library,
-            targetVersion,
-          });
-          if (version) {
-            console.log(version);
-            await store.shutdown();
-            process.exit(0);
-          } else {
-            await store.shutdown();
-            console.error("Error: No matching version found");
-            process.exit(1);
-          }
-        } catch (error) {
-          await store.shutdown();
-          console.error(
-            "Error:",
-            error instanceof Error ? error.message : String(error)
-          );
-          process.exit(1);
+        const version = await tools.findVersion.execute({
+          library,
+          targetVersion,
+        });
+        if (!version) {
+          throw new Error("No matching version found");
         }
+        console.log(version);
       });
 
     await program.parseAsync();
   } catch (error) {
-    await store.shutdown();
     console.error(
       "Error:",
       error instanceof Error ? error.message : String(error)
     );
+    await storeService.shutdown();
     process.exit(1);
   }
+
+  // Clean shutdown after successful execution
+  await storeService.shutdown();
+  process.exit(0);
 }
 
 main().catch((error) => {

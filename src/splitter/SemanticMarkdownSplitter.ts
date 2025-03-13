@@ -223,12 +223,16 @@ export class SemanticMarkdownSplitter {
     const chunks: MarkdownChunk[] = [];
 
     const processNode = (node: HierarchyNode) => {
-      // Create chunk if node has content or title
-      if (node.content.length > 0 || node.title) {
+      // Filter out empty segments
+      const validSegments = node.content.filter(
+        (segment) => segment.content.trim().length > 0
+      );
+
+      if (validSegments.length > 0) {
         chunks.push({
           hierarchy: node.path.filter(Boolean), // Remove empty strings
           level: node.level,
-          segments: node.content,
+          segments: validSegments,
           metadata: {
             title: node.title,
             path: node.path.filter(Boolean), // Remove empty strings
