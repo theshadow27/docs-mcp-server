@@ -45,6 +45,11 @@ async function main() {
       .option("-p, --max-pages <number>", "Maximum pages to scrape", "100")
       .option("-d, --max-depth <number>", "Maximum navigation depth", "3")
       .option(
+        "-c, --max-concurrency <number>",
+        "Maximum concurrent page requests",
+        "3"
+      )
+      .option(
         "--subpages-only",
         "Allow scraping pages outside the initial URL path",
         true
@@ -57,6 +62,7 @@ async function main() {
           options: {
             maxPages: Number.parseInt(options.maxPages),
             maxDepth: Number.parseInt(options.maxDepth),
+            maxConcurrency: Number.parseInt(options.maxConcurrency),
           },
         });
         console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);

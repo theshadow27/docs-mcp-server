@@ -11,6 +11,7 @@ export interface ScrapeToolOptions {
   options?: {
     maxPages?: number;
     maxDepth?: number;
+    maxConcurrency?: number;
   };
 }
 
@@ -83,6 +84,7 @@ export class ScrapeTool {
       version: version,
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,
+      maxConcurrency: scraperOptions?.maxConcurrency ?? 3,
       subpagesOnly: true,
     });
 

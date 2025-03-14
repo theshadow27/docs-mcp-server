@@ -20,6 +20,7 @@ export interface ScrapeOptions {
   maxPages: number;
   maxDepth: number;
   subpagesOnly?: boolean;
+  maxConcurrency?: number;
 }
 
 export interface PageResult {

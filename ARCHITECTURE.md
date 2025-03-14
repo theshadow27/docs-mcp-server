@@ -18,15 +18,15 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 ```
 src/
 ├── cli.ts                 # CLI interface implementation
-├── index.ts              # MCP server interface
-├── pipeline/             # Document processing pipeline
-├── scraper/             # Web scraping implementation
-│   └── strategies/      # Scraping strategies for different sources
-├── splitter/            # Document splitting and chunking
-├── store/              # Vector store and document storage
-├── tools/              # Core functionality tools
-├── types/              # Shared type definitions
-└── utils/              # Common utilities and helpers
+├── index.ts               # MCP server interface
+├── pipeline/              # Document processing pipeline
+├── scraper/               # Web scraping implementation
+│   └── strategies/        # Scraping strategies for different sources
+├── splitter/              # Document splitting and chunking
+├── store/                 # Vector store and document storage
+├── tools/                 # Core functionality tools
+├── types/                 # Shared type definitions
+└── utils/                 # Common utilities and helpers
 ```
 
 ## Tools Layer
@@ -67,7 +67,7 @@ The project uses a unified progress reporting system with typed callbacks for al
 - Provides real-time feedback across multiple levels (page, document, storage)
 - Ensures consistent progress tracking across components
 - Supports different output formats for CLI and MCP interfaces
-- Enables parallel processing with individual progress tracking
+- Enables parallel processing with individual progress tracking through configurable batch-based concurrency
 
 ### Logging Strategy
 
