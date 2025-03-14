@@ -1,5 +1,5 @@
-import type { VectorStoreService } from "../store/VectorStoreService.js";
-import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline.js";
+import type { VectorStoreService } from "../store/VectorStoreService";
+import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
 import type { ProgressResponse } from "../types";
 import type { ScraperProgress } from "../scraper/types";
 import { logger } from "../utils/logger";

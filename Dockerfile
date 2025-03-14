@@ -32,4 +32,4 @@ COPY --from=builder /app/dist ./dist
 # Set the command to run the application
 # CMD ["node", "dist/index.cjs"]
 EXPOSE 8000
-CMD ["npx", "-y", "supergateway", "--stdio", "node", "dist/index.cjs"]
+CMD ["npx", "-y", "supergateway", "--stdio", "node", "dist/server.js"]

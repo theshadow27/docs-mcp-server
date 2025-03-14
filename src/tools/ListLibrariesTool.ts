@@ -1,5 +1,4 @@
-import type { VectorStoreService } from "../store/VectorStoreService.js";
-import { logger } from "../utils/logger";
+import type { VectorStoreService } from "../store/VectorStoreService";
 
 export interface LibraryVersion {
   version: string;

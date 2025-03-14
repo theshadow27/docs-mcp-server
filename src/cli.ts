@@ -3,7 +3,7 @@ import "dotenv/config";
 import { Command } from "commander";
 import path from "node:path";
 import os from "node:os";
-import { VectorStoreService } from "./store/VectorStoreService.js";
+import { VectorStoreService } from "./store/VectorStoreService";
 import {
   FindVersionTool,
   ListLibrariesTool,
