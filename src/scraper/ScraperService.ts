@@ -1,45 +1,36 @@
-import type {
-  ScrapeOptions,
-  ProgressCallback,
-  ScrapingProgress,
-} from "../types";
-import { ScraperError } from "../utils/errors";
-import { logger } from "../utils/logger";
 import type { ScraperRegistry } from "./ScraperRegistry";
+import type { ScraperOptions, ScraperProgress } from "./types";
+import { ScraperError } from "../utils/errors";
+import type { ProgressCallback } from "../types";
 
 /**
- * Orchestrates web scraping operations using registered scraping strategies.
- * Delegates scraping to appropriate strategies based on URL patterns and provides
- * a unified error handling layer, wrapping domain-specific errors into ScraperErrors
- * for consistent error management throughout the application.
+ * Orchestrates document scraping operations using registered scraping strategies.
+ * Automatically selects appropriate strategy based on URL patterns.
  */
 export class ScraperService {
-  constructor(private registry: ScraperRegistry) {}
+  private registry: ScraperRegistry;
+
+  constructor(registry: ScraperRegistry) {
+    this.registry = registry;
+  }
 
   /**
-   * Executes scraping using appropriate strategy for given URL.
-   * Provides progress tracking and error handling wrapper
+   * Scrapes content from the provided URL using the appropriate strategy.
+   * Reports progress via callback and handles errors.
    */
   async scrape(
-    options: ScrapeOptions,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<void> {
-    try {
-      const strategy = this.registry.getStrategy(options.url);
-      await strategy.scrape(options, progressCallback);
-    } catch (error) {
-      logger.error(
-        `❌ Scraping failed: ${error instanceof Error ? error.message : "Unknown error"}`
+    // Find strategy for this URL
+    const strategy = this.registry.getStrategy(options.url);
+    if (!strategy) {
+      throw new ScraperError(
+        `No scraper strategy found for URL: ${options.url}`,
+        false
       );
-      // Wrap non-ScraperError errors in ScraperError
-      if (!(error instanceof ScraperError)) {
-        throw new ScraperError(
-          `Failed to scrape ${options.url}: ${error instanceof Error ? error.message : "Unknown error"}`,
-          false,
-          error as Error
-        );
-      }
-      throw error;
     }
+
+    await strategy.scrape(options, progressCallback);
   }
 }

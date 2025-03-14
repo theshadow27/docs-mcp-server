@@ -6,7 +6,7 @@ import {
 } from "../splitter";
 import semver from "semver";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
-import type { SearchResult, VersionInfo } from "../types";
+import type { StoreSearchResult, LibraryVersion } from "./types";
 import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
@@ -38,7 +38,7 @@ export class VectorStoreService {
    * Returns a list of all available versions for a library.
    * Only returns versions that follow semver format.
    */
-  async listVersions(library: string): Promise<VersionInfo[]> {
+  async listVersions(library: string): Promise<LibraryVersion[]> {
     const versions = await this.store.queryUniqueVersions(library);
     return versions
       .filter((v) => semver.valid(v))
@@ -132,12 +132,12 @@ export class VectorStoreService {
 
   async deleteStore(library: string, version: string): Promise<void> {
     logger.info(`🗑️ Deleting store for ${library}@${version}`);
-    await this.store.deleteDocuments({ library, version });
+    await this.store.deleteDocuments(library, version);
   }
 
   async removeAllDocuments(library: string, version: string): Promise<void> {
     logger.info(`🗑️ Removing all documents from ${library}@${version} store`);
-    await this.store.deleteDocuments({ library, version });
+    await this.store.deleteDocuments(library, version);
   }
 
   /**
@@ -186,7 +186,7 @@ export class VectorStoreService {
     logger.info(`📄 Split document into ${splitDocs.length} chunks`);
 
     // Add split documents to store
-    await this.store.addDocuments(splitDocs, { library, version });
+    await this.store.addDocuments(library, version, splitDocs);
   }
 
   /**
@@ -198,8 +198,8 @@ export class VectorStoreService {
     version: string,
     query: string,
     limit = 5
-  ): Promise<SearchResult[]> {
-    const results = await this.store.search(query, limit, { library, version });
+  ): Promise<StoreSearchResult[]> {
+    const results = await this.store.search(library, version, query, limit);
 
     // Rerank with BM25
     const rerankedResults = await BM25Retriever.fromDocuments(results, {

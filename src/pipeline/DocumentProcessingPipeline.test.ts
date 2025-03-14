@@ -2,7 +2,7 @@ import { DocumentProcessingPipeline } from "./DocumentProcessingPipeline";
 import { ScraperRegistry, ScraperService } from "../scraper";
 import { VectorStoreService } from "../store";
 import { logger } from "../utils/logger";
-import type { ScrapingProgress, ScrapeOptions } from "../types";
+import type { ScraperProgress, ScraperOptions } from "../scraper/types";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DocumentProcessingError, PipelineStateError } from "./errors";
 
@@ -38,7 +38,7 @@ vi.mock("../utils/logger", () => ({
 describe("DocumentProcessingPipeline", () => {
   let pipeline: DocumentProcessingPipeline;
 
-  const mockScrapeOptions: ScrapeOptions = {
+  const mockScrapeOptions: ScraperOptions = {
     url: "https://example.com",
     library: "test-lib",
     version: "1.0.0",
@@ -47,7 +47,7 @@ describe("DocumentProcessingPipeline", () => {
     subpagesOnly: true,
   };
 
-  const mockProgress: ScrapingProgress = {
+  const mockProgress: ScraperProgress = {
     currentUrl: "https://example.com/page",
     pagesScraped: 1,
     maxPages: 10,
@@ -164,7 +164,7 @@ describe("DocumentProcessingPipeline", () => {
   });
 
   it("should handle stop during processing", async () => {
-    let progressCallback: ((progress: ScrapingProgress) => void) | undefined;
+    let progressCallback: ((progress: ScraperProgress) => void) | undefined;
 
     mockScrape.mockImplementation((_, callback) => {
       progressCallback = callback;

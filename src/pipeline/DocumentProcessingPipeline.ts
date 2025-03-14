@@ -1,11 +1,7 @@
 import { ScraperRegistry, ScraperService } from "../scraper";
 import type { VectorStoreService } from "../store";
-import type {
-  DocumentPipeline,
-  DocumentPipelineCallbacks,
-  ScrapeOptions,
-  ScrapingProgress,
-} from "../types";
+import type { DocumentPipeline, DocumentPipelineCallbacks } from "./types";
+import type { ScraperOptions, ScraperProgress } from "../scraper/types";
 import { logger } from "../utils/logger";
 import { DocumentProcessingError, PipelineStateError } from "./errors";
 
@@ -44,14 +40,14 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
    * Initiates document processing pipeline.
    * Coordinates scraping and storage operations with progress tracking
    */
-  async process(options: ScrapeOptions): Promise<void> {
+  async process(options: ScraperOptions): Promise<void> {
     if (this.isProcessing) {
       throw new PipelineStateError("Pipeline is already processing");
     }
 
     this.isProcessing = true;
     try {
-      await this.scraperService.scrape(options, (progress: ScrapingProgress) =>
+      await this.scraperService.scrape(options, (progress: ScraperProgress) =>
         this.handleScrapingProgress(progress)
       );
       logger.info("✅ Pipeline processing complete");
@@ -72,7 +68,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
   }
 
   private async handleScrapingProgress(
-    progress: ScrapingProgress
+    progress: ScraperProgress
   ): Promise<void> {
     if (!this.isProcessing) return;
 

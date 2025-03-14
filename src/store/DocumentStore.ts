@@ -161,8 +161,9 @@ export class DocumentStore {
    * for vector similarity search
    */
   async addDocuments(
-    documents: Document[],
-    filter: { library: string; version: string }
+    library: string,
+    version: string,
+    documents: Document[]
   ): Promise<void> {
     if (!this.vectorStore) {
       throw new StoreError("Store not initialized");
@@ -173,8 +174,8 @@ export class DocumentStore {
       ...doc,
       metadata: {
         ...doc.metadata,
-        library: filter.library,
-        version: filter.version,
+        library,
+        version,
       },
     }));
 
@@ -191,15 +192,14 @@ export class DocumentStore {
   /**
    * Removes documents matching specified library and version
    */
-  async deleteDocuments(filter: {
-    library: string;
-    version: string;
-  }): Promise<void> {
+  async deleteDocuments(library: string, version: string): Promise<void> {
     if (!this.vectorStore) {
       throw new StoreError("Store not initialized");
     }
     try {
-      await this.vectorStore.delete({ filter });
+      await this.vectorStore.delete({
+        filter: { library, version },
+      });
     } catch (error) {
       throw new ConnectionError(
         "Failed to delete documents from store",
@@ -212,15 +212,19 @@ export class DocumentStore {
    * Performs similarity search on stored documents within specified library version
    */
   async search(
+    library: string,
+    version: string,
     query: string,
-    limit: number,
-    filter: { library: string; version: string }
+    limit: number
   ): Promise<Document[]> {
     if (!this.vectorStore) {
       throw new StoreError("Store not initialized");
     }
     try {
-      return await this.vectorStore.similaritySearch(query, limit * 2, filter);
+      return await this.vectorStore.similaritySearch(query, limit * 2, {
+        library,
+        version,
+      });
     } catch (error) {
       throw new ConnectionError(
         "Failed to search documents",

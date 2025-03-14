@@ -4,13 +4,13 @@ import {
   type DefaultScraperStrategyOptions,
 } from "./DefaultScraperStrategy";
 import { HtmlScraper } from "../HtmlScraper";
-import type { ScrapeOptions, PageResult } from "../../types";
+import type { ScraperOptions, ScrapedPage } from "../types";
 
 class MockHtmlScraper extends HtmlScraper {
-  scrapePageWithRetry = vi.fn<(url: string) => Promise<PageResult>>();
-  scrapePage = vi.fn<(url: string) => Promise<PageResult>>();
+  scrapePageWithRetry = vi.fn<(url: string) => Promise<ScrapedPage>>();
+  scrapePage = vi.fn<(url: string) => Promise<ScrapedPage>>();
 
-  constructor(mockResult: PageResult | Map<string, PageResult>) {
+  constructor(mockResult: ScrapedPage | Map<string, ScrapedPage>) {
     super();
     if (mockResult instanceof Map) {
       this.scrapePageWithRetry.mockImplementation((url: string) => {
@@ -54,7 +54,7 @@ describe("DefaultScraperStrategy", () => {
 
   describe("URL Normalization", () => {
     it("should normalize URLs with different cases to the same value", async () => {
-      const mockPageResult: PageResult = {
+      const mockPageResult: ScrapedPage = {
         content: "Test content",
         title: "Test Page",
         url: "https://example.com",
@@ -65,7 +65,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com/TEST",
         library: "test",
         version: "1.0",
@@ -79,7 +79,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should normalize URLs with and without trailing slashes to the same value", async () => {
-      const mockPageResult: PageResult = {
+      const mockPageResult: ScrapedPage = {
         content: "Test content",
         title: "Test Page",
         url: "https://example.com/",
@@ -90,7 +90,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -104,7 +104,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should normalize URLs with hash fragments", async () => {
-      const mockPageResult: PageResult = {
+      const mockPageResult: ScrapedPage = {
         content: "Test content",
         title: "Test Page",
         url: "https://example.com#fragment",
@@ -115,7 +115,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com#fragment",
         library: "test",
         version: "1.0",
@@ -129,7 +129,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should normalize URLs with query parameters", async () => {
-      const mockPageResult: PageResult = {
+      const mockPageResult: ScrapedPage = {
         content: "Test content",
         title: "Test Page",
         url: "https://example.com?query=1",
@@ -141,7 +141,7 @@ describe("DefaultScraperStrategy", () => {
         shouldFollowLink: () => true,
         urlNormalizerOptions: { removeQuery: true },
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com?query=1",
         library: "test",
         version: "1.0",
@@ -157,7 +157,7 @@ describe("DefaultScraperStrategy", () => {
 
   describe("Page Scraping", () => {
     it("should scrape a single page with no links", async () => {
-      const mockPageResult: PageResult = {
+      const mockPageResult: ScrapedPage = {
         content: "Test content",
         title: "Test Page",
         url: "https://example.com",
@@ -168,7 +168,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -183,7 +183,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should respect the maxPages limit", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com",
           {
@@ -231,7 +231,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -244,7 +244,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should respect the maxDepth limit", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com",
           {
@@ -279,7 +279,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -299,7 +299,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should respect the subpagesOnly option", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com/docs",
           {
@@ -338,7 +338,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com/docs",
         library: "test",
         version: "1.0",
@@ -362,7 +362,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should call shouldFollowLink function for each link", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com",
           {
@@ -393,7 +393,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -416,7 +416,7 @@ describe("DefaultScraperStrategy", () => {
     });
 
     it("should add links to visited set immediately when queuing them", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com",
           {
@@ -447,7 +447,7 @@ describe("DefaultScraperStrategy", () => {
         shouldFollowLink: () => true,
       });
 
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",
@@ -494,7 +494,7 @@ describe("DefaultScraperStrategy", () => {
 
   describe("Progress Callback", () => {
     it("should call the progress callback for each page scraped", async () => {
-      const mockResponses = new Map<string, PageResult>([
+      const mockResponses = new Map<string, ScrapedPage>([
         [
           "https://example.com",
           {
@@ -520,7 +520,7 @@ describe("DefaultScraperStrategy", () => {
         htmlScraper: mockHtmlScraper,
         shouldFollowLink: () => true,
       });
-      const options: ScrapeOptions = {
+      const options: ScraperOptions = {
         url: "https://example.com",
         library: "test",
         version: "1.0",

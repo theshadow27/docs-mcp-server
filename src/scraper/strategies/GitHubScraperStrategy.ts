@@ -1,10 +1,9 @@
+import type { ProgressCallback } from "../../types";
 import type {
-  ScrapeOptions,
-  ProgressCallback,
-  ScrapingProgress,
-  DocContent,
+  ScraperOptions,
+  ScraperProgress,
   ScraperStrategy,
-} from "../../types";
+} from "../types";
 import { DefaultScraperStrategy } from "./DefaultScraperStrategy";
 
 export class GitHubScraperStrategy implements ScraperStrategy {
@@ -67,8 +66,8 @@ export class GitHubScraperStrategy implements ScraperStrategy {
   }
 
   async scrape(
-    options: ScrapeOptions,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<void> {
     // Validate it's a GitHub URL
     const url = new URL(options.url);

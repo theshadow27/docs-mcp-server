@@ -1,5 +1,5 @@
 import type { VectorStoreService } from "../store";
-import type { SearchResult } from "../types";
+import type { StoreSearchResult } from "../store/types";
 import { VersionNotFoundError } from "./errors";
 import { logger } from "../utils/logger";
 
@@ -12,7 +12,7 @@ export interface SearchToolOptions {
 }
 
 export interface SearchToolResult {
-  results: SearchResult[];
+  results: StoreSearchResult[];
   error?: {
     message: string;
     availableVersions: Array<{ version: string; indexed: boolean }>;

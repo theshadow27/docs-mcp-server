@@ -1,4 +1,4 @@
-import type { ScraperStrategy } from "../types";
+import type { ScraperStrategy } from "./types";
 import { validateUrl } from "../utils/url";
 import { DefaultScraperStrategy } from "./strategies/DefaultScraperStrategy";
 import { GitHubScraperStrategy } from "./strategies/GitHubScraperStrategy";

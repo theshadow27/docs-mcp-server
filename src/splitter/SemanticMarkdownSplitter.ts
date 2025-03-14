@@ -31,7 +31,7 @@ export interface MarkdownChunk {
 /**
  * Configuration options for the semantic markdown splitter.
  */
-export interface SplitterOptions {
+export interface MarkdownSplitterOptions {
   /** Minimum characters per chunk (default: 1000) */
   minChunkSize?: number;
   /** Maximum characters per chunk (default: 4000) */
@@ -62,9 +62,9 @@ interface HierarchyNode {
  * - Supports size-based chunk splitting
  */
 export class SemanticMarkdownSplitter {
-  private readonly options: Required<SplitterOptions>;
+  private readonly options: Required<MarkdownSplitterOptions>;
 
-  constructor(options: SplitterOptions = {}) {
+  constructor(options: MarkdownSplitterOptions = {}) {
     this.options = {
       minChunkSize: options.minChunkSize ?? 1000,
       maxChunkSize: options.maxChunkSize ?? 4000,

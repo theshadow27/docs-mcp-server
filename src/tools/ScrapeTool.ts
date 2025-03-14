@@ -1,6 +1,7 @@
 import type { VectorStoreService } from "../store/VectorStoreService.js";
 import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline.js";
-import type { ProgressResponse, ScrapingProgress } from "../types";
+import type { ProgressResponse } from "../types";
+import type { ScraperProgress } from "../scraper/types";
 import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {
@@ -62,7 +63,7 @@ export class ScrapeTool {
     };
 
     pipeline.setCallbacks({
-      onProgress: async (progress: ScrapingProgress) => {
+      onProgress: async (progress: ScraperProgress) => {
         if (progress.pagesScraped > currentPage) {
           currentPage = progress.pagesScraped;
           reportProgress(

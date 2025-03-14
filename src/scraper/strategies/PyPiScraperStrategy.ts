@@ -1,9 +1,9 @@
+import type { ProgressCallback } from "../../types";
 import type {
-  ScrapeOptions as options,
-  ProgressCallback,
-  ScrapingProgress,
+  ScraperOptions,
+  ScraperProgress,
   ScraperStrategy,
-} from "../../types";
+} from "../types";
 import { DefaultScraperStrategy } from "./DefaultScraperStrategy";
 
 export class PyPiScraperStrategy implements ScraperStrategy {
@@ -30,10 +30,10 @@ export class PyPiScraperStrategy implements ScraperStrategy {
   }
 
   async scrape(
-    config: options,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<void> {
     // Use default strategy with our configuration
-    await this.defaultStrategy.scrape(config, progressCallback);
+    await this.defaultStrategy.scrape(options, progressCallback);
   }
 }

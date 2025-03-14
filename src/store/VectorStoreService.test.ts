@@ -73,7 +73,9 @@ describe("VectorStoreService", () => {
   });
 
   it("should handle empty store existence check", async () => {
-    mockStore.checkDocumentExists.mockResolvedValue(false);
+    mockStore.checkDocumentExists.mockImplementation((lib, ver) =>
+      Promise.resolve(false)
+    );
     const exists = await storeService.exists("test-lib", "1.0.0");
     expect(exists).toBe(false);
   });
@@ -110,10 +112,11 @@ describe("VectorStoreService", () => {
         "testing"
       );
       expect(mockStore.addDocuments).toHaveBeenCalledWith(
+        library,
+        version,
         expect.arrayContaining([
           expect.objectContaining({ pageContent: document.pageContent }),
-        ]),
-        { library, version }
+        ])
       );
       expect(results).toEqual([
         {
@@ -164,6 +167,8 @@ describe("VectorStoreService", () => {
 
       // Verify the documents were stored with semantic metadata
       expect(mockStore.addDocuments).toHaveBeenCalledWith(
+        library,
+        version,
         expect.arrayContaining([
           expect.objectContaining({
             metadata: expect.objectContaining({
@@ -172,8 +177,7 @@ describe("VectorStoreService", () => {
               path: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
             }),
           }),
-        ]),
-        { library, version }
+        ])
       );
 
       // Verify search results preserve metadata
@@ -199,10 +203,7 @@ describe("VectorStoreService", () => {
     const version = "1.0.0";
 
     await storeService.removeAllDocuments(library, version);
-    expect(mockStore.deleteDocuments).toHaveBeenCalledWith({
-      library,
-      version,
-    });
+    expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, version);
   });
 
   describe("listVersions", () => {

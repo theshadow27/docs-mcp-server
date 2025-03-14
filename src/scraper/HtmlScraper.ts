@@ -5,7 +5,7 @@ import { validateUrl } from "../utils/url";
 import { logger } from "../utils/logger";
 import createDOMPurify, { type WindowLike } from "dompurify";
 import { Window } from "happy-dom";
-import type { PageResult } from "../types";
+import type { ScrapedPage } from "./types";
 
 export type RetryOptions = {
   maxRetries?: number;
@@ -162,7 +162,7 @@ export class HtmlScraper {
    * Performs single attempt at scraping page content and converting to markdown.
    * Handles HTML sanitization and URL normalization
    */
-  public async scrapePage(url: string): Promise<PageResult> {
+  public async scrapePage(url: string): Promise<ScrapedPage> {
     validateUrl(url);
 
     const { data } = await scrapeIt<{
@@ -238,7 +238,7 @@ export class HtmlScraper {
   public async scrapePageWithRetry(
     url: string,
     options?: RetryOptions
-  ): Promise<PageResult> {
+  ): Promise<ScrapedPage> {
     validateRetryOptions(options);
     const maxRetries = options?.maxRetries ?? this.MAX_RETRIES;
     const baseDelay = options?.baseDelay ?? this.BASE_DELAY;

@@ -1,11 +1,11 @@
 import { logger } from "../../utils/logger";
+import type { ProgressCallback } from "../../types";
 import type {
-  ScrapeOptions,
-  ProgressCallback,
-  ScrapingProgress,
+  ScraperOptions,
+  ScraperProgress,
   ScraperStrategy,
   ScraperMetadata,
-} from "../../types";
+} from "../types";
 import { normalizeUrl, type UrlNormalizerOptions } from "../../utils/url";
 import { HtmlScraper } from "../HtmlScraper";
 
@@ -57,8 +57,8 @@ export class DefaultScraperStrategy implements ScraperStrategy {
 
   private async processUrl(
     item: { url: string; depth: number },
-    options: ScrapeOptions,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<string[]> {
     const { url, depth } = item;
     const normalizedUrl = normalizeUrl(url, this.urlNormalizerOptions);
@@ -99,8 +99,8 @@ export class DefaultScraperStrategy implements ScraperStrategy {
   private async processBatch(
     batch: Array<{ url: string; depth: number }>,
     baseUrl: URL,
-    options: ScrapeOptions,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<Array<{ url: string; depth: number }>> {
     // Process all URLs in the batch concurrently
     const results = await Promise.all(
@@ -147,8 +147,8 @@ export class DefaultScraperStrategy implements ScraperStrategy {
   }
 
   async scrape(
-    options: ScrapeOptions,
-    progressCallback?: ProgressCallback<ScrapingProgress>
+    options: ScraperOptions,
+    progressCallback?: ProgressCallback<ScraperProgress>
   ): Promise<void> {
     this.visited.clear();
     this.pageCount = 0;
