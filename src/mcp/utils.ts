@@ -6,15 +6,15 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
  * @returns The response object.
  */
 export function createResponse(text: string): CallToolResult {
-  return {
-    content: [
-      {
-        type: "text",
-        text,
-      },
-    ],
-    isError: false,
-  };
+	return {
+		content: [
+			{
+				type: "text",
+				text,
+			},
+		],
+		isError: false,
+	};
 }
 
 /**
@@ -23,13 +23,13 @@ export function createResponse(text: string): CallToolResult {
  * @returns The response object.
  */
 export function createError(text: string): CallToolResult {
-  return {
-    content: [
-      {
-        type: "text",
-        text,
-      },
-    ],
-    isError: true,
-  };
+	return {
+		content: [
+			{
+				type: "text",
+				text,
+			},
+		],
+		isError: true,
+	};
 }
