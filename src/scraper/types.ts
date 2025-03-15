@@ -35,6 +35,11 @@ export interface ScrapedPage {
   links: string[];
 }
 
+export interface ScrapedDocument {
+  content: string;
+  metadata: ScraperMetadata;
+}
+
 /**
  * Metadata available during the scraping phase
  */
@@ -54,5 +59,5 @@ export interface ScraperProgress {
   currentUrl: string;
   depth: number;
   maxDepth: number;
-  document?: Document;
+  document?: ScrapedDocument;
 }

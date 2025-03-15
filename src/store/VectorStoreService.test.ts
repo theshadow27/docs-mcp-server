@@ -32,7 +32,6 @@ vi.mock("@langchain/community/retrievers/bm25", () => {
               title: "Root Doc",
               library: "test-lib",
               version: "1.0.0",
-              hierarchy: ["Chapter 1", "Section 1.1"],
               level: 2,
               path: ["Chapter 1", "Section 1.1"],
               bm25Score: 0.8,
@@ -127,7 +126,6 @@ describe("VectorStoreService", () => {
             title: "Root Doc",
             library: "test-lib",
             version: "1.0.0",
-            hierarchy: ["Chapter 1", "Section 1.1"],
             level: 2,
             path: ["Chapter 1", "Section 1.1"],
           },
@@ -156,7 +154,6 @@ describe("VectorStoreService", () => {
             title: "Root Doc", // Should match the original document metadata
             library,
             version,
-            hierarchy: ["Chapter 1", "Section 1.1"],
             level: 2,
             path: ["Chapter 1", "Section 1.1"],
           },
@@ -172,7 +169,6 @@ describe("VectorStoreService", () => {
         expect.arrayContaining([
           expect.objectContaining({
             metadata: expect.objectContaining({
-              hierarchy: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
               level: 2,
               path: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
             }),
@@ -191,7 +187,6 @@ describe("VectorStoreService", () => {
         title: "Root Doc",
         library: "test-lib",
         version: "1.0.0",
-        hierarchy: ["Chapter 1", "Section 1.1"],
         level: 2,
         path: ["Chapter 1", "Section 1.1"],
       });

@@ -1,15 +1,12 @@
 import type { Document } from "@langchain/core/documents";
-import {
-  SemanticMarkdownSplitter,
-  type MarkdownChunk,
-  type ContentSegment,
-} from "../splitter";
+import { SemanticMarkdownSplitter, type ContentChunk } from "../splitter";
 import semver from "semver";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 import type { StoreSearchResult, LibraryVersion } from "./types";
 import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
+import { ConnectionError } from "./errors";
 
 /**
  * Provides semantic search capabilities across different versions of library documentation.
@@ -20,7 +17,9 @@ export class VectorStoreService {
   constructor() {
     const connectionString = process.env.POSTGRES_CONNECTION || "";
     if (!connectionString) {
-      throw new Error("POSTGRES_CONNECTION environment variable is required");
+      throw new ConnectionError(
+        "POSTGRES_CONNECTION environment variable is required"
+      );
     }
     this.store = new DocumentStore(connectionString);
   }
@@ -154,8 +153,6 @@ export class VectorStoreService {
 
     const splitter = new SemanticMarkdownSplitter({
       maxChunkSize: 4000,
-      minChunkSize: 1000,
-      includeHierarchy: true,
     });
 
     if (!document.pageContent.trim()) {
@@ -166,21 +163,13 @@ export class VectorStoreService {
     const chunks = await splitter.splitText(document.pageContent);
 
     // Convert semantic chunks to documents
-    const splitDocs = chunks.map((chunk: MarkdownChunk) => ({
-      pageContent: chunk.segments
-        .map((segment: ContentSegment) => {
-          if (segment.type === "code") {
-            return `\`\`\`${segment.language || ""}\n${segment.content}\n\`\`\``;
-          }
-          return segment.content;
-        })
-        .join("\n\n"),
+    const splitDocs = chunks.map((chunk: ContentChunk) => ({
+      pageContent: chunk.content,
       metadata: {
         ...document.metadata,
-        hierarchy: chunk.hierarchy,
-        level: chunk.level,
-        title: chunk.metadata.title,
-        path: chunk.metadata.path,
+        level: chunk.section.level,
+        title: chunk.section.title,
+        path: chunk.section.path,
       },
     }));
     logger.info(`📄 Split document into ${splitDocs.length} chunks`);
@@ -215,7 +204,6 @@ export class VectorStoreService {
         title: doc.metadata.title as string,
         library: doc.metadata.library as string,
         version: doc.metadata.version as string,
-        hierarchy: doc.metadata.hierarchy as string[],
         level: doc.metadata.level as number,
         path: doc.metadata.path as string[],
       },

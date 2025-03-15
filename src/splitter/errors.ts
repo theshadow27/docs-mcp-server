@@ -1,30 +1,21 @@
-class SplitterError extends Error {
-  constructor(
-    message: string,
-    public readonly cause?: Error
-  ) {
-    super(message);
-    this.name = this.constructor.name;
-    if (cause?.stack) {
-      this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
-    }
+/**
+ * Base error class for all splitter-related errors
+ */
+export class SplitterError extends Error {}
+
+/**
+ * Thrown when content cannot be split further while maintaining its validity
+ * (e.g., markdown tables require headers, code blocks require language and backticks)
+ */
+export class MinimumChunkSizeError extends SplitterError {
+  constructor(size: number, maxSize: number) {
+    super(
+      `Cannot split content any further. Content requires minimum chunk size of ${size} bytes, but maximum allowed is ${maxSize} bytes.`
+    );
   }
 }
 
-class ChunkSizeError extends SplitterError {
-  constructor(
-    public readonly size: number,
-    public readonly maxSize: number,
-    message?: string
-  ) {
-    super(message ?? `Chunk size ${size} exceeds maximum ${maxSize}`);
-  }
-}
-
-class InvalidContentError extends SplitterError {
-  constructor(message: string) {
-    super(`Invalid content: ${message}`);
-  }
-}
-
-export { SplitterError, ChunkSizeError, InvalidContentError };
+/**
+ * Generic error for content splitting failures
+ */
+export class ContentSplitterError extends SplitterError {}

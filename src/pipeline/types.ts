@@ -1,5 +1,8 @@
-import type { Document } from "../types";
-import type { ScraperOptions, ScraperProgress } from "../scraper/types";
+import type {
+  ScrapedDocument,
+  ScraperOptions,
+  ScraperProgress,
+} from "../scraper/types";
 
 /**
  * Interface for document processing pipeline implementations
@@ -15,5 +18,5 @@ export interface DocumentPipeline {
  */
 export interface DocumentPipelineCallbacks {
   onProgress?: (progress: ScraperProgress) => Promise<void>;
-  onError?: (error: Error, document?: Document) => Promise<void>;
+  onError?: (error: Error, document?: ScrapedDocument) => Promise<void>;
 }

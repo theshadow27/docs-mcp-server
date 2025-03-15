@@ -1,329 +1,352 @@
-import { describe, it, expect } from "vitest";
-import { SemanticMarkdownSplitter } from "./SemanticMarkdownSplitter";
+import { SemanticMarkdownSplitter } from "./SemanticMarkdownSplitter.js";
+import { describe, it, expect, vi } from "vitest";
+import type { TableContentSplitter } from "./splitters/TableContentSplitter.js";
+import type { CodeContentSplitter } from "./splitters/CodeContentSplitter.js";
+import { MinimumChunkSizeError } from "./errors.js";
 
 describe("SemanticMarkdownSplitter", () => {
-  const splitter = new SemanticMarkdownSplitter({
-    minChunkSize: 10, // Small sizes for testing
-    maxChunkSize: 100,
+  it("should handle empty markdown", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    const result = await splitter.splitText("");
+    expect(result).toEqual([]);
   });
 
-  it("should split content with complete metadata extraction", async () => {
-    const markdown = `# Title 1
-Some content here.
+  it("should handle markdown with no headings", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    const markdown = "This is some text without any headings.";
+    const result = await splitter.splitText(markdown);
+
+    expect(result).toEqual([
+      {
+        type: "text",
+        content: "This is some text without any headings.",
+        section: {
+          title: "",
+          level: 0,
+          path: [],
+        },
+      },
+    ]);
+  });
+
+  it("should correctly extract sections from headings", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    const markdown = `
+# Chapter 1
+Some text in chapter 1.
 
 ## Section 1.1
-More content here.
+More text in section 1.1.
 
-\`\`\`typescript
-const x = 1;
-const y = 2;
-\`\`\`
+### Subsection 1.1.1
+Text in subsection.
 
 ## Section 1.2
-Final content.`;
+Final text.
 
-    const chunks = await splitter.splitText(markdown);
+# Chapter 2
+Text in chapter 2.
+`;
+    const result = await splitter.splitText(markdown);
 
-    // Test root level chunk
-    expect(chunks[0]).toEqual(
-      expect.objectContaining({
-        hierarchy: ["Title 1"],
-        level: 1,
-        metadata: {
-          title: "Title 1",
-          path: ["Title 1"],
+    expect(result).toEqual([
+      {
+        type: "text",
+        content: "# Chapter 1",
+        section: {
+          title: "Chapter 1",
+          level: 1,
+          path: ["Chapter 1"],
         },
-      })
-    );
-
-    // Test first subsection
-    expect(chunks[1]).toEqual(
-      expect.objectContaining({
-        hierarchy: ["Title 1", "Section 1.1"],
-        level: 2,
-        metadata: {
+      },
+      {
+        type: "text",
+        content: "Some text in chapter 1.",
+        section: {
+          title: "Chapter 1",
+          level: 1,
+          path: ["Chapter 1"],
+        },
+      },
+      {
+        type: "text",
+        content: "## Section 1.1",
+        section: {
           title: "Section 1.1",
-          path: ["Title 1", "Section 1.1"],
+          level: 2,
+          path: ["Chapter 1", "Section 1.1"],
         },
-      })
-    );
-
-    // Test second subsection
-    expect(chunks[2]).toEqual(
-      expect.objectContaining({
-        hierarchy: ["Title 1", "Section 1.2"],
-        level: 2,
-        metadata: {
+      },
+      {
+        type: "text",
+        content: "More text in section 1.1.",
+        section: {
+          title: "Section 1.1",
+          level: 2,
+          path: ["Chapter 1", "Section 1.1"],
+        },
+      },
+      {
+        type: "text",
+        content: "### Subsection 1.1.1",
+        section: {
+          title: "Subsection 1.1.1",
+          level: 3,
+          path: ["Chapter 1", "Section 1.1", "Subsection 1.1.1"],
+        },
+      },
+      {
+        type: "text",
+        content: "Text in subsection.",
+        section: {
+          title: "Subsection 1.1.1",
+          level: 3,
+          path: ["Chapter 1", "Section 1.1", "Subsection 1.1.1"],
+        },
+      },
+      {
+        type: "text",
+        content: "## Section 1.2",
+        section: {
           title: "Section 1.2",
-          path: ["Title 1", "Section 1.2"],
+          level: 2,
+          path: ["Chapter 1", "Section 1.2"],
         },
-      })
-    );
-  });
-
-  it("should track heading levels correctly in metadata", async () => {
-    const markdown = `# H1 Title
-Content 1
-
-## H2 Section
-Content 2
-
-### H3 Subsection
-Content 3
-
-#### H4 Deep
-Content 4
-
-##### H5 Deeper
-Content 5
-
-###### H6 Deepest
-Content 6`;
-
-    const chunks = await splitter.splitText(markdown);
-
-    // Verify each heading level is tracked correctly
-    expect(
-      chunks.map((c) => ({ title: c.metadata.title, level: c.level }))
-    ).toEqual([
-      { title: "H1 Title", level: 1 },
-      { title: "H2 Section", level: 2 },
-      { title: "H3 Subsection", level: 3 },
-      { title: "H4 Deep", level: 4 },
-      { title: "H5 Deeper", level: 5 },
-      { title: "H6 Deepest", level: 6 },
-    ]);
-
-    // Verify path includes full hierarchy
-    expect(chunks[5].metadata.path).toEqual([
-      "H1 Title",
-      "H2 Section",
-      "H3 Subsection",
-      "H4 Deep",
-      "H5 Deeper",
-      "H6 Deepest",
+      },
+      {
+        type: "text",
+        content: "Final text.",
+        section: {
+          title: "Section 1.2",
+          level: 2,
+          path: ["Chapter 1", "Section 1.2"],
+        },
+      },
+      {
+        type: "text",
+        content: "# Chapter 2",
+        section: {
+          title: "Chapter 2",
+          level: 1,
+          path: ["Chapter 2"],
+        },
+      },
+      {
+        type: "text",
+        content: "Text in chapter 2.",
+        section: {
+          title: "Chapter 2",
+          level: 1,
+          path: ["Chapter 2"],
+        },
+      },
     ]);
   });
 
-  it("should distinguish between text and code content", async () => {
-    const markdown = `# Code Example
-Normal text here.
+  it("should correctly differentiate between content types", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    const markdown = `
+# Mixed Content Section
 
-\`\`\`typescript
-function test() {
-  return true;
-}
-\`\`\`
-
-More text.`;
-
-    const chunks = await splitter.splitText(markdown);
-    const codeSegments = chunks[0].segments.filter((s) => s.type === "code");
-    const textSegments = chunks[0].segments.filter((s) => s.type === "text");
-
-    expect(codeSegments.length).toBeGreaterThan(0);
-    expect(textSegments.length).toBeGreaterThan(0);
-    expect(codeSegments[0].language).toBe("typescript");
-  });
-
-  it("should respect maxChunkSize while preserving code blocks", async () => {
-    const markdown = `# Large Content
-${Array(20).fill("Very long text.").join(" ")}
-
-\`\`\`typescript
-const x = 1;
-const y = 2;
-\`\`\`
-
-${Array(20).fill("More long text.").join(" ")}`;
-
-    const chunks = await splitter.splitText(markdown);
-
-    expect(chunks.length).toBeGreaterThan(1);
-
-    // Verify no chunk exceeds maxChunkSize
-    for (const chunk of chunks) {
-      const totalSize = chunk.segments.reduce(
-        (sum, segment) => sum + segment.content.length,
-        0
-      );
-      expect(totalSize).toBeLessThanOrEqual(100);
-    }
-
-    // Verify code blocks are not split
-    const codeSegments = chunks
-      .flatMap((c) => c.segments)
-      .filter((s) => s.type === "code");
-    expect(codeSegments[0].content).toContain("const x = 1");
-    expect(codeSegments[0].content).toContain("const y = 2");
-  });
-
-  it("should handle empty content gracefully with proper metadata", async () => {
-    const markdown = "";
-    const chunks = await splitter.splitText(markdown);
-    expect(chunks).toEqual([]);
-
-    const whitespaceMarkdown = "   \n\t\n   ";
-    const whitespaceChunks = await splitter.splitText(whitespaceMarkdown);
-    expect(whitespaceChunks).toEqual([]);
-  });
-
-  it("should filter out empty and whitespace-only content", async () => {
-    const markdown = `# Empty Section
-    
-## Whitespace Section
-   
-   
-## Valid Section
-Some actual content.
-
-## Another Empty Section
-\t  \n`;
-
-    const chunks = await splitter.splitText(markdown);
-    expect(chunks.length).toBe(1);
-    expect(chunks[0].hierarchy).toContain("Valid Section");
-    expect(chunks[0].segments.length).toBe(1);
-    expect(chunks[0].segments[0].content).toBe("Some actual content.");
-  });
-
-  it("should preserve hierarchical structure with nested headings", async () => {
-    const markdown = `# Main Title
-Top level content.
-
-## Section 1
-Section 1 content.
-
-### Subsection 1.1
-Deep nested content.
-
-## Section 2
-Final section content.`;
-
-    const chunks = await splitter.splitText(markdown);
-
-    expect(chunks[0].hierarchy).toEqual(["Main Title"]);
-    expect(chunks[1].hierarchy).toEqual(["Main Title", "Section 1"]);
-    expect(chunks[2].hierarchy).toEqual([
-      "Main Title",
-      "Section 1",
-      "Subsection 1.1",
-    ]);
-    expect(chunks[3].hierarchy).toEqual(["Main Title", "Section 2"]);
-  });
-
-  it("should handle plain text without headers", async () => {
-    const markdown = `This is just plain text.
-Some more text here.
-
-And another paragraph.`;
-
-    const chunks = await splitter.splitText(markdown);
-
-    expect(chunks.length).toBe(1);
-    expect(chunks[0].segments.length).toBe(2);
-    expect(chunks[0].segments.every((s) => s.type === "text")).toBe(true);
-    expect(chunks[0].hierarchy).toEqual([]);
-  });
-
-  it("should handle content before first header", async () => {
-    const markdown = `Initial text before any headers.
-More initial content.
-
-## First Section
-Some section content.
-
-### Subsection
-Deeper nested content.`;
-
-    const chunks = await splitter.splitText(markdown);
-
-    // First chunk should be root with initial content
-    expect(chunks[0].segments.length).toBeGreaterThan(0);
-    expect(chunks[0].hierarchy).toEqual([]);
-
-    // Second chunk should be "First Section"
-    expect(chunks[1].hierarchy).toEqual(["First Section"]);
-    expect(
-      chunks[1].segments.some((s) => s.content.includes("section content"))
-    ).toBe(true);
-
-    // Third chunk should be "Subsection" under "First Section"
-    expect(chunks[2].hierarchy).toEqual(["First Section", "Subsection"]);
-    expect(
-      chunks[2].segments.some((s) => s.content.includes("Deeper nested"))
-    ).toBe(true);
-  });
-
-  it("should handle mixed content structures", async () => {
-    const markdown = `Some text at root level.
+This is some text.
 
 \`\`\`javascript
-// Root level code
-const x = 1;
+// Some code in JavaScript
+console.log('Hello');
 \`\`\`
 
-## Section 1
-Section content.
+| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |
+`;
+    const result = await splitter.splitText(markdown);
 
-More text here.
-\`\`\`python
-def test():
-    pass
-\`\`\``;
-
-    const chunks = await splitter.splitText(markdown);
-
-    // Root level should have text and JavaScript code
-    expect(chunks[0].segments.length).toBe(2);
-    expect(chunks[0].segments[0].type).toBe("text");
-    expect(chunks[0].segments[1].type).toBe("code");
-    expect(chunks[0].segments[1].language).toBe("javascript");
-
-    // Section 1 should have text and Python code
-    expect(chunks[1].hierarchy).toEqual(["Section 1"]);
-    expect(chunks[1].segments.length).toBe(3);
-    expect(chunks[1].segments[2].type).toBe("code");
-    expect(chunks[1].segments[2].language).toBe("python");
+    expect(result).toEqual([
+      {
+        type: "text",
+        content: "# Mixed Content Section",
+        section: {
+          title: "Mixed Content Section",
+          level: 1,
+          path: ["Mixed Content Section"],
+        },
+      },
+      {
+        type: "text",
+        content: "This is some text.",
+        section: {
+          title: "Mixed Content Section",
+          level: 1,
+          path: ["Mixed Content Section"],
+        },
+      },
+      {
+        type: "code",
+        content:
+          "```javascript\n// Some code in JavaScript\nconsole.log('Hello');\n```",
+        section: {
+          title: "Mixed Content Section",
+          level: 1,
+          path: ["Mixed Content Section"],
+        },
+      },
+      {
+        type: "table",
+        content: "| Header 1 | Header 2 |\n|---|---|\n| Cell 1 | Cell 2 |",
+        section: {
+          title: "Mixed Content Section",
+          level: 1,
+          path: ["Mixed Content Section"],
+        },
+      },
+    ]);
   });
 
-  it("should split very large code blocks", async () => {
-    const markdown = `# Test
-\`\`\`typescript
-${Array(50).fill("// Very long line of code that exceeds the limit").join("\n")}
-\`\`\``;
+  it("should preserve table headers in metadata", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    // Mock the table splitter to verify it receives the headers
+    const mockSplit = vi
+      .fn()
+      .mockResolvedValue([{ content: "mocked content" }]);
+    splitter.tableSplitter = {
+      split: mockSplit,
+    } as unknown as TableContentSplitter;
 
-    const splitter = new SemanticMarkdownSplitter({
-      minChunkSize: 10,
-      maxChunkSize: 100, // Small size for testing
-    });
+    const markdown = `
+| Col 1 | Col 2 | Col 3 |
+|-------|--------|-------|
+| A1    | A2     | A3    |
+| B1    | B2     | B3    |
+`;
 
-    const chunks = await splitter.splitText(markdown);
+    await splitter.splitText(markdown);
 
-    expect(chunks.length).toBeGreaterThan(1);
+    // Verify that the table splitter was called with headers
+    expect(mockSplit).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: ["Col 1", "Col 2", "Col 3"],
+      })
+    );
+  });
 
-    // All chunks should be under maxChunkSize
-    for (const chunk of chunks) {
-      const totalSize = chunk.segments.reduce(
-        (sum, segment) => sum + segment.content.length,
-        0
-      );
-      expect(totalSize).toBeLessThanOrEqual(100);
+  it("should preserve code language in metadata", async () => {
+    const splitter = new SemanticMarkdownSplitter();
+    // Mock the code splitter to verify it receives the language
+    const mockSplit = vi
+      .fn()
+      .mockResolvedValue([{ content: "mocked content" }]);
+    splitter.codeSplitter = {
+      split: mockSplit,
+    } as unknown as CodeContentSplitter;
 
-      // All code segments should maintain the language
-      const codeSegments = chunk.segments.filter((s) => s.type === "code");
-      for (const segment of codeSegments) {
-        expect(segment.language).toBe("typescript");
-      }
+    const markdown = `
+\`\`\`python
+def hello():
+    print("Hello, World!")
+\`\`\`
+`;
+
+    await splitter.splitText(markdown);
+
+    // Verify that the code splitter was called with language
+    expect(mockSplit).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        language: "python",
+      })
+    );
+  });
+
+  it("should correctly split long tables while preserving headers", async () => {
+    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 100 });
+
+    // Create a table with many rows that will exceed maxChunkSize
+    const tableRows = Array.from(
+      { length: 20 },
+      (_, i) => `| ${i + 1} | This is row ${i + 1} | ${(i + 1) * 100} |`
+    ).join("\n");
+
+    const markdown = `
+| ID | Description | Value |
+|----|------------|-------|
+${tableRows}
+`;
+
+    const result = await splitter.splitText(markdown);
+
+    // Verify that we got multiple chunks
+    expect(result.length).toBeGreaterThan(1);
+
+    // Verify each chunk
+    for (const chunk of result) {
+      expect(chunk.type).toBe("table");
+      // Each chunk should start with the header
+      expect(chunk.content).toMatch(/^\| ID \| Description \| Value \|/);
+      // Each chunk should have the header separator
+      expect(chunk.content).toMatch(/\|---|---|---\|/);
+      // Each chunk should have at least one data row
+      expect(chunk.content.split("\n").length).toBeGreaterThan(2);
+      // Each chunk should be valid markdown table format
+      expect(chunk.content).toMatch(/^\|.*\|$/gm);
+      // Each chunk should be within size limit
+      expect(chunk.content.length).toBeLessThanOrEqual(100);
     }
+  });
 
-    // Content should still be valid code lines
-    const allCode = chunks
-      .flatMap((c) => c.segments)
-      .filter((s) => s.type === "code")
-      .map((s) => s.content)
-      .join("\n");
+  it("should correctly split long code blocks while preserving language", async () => {
+    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 100 });
 
-    expect(allCode).toContain("// Very long line of code");
+    // Create a long code block that will exceed maxChunkSize
+    const codeLines = Array.from(
+      { length: 20 },
+      (_, i) =>
+        `console.log("This is line ${i + 1} with some extra text to make it longer");`
+    ).join("\n");
+
+    const markdown = `
+\`\`\`javascript
+${codeLines}
+\`\`\`
+`;
+
+    const result = await splitter.splitText(markdown);
+
+    // Verify that we got multiple chunks
+    expect(result.length).toBeGreaterThan(1);
+
+    // Verify each chunk
+    for (const chunk of result) {
+      expect(chunk.type).toBe("code");
+      // Each chunk should start with the language identifier
+      expect(chunk.content).toMatch(/^```javascript\n/);
+      // Each chunk should end with closing backticks
+      expect(chunk.content).toMatch(/\n```$/);
+      // Each chunk should contain actual code
+      expect(chunk.content).toMatch(/console\.log/);
+      // Each chunk should be within size limit
+      expect(chunk.content.length).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("should throw MinimumChunkSizeError when table cannot be split further", async () => {
+    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 20 });
+    const markdown = `
+| Header1 | Header2 |
+|---------|---------|
+| Cell1   | Cell2   |`;
+
+    await expect(splitter.splitText(markdown)).rejects.toThrow(
+      MinimumChunkSizeError
+    );
+  });
+
+  it("should throw MinimumChunkSizeError when code block cannot be split further", async () => {
+    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 20 });
+    const markdown = "```javascript\nconst x = 1;\n```";
+
+    await expect(splitter.splitText(markdown)).rejects.toThrow(
+      MinimumChunkSizeError
+    );
   });
 });

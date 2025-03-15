@@ -3,12 +3,7 @@
  */
 export interface Document {
   content: string;
-  metadata: {
-    url: string;
-    title: string;
-    library: string;
-    version: string;
-  };
+  metadata: DocumentMetadata;
 }
 
 /**
@@ -19,7 +14,6 @@ export interface DocumentMetadata {
   title: string;
   library: string;
   version: string;
-  hierarchy: string[];
   level: number;
   path: string[];
 }
