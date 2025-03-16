@@ -4,19 +4,19 @@ import { logger } from "../utils/logger";
 import { VersionNotFoundError } from "./errors";
 
 export interface SearchToolOptions {
-	library: string;
-	version: string;
-	query: string;
-	limit: number;
-	exactMatch?: boolean;
+  library: string;
+  version: string;
+  query: string;
+  limit: number;
+  exactMatch?: boolean;
 }
 
 export interface SearchToolResult {
-	results: StoreSearchResult[];
-	error?: {
-		message: string;
-		availableVersions: Array<{ version: string; indexed: boolean }>;
-	};
+  results: StoreSearchResult[];
+  error?: {
+    message: string;
+    availableVersions: Array<{ version: string; indexed: boolean }>;
+  };
 }
 
 /**
@@ -25,49 +25,49 @@ export interface SearchToolResult {
  * Returns available versions when requested version is not found.
  */
 export class SearchTool {
-	private storeService: VectorStoreService;
+  private storeService: VectorStoreService;
 
-	constructor(storeService: VectorStoreService) {
-		this.storeService = storeService;
-	}
+  constructor(storeService: VectorStoreService) {
+    this.storeService = storeService;
+  }
 
-	async execute(options: SearchToolOptions): Promise<SearchToolResult> {
-		const { library, version, query, limit, exactMatch = false } = options;
+  async execute(options: SearchToolOptions): Promise<SearchToolResult> {
+    const { library, version, query, limit, exactMatch = false } = options;
 
-		logger.info(
-			`🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`,
-		);
+    logger.info(
+      `🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`,
+    );
 
-		try {
-			const bestVersion = exactMatch
-				? version
-				: await this.storeService.findBestVersion(library, version);
+    try {
+      const bestVersion = exactMatch
+        ? version
+        : await this.storeService.findBestVersion(library, version);
 
-			const results = await this.storeService.searchStore(
-				library,
-				bestVersion,
-				query,
-				limit,
-			);
-			logger.info(`✅ Found ${results.length} matching results`);
+      const results = await this.storeService.searchStore(
+        library,
+        bestVersion,
+        query,
+        limit,
+      );
+      logger.info(`✅ Found ${results.length} matching results`);
 
-			return { results };
-		} catch (error) {
-			if (error instanceof VersionNotFoundError) {
-				logger.info(`ℹ️ Version not found: ${error.message}`);
-				return {
-					results: [],
-					error: {
-						message: error.message,
-						availableVersions: error.availableVersions,
-					},
-				};
-			}
+      return { results };
+    } catch (error) {
+      if (error instanceof VersionNotFoundError) {
+        logger.info(`ℹ️ Version not found: ${error.message}`);
+        return {
+          results: [],
+          error: {
+            message: error.message,
+            availableVersions: error.availableVersions,
+          },
+        };
+      }
 
-			logger.error(
-				`❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-			);
-			throw error;
-		}
-	}
+      logger.error(
+        `❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      throw error;
+    }
+  }
 }

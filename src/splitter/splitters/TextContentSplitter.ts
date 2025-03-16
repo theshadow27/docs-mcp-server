@@ -1,11 +1,7 @@
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { fullTrim } from "../../utils/string";
 import { MinimumChunkSizeError } from "../errors";
-import type {
-  ContentChunk,
-  ContentSplitter,
-  ContentSplitterOptions,
-} from "./types";
+import type { ContentChunk, ContentSplitter, ContentSplitterOptions } from "./types";
 
 /**
  * Splits text content using a hierarchical approach:
@@ -22,7 +18,7 @@ export class TextContentSplitter implements ContentSplitter {
    */
   async split(
     content: string,
-    metadata?: ContentChunk["metadata"]
+    metadata?: ContentChunk["metadata"],
   ): Promise<ContentChunk[]> {
     const trimmedContent = fullTrim(content);
 
@@ -33,13 +29,10 @@ export class TextContentSplitter implements ContentSplitter {
     // Check for unsplittable content (e.g., a single word longer than maxChunkSize)
     const words = trimmedContent.split(/\s+/);
     const longestWord = words.reduce((max, word) =>
-      word.length > max.length ? word : max
+      word.length > max.length ? word : max,
     );
     if (longestWord.length > this.options.maxChunkSize) {
-      throw new MinimumChunkSizeError(
-        longestWord.length,
-        this.options.maxChunkSize
-      );
+      throw new MinimumChunkSizeError(longestWord.length, this.options.maxChunkSize);
     }
 
     // First try splitting by paragraphs (double newlines)
@@ -64,9 +57,7 @@ export class TextContentSplitter implements ContentSplitter {
    * Checks if all chunks are within the maximum size limit
    */
   private areChunksValid(chunks: ContentChunk[]): boolean {
-    return chunks.every(
-      (chunk) => chunk.content.length <= this.options.maxChunkSize
-    );
+    return chunks.every((chunk) => chunk.content.length <= this.options.maxChunkSize);
   }
 
   /**
@@ -114,10 +105,7 @@ export class TextContentSplitter implements ContentSplitter {
    * Attempts to merge small chunks with previous chunks to minimize fragmentation.
    * Only merges if combined size is within maxChunkSize.
    */
-  protected mergeChunks(
-    chunks: ContentChunk[],
-    separator: string
-  ): ContentChunk[] {
+  protected mergeChunks(chunks: ContentChunk[], separator: string): ContentChunk[] {
     const mergedChunks: ContentChunk[] = [];
     let currentChunk: ContentChunk | null = null;
 

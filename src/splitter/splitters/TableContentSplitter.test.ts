@@ -57,13 +57,13 @@ ${rows.join("\n")}`;
     await expect(
       splitter.split(table, {
         headers: ["Header A", "Header B", "Header C"],
-      })
+      }),
     ).rejects.toThrow(MinimumChunkSizeError);
 
     await expect(
       splitter.split(table, {
         headers: ["Header A", "Header B", "Header C"],
-      })
+      }),
     ).rejects.toThrowError("Cannot split content any further");
   });
 

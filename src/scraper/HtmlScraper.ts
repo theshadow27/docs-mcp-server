@@ -118,8 +118,7 @@ export class HtmlScraper {
       options?.contentSelector ||
       "article, .content, .documentation, main, [role='main'], body";
     this.linksSelector = options?.linksSelector || "a[href]";
-    this.selectorsToRemove =
-      options?.removeSelectors ?? defaultSelectorsToRemove;
+    this.selectorsToRemove = options?.removeSelectors ?? defaultSelectorsToRemove;
 
     this.turndownService = new TurndownService({
       headingStyle: "atx",
@@ -139,7 +138,7 @@ export class HtmlScraper {
         const element = node as HTMLElement;
         // First look for an ancestor with both 'highlight' and 'highlight-source-*' classes
         const highlightElement = element.closest(
-          '.highlight[class*="highlight-source-"]'
+          '.highlight[class*="highlight-source-"]',
         );
 
         const language =
@@ -244,7 +243,7 @@ export class HtmlScraper {
    */
   public async scrapePageWithRetry(
     url: string,
-    options?: RetryOptions
+    options?: RetryOptions,
   ): Promise<ScrapedPage> {
     validateRetryOptions(options);
     const maxRetries = options?.maxRetries ?? this.MAX_RETRIES;
@@ -264,7 +263,7 @@ export class HtmlScraper {
       if (status !== undefined && status >= 400 && status < 500) {
         for (let attempt = 1; attempt < maxRetries; attempt++) {
           logger.warn(
-            `⚠️ Retry ${attempt}/${maxRetries - 1} for ${url} (Status: ${status})`
+            `⚠️ Retry ${attempt}/${maxRetries - 1} for ${url} (Status: ${status})`,
           );
           try {
             await this.delay(baseDelay * 2 ** attempt);
@@ -275,15 +274,14 @@ export class HtmlScraper {
               throw new ScraperError(
                 `Failed to scrape ${url} after ${maxRetries} retries`,
                 true,
-                retryError instanceof Error ? retryError : undefined
+                retryError instanceof Error ? retryError : undefined,
               );
             }
             // Otherwise continue to next retry
-            const retryStatus = (
-              retryError as { response?: { status: number } }
-            )?.response?.status;
+            const retryStatus = (retryError as { response?: { status: number } })
+              ?.response?.status;
             logger.warn(
-              `⚠️ Attempt ${attempt} failed (Status: ${retryStatus || "unknown"})`
+              `⚠️ Attempt ${attempt} failed (Status: ${retryStatus || "unknown"})`,
             );
           }
         }
@@ -293,7 +291,7 @@ export class HtmlScraper {
       throw new ScraperError(
         `Failed to scrape ${url}: ${message}`,
         false,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }

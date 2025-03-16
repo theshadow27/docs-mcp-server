@@ -2,20 +2,20 @@
  * Common document content type shared across modules
  */
 export interface Document {
-	content: string;
-	metadata: DocumentMetadata;
+  content: string;
+  metadata: DocumentMetadata;
 }
 
 /**
  * Common metadata fields shared across document chunks
  */
 export interface DocumentMetadata {
-	url: string;
-	title: string;
-	library: string;
-	version: string;
-	level?: number; // Optional during scraping
-	path?: string[]; // Optional during scraping
+  url: string;
+  title: string;
+  library: string;
+  version: string;
+  level?: number; // Optional during scraping
+  path?: string[]; // Optional during scraping
 }
 
 /**
@@ -27,5 +27,5 @@ export type ProgressCallback<T> = (progress: T) => void | Promise<void>;
  * Standard progress response format
  */
 export interface ProgressResponse {
-	content: { type: string; text: string }[];
+  content: { type: string; text: string }[];
 }

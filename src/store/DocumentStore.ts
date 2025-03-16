@@ -16,9 +16,7 @@ export class DocumentStore {
 
   constructor(connectionString: string) {
     if (!connectionString) {
-      throw new StoreError(
-        "Missing required environment variable: POSTGRES_CONNECTION"
-      );
+      throw new StoreError("Missing required environment variable: POSTGRES_CONNECTION");
     }
     this.pool = new pg.Pool(this.parseConnectionString(connectionString));
     this.embeddings = new OpenAIEmbeddings({
@@ -49,7 +47,7 @@ export class DocumentStore {
     } catch (error) {
       throw new ConnectionError(
         "Failed to initialize database connection",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -68,13 +66,13 @@ export class DocumentStore {
     try {
       const result = await this.pool.query(
         "SELECT DISTINCT version FROM documents WHERE library = $1",
-        [library]
+        [library],
       );
       return result.rows.map((row) => row.version);
     } catch (error) {
       throw new ConnectionError(
         "Failed to query versions",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -82,20 +80,17 @@ export class DocumentStore {
   /**
    * Verifies existence of documents for a specific library version
    */
-  async checkDocumentExists(
-    library: string,
-    version: string
-  ): Promise<boolean> {
+  async checkDocumentExists(library: string, version: string): Promise<boolean> {
     try {
       const result = await this.pool.query(
         "SELECT EXISTS(SELECT 1 FROM documents WHERE library = $1 AND version = $2)",
-        [library, version]
+        [library, version],
       );
       return result.rows[0].exists;
     } catch (error) {
       throw new ConnectionError(
         "Failed to check document existence",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -110,7 +105,7 @@ export class DocumentStore {
     }
     try {
       const result = await this.pool.query<QueryResult>(
-        "SELECT DISTINCT library, version FROM documents"
+        "SELECT DISTINCT library, version FROM documents",
       );
       const libraryMap = new Map<string, Set<string>>();
 
@@ -128,7 +123,7 @@ export class DocumentStore {
     } catch (error) {
       throw new ConnectionError(
         "Failed to query library versions",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -140,7 +135,7 @@ export class DocumentStore {
   async addDocuments(
     library: string,
     version: string,
-    documents: Document[]
+    documents: Document[],
   ): Promise<void> {
     try {
       // Generate embeddings in batch
@@ -163,7 +158,7 @@ export class DocumentStore {
     } catch (error) {
       throw new ConnectionError(
         "Failed to add documents to store",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -179,13 +174,13 @@ export class DocumentStore {
     try {
       const result = await this.pool.query<{ delete_documents: number }>(
         "SELECT delete_documents($1, $2)",
-        [library, version]
+        [library, version],
       );
       return result.rows[0].delete_documents;
     } catch (error) {
       throw new ConnectionError(
         "Failed to delete documents",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -197,7 +192,7 @@ export class DocumentStore {
     library: string,
     version: string,
     query: string,
-    limit: number
+    limit: number,
   ): Promise<Document[]> {
     try {
       // Generate query embedding for vector search
@@ -208,7 +203,7 @@ export class DocumentStore {
 
       const result = await this.pool.query(
         "SELECT * FROM search_documents($1, $2, $3, $4, $5)",
-        [library, version, query, vectorStr, limit]
+        [library, version, query, vectorStr, limit],
       );
 
       return result.rows.map((row) => ({
@@ -221,7 +216,7 @@ export class DocumentStore {
     } catch (error) {
       throw new ConnectionError(
         "Failed to search documents",
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }

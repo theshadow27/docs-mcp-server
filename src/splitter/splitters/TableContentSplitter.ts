@@ -1,9 +1,5 @@
 import { MinimumChunkSizeError } from "../errors";
-import type {
-  ContentChunk,
-  ContentSplitter,
-  ContentSplitterOptions,
-} from "./types";
+import type { ContentChunk, ContentSplitter, ContentSplitterOptions } from "./types";
 
 /**
  * Interface representing the structure of a parsed markdown table
@@ -26,7 +22,7 @@ export class TableContentSplitter implements ContentSplitter {
    */
   async split(
     content: string,
-    metadata?: { headers?: string[] }
+    metadata?: { headers?: string[] },
   ): Promise<ContentChunk[]> {
     const parsedTable = this.parseTable(content);
     if (!parsedTable) {
