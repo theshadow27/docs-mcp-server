@@ -1,84 +1,84 @@
 import { describe, expect, it } from "vitest";
-import { TextContentSplitter } from "./TextContentSplitter.js";
-import type { ContentSplitterOptions } from "./types.js";
+import { TextContentSplitter } from "./TextContentSplitter";
+import type { ContentSplitterOptions } from "./types";
 
 describe("TextContentSplitter", () => {
-	const options = {
-		maxChunkSize: 100,
-	} satisfies ContentSplitterOptions;
-	const splitter = new TextContentSplitter(options);
+  const options = {
+    maxChunkSize: 100,
+  } satisfies ContentSplitterOptions;
+  const splitter = new TextContentSplitter(options);
 
-	it("should split on paragraph boundaries when possible", async () => {
-		const text = `First paragraph with some content.
+  it("should split on paragraph boundaries when possible", async () => {
+    const text = `First paragraph with some content.
 
 Second paragraph that continues the text.
 
 Third paragraph to complete the example.`;
 
-		const chunks = await splitter.split(text);
+    const chunks = await splitter.split(text);
 
-		expect(chunks.length).toBe(3);
-		expect(chunks[0].content).toBe("First paragraph with some content.");
-		expect(chunks[1].content).toBe("Second paragraph that continues the text.");
-		expect(chunks[2].content).toBe("Third paragraph to complete the example.");
-	});
+    expect(chunks.length).toBe(3);
+    expect(chunks[0].content).toBe("First paragraph with some content.");
+    expect(chunks[1].content).toBe("Second paragraph that continues the text.");
+    expect(chunks[2].content).toBe("Third paragraph to complete the example.");
+  });
 
-	it("should fall back to line breaks when paragraphs too large", async () => {
-		// Create a paragraph larger than maxChunkSize
-		const longParagraph = Array(5)
-			.fill("This is a very long line of text that should be split.")
-			.join(" ");
+  it("should fall back to line breaks when paragraphs too large", async () => {
+    // Create a paragraph larger than maxChunkSize
+    const longParagraph = Array(5)
+      .fill("This is a very long line of text that should be split.")
+      .join(" ");
 
-		const text = `${longParagraph}
+    const text = `${longParagraph}
 Line two of the text.
 Line three continues here.
 And line four finishes it.`;
 
-		const chunks = await splitter.split(text);
+    const chunks = await splitter.split(text);
 
-		// Should split into multiple chunks at line boundaries
-		expect(chunks.length).toBeGreaterThan(1);
-		for (const chunk of chunks) {
-			expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
-		}
-	});
+    // Should split into multiple chunks at line boundaries
+    expect(chunks.length).toBeGreaterThan(1);
+    for (const chunk of chunks) {
+      expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
+    }
+  });
 
-	it("should merge small chunks when possible", async () => {
-		const text =
-			"Short line 1.\nShort line 2.\nShort line 3.\n\nAnother short one.\nAnd another.";
+  it("should merge small chunks when possible", async () => {
+    const text =
+      "Short line 1.\nShort line 2.\nShort line 3.\n\nAnother short one.\nAnd another.";
 
-		const chunks = await splitter.split(text);
+    const chunks = await splitter.split(text);
 
-		// Small consecutive lines should be merged
-		expect(chunks.length).toBeLessThan(6); // Less than total number of lines
-		for (const chunk of chunks) {
-			expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
-		}
-	});
+    // Small consecutive lines should be merged
+    expect(chunks.length).toBeLessThan(6); // Less than total number of lines
+    for (const chunk of chunks) {
+      expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
+    }
+  });
 
-	it("should handle empty content gracefully", async () => {
-		const emptyChunks = await splitter.split("");
-		expect(emptyChunks.length).toBe(1);
-		expect(emptyChunks[0].content).toBe("");
+  it("should handle empty content gracefully", async () => {
+    const emptyChunks = await splitter.split("");
+    expect(emptyChunks.length).toBe(1);
+    expect(emptyChunks[0].content).toBe("");
 
-		const whitespaceChunks = await splitter.split("   \n  \n  ");
-		expect(whitespaceChunks.length).toBe(1);
-		expect(whitespaceChunks[0].content).toBe("");
-	});
+    const whitespaceChunks = await splitter.split("   \n  \n  ");
+    expect(whitespaceChunks.length).toBe(1);
+    expect(whitespaceChunks[0].content).toBe("");
+  });
 
-	it("should split words as last resort", async () => {
-		const splitter = new TextContentSplitter({
-			maxChunkSize: 20, // Very small for testing word splitting
-		});
+  it("should split words as last resort", async () => {
+    const splitter = new TextContentSplitter({
+      maxChunkSize: 20, // Very small for testing word splitting
+    });
 
-		const text =
-			"This is a very long sentence that needs to be split into smaller chunks";
+    const text =
+      "This is a very long sentence that needs to be split into smaller chunks";
 
-		const chunks = await splitter.split(text);
+    const chunks = await splitter.split(text);
 
-		expect(chunks.length).toBeGreaterThan(1);
-		for (const chunk of chunks) {
-			expect(chunk.content.length).toBeLessThanOrEqual(20);
-		}
-	});
+    expect(chunks.length).toBeGreaterThan(1);
+    for (const chunk of chunks) {
+      expect(chunk.content.length).toBeLessThanOrEqual(20);
+    }
+  });
 });

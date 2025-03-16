@@ -5,6 +5,7 @@
 - Follow programming principles such as DRY, KISS, YAGNI, and SOLID
 - Always use the latest version of the programming language and libraries.
 - Always prefer the simplest solution.
+- When importing a relative path, avoid using file extensions like ".js" and ".ts".
 - NEVER update any files in the following directories: .git, node_modules
 - Add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
 

@@ -4,15 +4,11 @@ import remarkHtml from "remark-html";
 import remarkParse from "remark-parse";
 import TurndownService from "turndown";
 import { unified } from "unified";
-import { fullTrim } from "../utils/string.js";
-import {
-  ContentSplitterError,
-  MinimumChunkSizeError,
-  SplitterError,
-} from "./errors.js";
-import { CodeContentSplitter } from "./splitters/CodeContentSplitter.js";
-import { TableContentSplitter } from "./splitters/TableContentSplitter.js";
-import { TextContentSplitter } from "./splitters/TextContentSplitter.js";
+import { fullTrim } from "../utils/string";
+import { ContentSplitterError, MinimumChunkSizeError } from "./errors";
+import { CodeContentSplitter } from "./splitters/CodeContentSplitter";
+import { TableContentSplitter } from "./splitters/TableContentSplitter";
+import { TextContentSplitter } from "./splitters/TextContentSplitter";
 
 /**
  * Types of content within a document section
