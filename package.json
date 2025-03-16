@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsup",
     "cli": "node dist/cli.js",
-    "dev:cli": "run-p \"build -- --watch\" \"cli\"",
+    "dev:cli": "npm run build && node dist/cli.js",
     "server": "node --watch dist/server.js",
     "dev:server": "run-p \"build -- --watch\" \"server\"",
     "test": "vitest",
