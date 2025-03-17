@@ -8,6 +8,7 @@
 - When importing a relative path, avoid using file extensions like ".js" and ".ts".
 - NEVER update any files in the following directories: .git, node_modules
 - Add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
+- Git commit messages must be formatted as markdown
 
 ## Architecture Documentation Guidelines
 

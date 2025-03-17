@@ -17,6 +17,19 @@ This server supports partial version matching, selecting the best available vers
 - If a partial version (e.g., `1.2`) is specified, the latest matching version (e.g., `1.2.5`) is used.
 - If the specified version (full or partial) is not found, the server will attempt to find the closest preceding version.
 
+## CLI Usage
+
+The `docs-mcp` CLI provides commands for managing documentation. To see available commands and options:
+
+```bash
+# Show all commands
+docs-mcp --help
+
+# Show help for a specific command
+docs-mcp scrape --help
+docs-mcp search --help
+```
+
 ## Development
 
 Install dependencies:

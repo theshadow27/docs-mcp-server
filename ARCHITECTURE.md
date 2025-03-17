@@ -40,9 +40,23 @@ The project maintains a `tools/` directory containing modular implementations of
 Current tools include:
 
 - Documentation scraping functionality
-- Search capabilities
+- Search capabilities with context-aware results
 - Library version management
 - Document management operations
+
+### Document Storage Design
+
+Documents are stored with URLs and sequential ordering to maintain source context:
+
+```mermaid
+graph LR
+    D1[Previous Doc] --> D2[Current Doc] --> D3[Next Doc]
+    subgraph Same URL/Version
+        D1 & D2 & D3
+    end
+```
+
+Search results include surrounding content to provide more complete responses, while maintaining efficient retrieval through compound indexing.
 
 ### Interface-Specific Adapters
 
@@ -119,6 +133,8 @@ This hierarchy ensures:
 When adding new functionality:
 
 1. Implement core logic in a new tool under `tools/`
-2. Add CLI command in `cli.ts`
-3. Add MCP tool in `index.ts`
-4. Maintain consistent error handling and progress reporting
+2. Consider data relationships and context requirements
+3. Design for efficient retrieval patterns
+4. Add CLI command in `cli.ts`
+5. Add MCP tool in `index.ts`
+6. Maintain consistent error handling and progress reporting
