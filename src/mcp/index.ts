@@ -47,7 +47,11 @@ export async function startServer() {
           .optional()
           .default(100)
           .describe("Maximum number of pages to scrape"),
-        maxDepth: z.number().optional().default(3).describe("Maximum navigation depth"),
+        maxDepth: z
+          .number()
+          .optional()
+          .default(3)
+          .describe("Maximum navigation depth"),
         subpagesOnly: z
           .boolean()
           .optional()
@@ -67,16 +71,16 @@ export async function startServer() {
           });
 
           return createResponse(
-            `Successfully scraped ${result.pagesScraped} pages from ${url} for ${library} v${version}.`,
+            `Successfully scraped ${result.pagesScraped} pages from ${url} for ${library} v${version}.`
           );
         } catch (error) {
           return createError(
             `Failed to scrape documentation: ${
               error instanceof Error ? error.message : String(error)
-            }`,
+            }`
           );
         }
-      },
+      }
     );
 
     // Search docs tool
@@ -92,10 +96,14 @@ export async function startServer() {
         version: z
           .string()
           .describe(
-            "Version of the library (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')",
+            "Version of the library (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')"
           ),
         query: z.string().describe("Search query"),
-        limit: z.number().optional().default(5).describe("Maximum number of results"),
+        limit: z
+          .number()
+          .optional()
+          .default(5)
+          .describe("Maximum number of results"),
         exactMatch: z
           .boolean()
           .optional()
@@ -112,15 +120,17 @@ export async function startServer() {
             exactMatch,
           });
 
+          const formattedResults = result.results.map(
+            (r, i) => `
+------------------------------------------------------------
+Result ${i + 1}: ${r.metadata.url}
+
+${r.content}\n`
+          );
+
           return createResponse(
-            `Search results for '${query}' in ${library} v${version}:\n\n${result.results
-              .map(
-                (r, i) => `Result ${i + 1}:
-- URL: ${r.metadata.url}
-- Title: ${r.metadata.title}
-- Snippet: ${r.content}\n`,
-              )
-              .join("")}`,
+            `Search results for '${query}' in ${library} v${version}:
+${formattedResults.join("")}`
           );
         } catch (error) {
           if (error instanceof VersionNotFoundError) {
@@ -130,34 +140,39 @@ export async function startServer() {
             return createError(
               indexedVersions.length > 0
                 ? `Version not found. Available indexed versions for ${library}: ${indexedVersions.join(", ")}`
-                : `Version not found. No indexed versions available for ${library}.`,
+                : `Version not found. No indexed versions available for ${library}.`
             );
           }
           return createError(
             `Failed to search documentation: ${
               error instanceof Error ? error.message : String(error)
-            }`,
+            }`
           );
         }
-      },
+      }
     );
 
     // List libraries tool
-    server.tool("list_libraries", "List all indexed libraries", {}, async () => {
-      try {
-        const result = await tools.listLibraries.execute();
+    server.tool(
+      "list_libraries",
+      "List all indexed libraries",
+      {},
+      async () => {
+        try {
+          const result = await tools.listLibraries.execute();
 
-        return createResponse(
-          `Indexed libraries:\n${result.libraries.map((lib) => `- ${lib.name}`).join("\n")}`,
-        );
-      } catch (error) {
-        return createError(
-          `Failed to list libraries: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+          return createResponse(
+            `Indexed libraries:\n${result.libraries.map((lib) => `- ${lib.name}`).join("\n")}`
+          );
+        } catch (error) {
+          return createError(
+            `Failed to list libraries: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
       }
-    });
+    );
 
     // Find version tool
     server.tool(
@@ -169,7 +184,7 @@ export async function startServer() {
           .string()
           .optional()
           .describe(
-            "Target version to match (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')",
+            "Target version to match (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')"
           ),
       },
       async ({ library, targetVersion }) => {
@@ -188,10 +203,10 @@ export async function startServer() {
           return createError(
             `Failed to find version: ${
               error instanceof Error ? error.message : String(error)
-            }`,
+            }`
           );
         }
-      },
+      }
     );
 
     // Start server
@@ -207,7 +222,10 @@ export async function startServer() {
     });
   } catch (error) {
     await storeService.shutdown();
-    console.error("Error:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "Error:",
+      error instanceof Error ? error.message : String(error)
+    );
     process.exit(1);
   }
 }

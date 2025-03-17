@@ -4,7 +4,7 @@ import { type ContentChunk, SemanticMarkdownSplitter } from "../splitter";
 import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
-import { ConnectionError } from "./errors";
+import { ConnectionError, StoreError } from "./errors";
 import type { LibraryVersion, StoreSearchResult } from "./types";
 
 /**
@@ -16,7 +16,9 @@ export class VectorStoreService {
   constructor() {
     const connectionString = process.env.POSTGRES_CONNECTION || "";
     if (!connectionString) {
-      throw new ConnectionError("POSTGRES_CONNECTION environment variable is required");
+      throw new ConnectionError(
+        "POSTGRES_CONNECTION environment variable is required"
+      );
     }
     this.store = new DocumentStore(connectionString);
   }
@@ -60,16 +62,25 @@ export class VectorStoreService {
    * For documentation, we prefer matching older versions over no match at all,
    * since older docs are often still relevant and useful.
    */
-  async findBestVersion(library: string, targetVersion?: string): Promise<string> {
+  async findBestVersion(
+    library: string,
+    targetVersion?: string
+  ): Promise<string> {
     logger.info(
-      `🔍 Finding best version for ${library}${targetVersion ? `@${targetVersion}` : ""}`,
+      `🔍 Finding best version for ${library}${targetVersion ? `@${targetVersion}` : ""}`
     );
 
-    const validVersions = (await this.listVersions(library)).filter((v) => v.indexed);
+    const validVersions = (await this.listVersions(library)).filter(
+      (v) => v.indexed
+    );
 
     if (validVersions.length === 0) {
       logger.warn(`⚠️ No valid versions found for ${library}`);
-      throw new VersionNotFoundError(library, targetVersion ?? "", validVersions);
+      throw new VersionNotFoundError(
+        library,
+        targetVersion ?? "",
+        validVersions
+      );
     }
 
     if (targetVersion) {
@@ -85,7 +96,11 @@ export class VectorStoreService {
     if (!targetVersion) {
       const result = semver.maxSatisfying(versionStrings, "*");
       if (!result) {
-        throw new VersionNotFoundError(library, targetVersion ?? "", validVersions);
+        throw new VersionNotFoundError(
+          library,
+          targetVersion ?? "",
+          validVersions
+        );
       }
       return result;
     }
@@ -102,7 +117,9 @@ export class VectorStoreService {
     if (result) {
       logger.info(`✅ Found version ${result} for ${library}@${targetVersion}`);
     } else {
-      logger.warn(`⚠️ No matching version found for ${library}@${targetVersion}`);
+      logger.warn(
+        `⚠️ No matching version found for ${library}@${targetVersion}`
+      );
     }
 
     if (!result) {
@@ -128,7 +145,16 @@ export class VectorStoreService {
    * Uses SemanticMarkdownSplitter to maintain markdown structure and content types during splitting.
    * Preserves hierarchical structure of documents and distinguishes between text and code segments.
    */
-  async addDocument(library: string, version: string, document: Document): Promise<void> {
+  async addDocument(
+    library: string,
+    version: string,
+    document: Document
+  ): Promise<void> {
+    const url = document.metadata.url as string;
+    if (!url || typeof url !== "string" || !url.trim()) {
+      throw new StoreError("Document metadata must include a valid URL");
+    }
+
     logger.info(`📚 Adding document: ${document.metadata.title}`);
 
     const splitter = new SemanticMarkdownSplitter({
@@ -166,7 +192,7 @@ export class VectorStoreService {
     library: string,
     version: string,
     query: string,
-    limit = 5,
+    limit = 5
   ): Promise<StoreSearchResult[]> {
     const results = await this.store.search(library, version, query, limit);
 
