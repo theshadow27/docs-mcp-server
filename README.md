@@ -66,24 +66,32 @@ docker compose up -d
   - Username: mcp_user
   - Password: (use POSTGRES_PASSWORD from .env)
 
-For development with auto-rebuild:
+5. Access MCP server:
 
-```bash
-npm run watch
-```
+The MCP server provides two endpoints:
+
+- SSE endpoint: http://localhost:8000/sse
+- POST messages: http://localhost:8000/message
 
 ## Installation
 
 To use with Claude Desktop, add the server config:
 
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+- On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "docs-mcp-server": {
-      "command": "/path/to/docs-mcp-server/build/index.js"
+      "command": "node",
+      "args": ["/path/to/docs-mcp-server/dist/server.js"],
+      "env": {
+        "OPENAI_API_KEY": "sk-proj-...",
+        "POSTGRES_CONNECTION": "postgresql://mcp_user:docs_mcp@localhost:5432/docs_mcp"
+      },
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }
