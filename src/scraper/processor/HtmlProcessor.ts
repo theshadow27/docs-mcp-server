@@ -1,0 +1,205 @@
+import createDOMPurify, { type WindowLike } from "dompurify";
+import { Window, type HTMLElement } from "happy-dom";
+import TurndownService from "turndown";
+import { ScraperError } from "../../utils/errors";
+import type { ContentProcessor, ProcessedContent } from "./types";
+import type { RawContent } from "../fetcher/types";
+
+export interface HtmlProcessOptions {
+  /** CSS selectors to include in processing */
+  includeSelectors?: string[];
+  /** CSS selectors to exclude from processing */
+  excludeSelectors?: string[];
+  /** Whether to extract links from content */
+  extractLinks?: boolean;
+  /** Whether to sanitize HTML content */
+  sanitize?: boolean;
+}
+
+/**
+ * Processes HTML content, sanitizes it, and converts it to markdown.
+ */
+export class HtmlProcessor implements ContentProcessor {
+  private turndownService: TurndownService;
+  private options: HtmlProcessOptions;
+
+  constructor(options?: HtmlProcessOptions) {
+    this.turndownService = new TurndownService({
+      headingStyle: "atx",
+      hr: "---",
+      bulletListMarker: "-",
+      codeBlockStyle: "fenced",
+      emDelimiter: "_",
+      strongDelimiter: "**",
+      linkStyle: "referenced",
+      linkReferenceStyle: "full",
+    });
+
+    // Preserve code blocks and syntax
+    this.turndownService.addRule("pre", {
+      filter: ["pre"],
+      replacement: (content, node) => {
+        const element = node as unknown as HTMLElement;
+        // First look for an ancestor with both 'highlight' and 'highlight-source-*' classes
+        const highlightElement = element.closest(
+          '.highlight[class*="highlight-source-"]'
+        );
+
+        const language =
+          highlightElement?.className.match(/highlight-source-(\w+)/)?.[1] ||
+          element.getAttribute("class")?.replace("language-", "") ||
+          "";
+
+        return `\n\`\`\`${language}\n${content}\n\`\`\`\n`;
+      },
+    });
+
+    // Better table handling
+    this.turndownService.addRule("table", {
+      filter: ["table"],
+      replacement: (content) => {
+        const cleanedContent = content.replace(/\n+/g, "\n");
+        return `\n\n${cleanedContent}\n\n`;
+      },
+    });
+    this.options = options || {};
+  }
+
+  canProcess(content: RawContent): boolean {
+    return content.mimeType.startsWith("text/html");
+  }
+
+  async process(content: RawContent): Promise<ProcessedContent> {
+    if (!this.canProcess(content)) {
+      throw new ScraperError(
+        `HtmlProcessor cannot process content of type ${content.mimeType}`,
+        false
+      );
+    }
+
+    const htmlContent =
+      typeof content.content === "string"
+        ? content.content
+        : content.content.toString(
+            (content.encoding as BufferEncoding) || "utf-8"
+          );
+
+    // Find title
+    const titleMatch = htmlContent.match(/<title>([^<]+)<\/title>/i);
+    const title = titleMatch?.[1] || "Untitled";
+
+    // Sanitize HTML content
+    const window = new Window();
+    const purify = createDOMPurify(window as unknown as WindowLike);
+    const purifiedContent = purify.sanitize(htmlContent, {
+      WHOLE_DOCUMENT: true,
+      RETURN_DOM: true,
+    }) as unknown as HTMLElement;
+
+    const selectorsToRemove = [
+      ...(this.options.excludeSelectors || []),
+      "nav",
+      "footer",
+      "script",
+      "style",
+      "noscript",
+      "svg",
+      "link",
+      "meta",
+      "iframe",
+      "header",
+      "button",
+      "input",
+      "textarea",
+      "select",
+      "form",
+      ".ads",
+      ".advertisement",
+      ".banner",
+      ".cookie-banner",
+      ".cookie-consent",
+      ".hidden",
+      ".hide",
+      ".modal",
+      ".nav-bar",
+      ".overlay",
+      ".popup",
+      ".promo",
+      ".mw-editsection",
+      ".side-bar",
+      ".social-share",
+      ".sticky",
+      "#ads",
+      "#banner",
+      "#cookieBanner",
+      "#modal",
+      "#nav",
+      "#overlay",
+      "#popup",
+      "#sidebar",
+      "#socialMediaBox",
+      "#stickyHeader",
+      "#ad-container",
+      ".ad-container",
+      ".login-form",
+      ".signup-form",
+      ".tooltip",
+      ".dropdown-menu",
+      ".alert",
+      ".breadcrumb",
+      ".pagination",
+      '[role="alert"]',
+      '[role="banner"]',
+      '[role="dialog"]',
+      '[role="alertdialog"]',
+      '[role="region"][aria-label*="skip" i]',
+      '[aria-modal="true"]',
+      ".noprint",
+      "figure",
+      "sup",
+    ];
+
+    // Remove unwanted elements using selectorsToRemove
+    if (purifiedContent instanceof window.HTMLElement) {
+      for (const selector of selectorsToRemove) {
+        const elements = purifiedContent.querySelectorAll(selector);
+        for (const el of elements) {
+          el.remove();
+        }
+      }
+    }
+
+    // Convert back to string
+    const cleanedContent = purifiedContent.innerHTML;
+
+    // Extract links if requested
+    let links: string[] = [];
+    if (this.options.extractLinks !== false) {
+      const linkElements = purifiedContent.querySelectorAll("a[href]");
+      links = Array.from(linkElements)
+        .map((el) => el.getAttribute("href"))
+        .filter((href): href is string => href !== null)
+        .map((href) => {
+          try {
+            return new URL(href, content.source).href;
+          } catch {
+            return null; // Invalid URL
+          }
+        })
+        .filter((url): url is string => url !== null);
+    }
+
+    const markdown = this.turndownService.turndown(cleanedContent || "").trim();
+    if (!markdown) {
+      throw new ScraperError("No valid content found", false);
+    }
+
+    return {
+      content: markdown,
+      title,
+      source: content.source,
+      links,
+      metadata: {},
+    };
+  }
+}

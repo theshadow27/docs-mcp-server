@@ -1,21 +1,21 @@
 import type { ProgressCallback } from "../../types";
-import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
-import { DefaultScraperStrategy } from "./DefaultScraperStrategy";
+import type {
+  ScraperOptions,
+  ScraperProgress,
+  ScraperStrategy,
+} from "../types";
+import { WebScraperStrategy } from "./WebScraperStrategy";
 
 export class PyPiScraperStrategy implements ScraperStrategy {
-  private defaultStrategy: DefaultScraperStrategy;
+  private defaultStrategy: WebScraperStrategy;
 
-  static canHandle(url: string): boolean {
+  canHandle(url: string): boolean {
     const { hostname } = new URL(url);
     return ["pypi.org", "www.pypi.org"].includes(hostname);
   }
 
-  static create(): PyPiScraperStrategy {
-    return new PyPiScraperStrategy();
-  }
-
   constructor() {
-    this.defaultStrategy = new DefaultScraperStrategy({
+    this.defaultStrategy = new WebScraperStrategy({
       urlNormalizerOptions: {
         ignoreCase: true,
         removeHash: true,
@@ -27,7 +27,7 @@ export class PyPiScraperStrategy implements ScraperStrategy {
 
   async scrape(
     options: ScraperOptions,
-    progressCallback?: ProgressCallback<ScraperProgress>,
+    progressCallback: ProgressCallback<ScraperProgress>
   ): Promise<void> {
     // Use default strategy with our configuration
     await this.defaultStrategy.scrape(options, progressCallback);

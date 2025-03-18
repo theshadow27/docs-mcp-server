@@ -5,9 +5,10 @@ import type { ProgressCallback } from "../types";
  * Strategy interface for implementing different scraping behaviors
  */
 export interface ScraperStrategy {
+  canHandle(url: string): boolean;
   scrape(
     options: ScraperOptions,
-    progressCallback?: ProgressCallback<ScraperProgress>,
+    progressCallback: ProgressCallback<ScraperProgress>
   ): Promise<void>;
 }
 

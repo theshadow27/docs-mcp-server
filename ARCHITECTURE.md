@@ -17,17 +17,51 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 
 ```
 src/
-├── cli.ts                 # CLI interface implementation
-├── index.ts               # MCP server interface
-├── pipeline/              # Document processing pipeline
-├── scraper/               # Web scraping implementation
-│   └── strategies/        # Scraping strategies for different sources
-├── splitter/              # Document splitting and chunking
-├── store/                 # Vector store and document storage
-├── tools/                 # Core functionality tools
-├── types/                 # Shared type definitions
-└── utils/                 # Common utilities and helpers
+├── cli.ts                           # CLI interface implementation
+├── index.ts                         # MCP server interface
+├── pipeline/                        # Document processing pipeline
+├── scraper/                         # Web scraping implementation
+│   ├── strategies/                  # Scraping strategies for different sources
+│   │   ├── WebScraperStrategy.ts    # Handles HTTP/HTTPS content
+│   │   └── LocalFileStrategy.ts     # Handles local filesystem content
+│   ├── fetcher/                     # Content fetching abstractions
+│   ├── processor/                   # Content processing abstractions
+│   └── types.ts                     # Shared scraper types
+├── splitter/                        # Document splitting and chunking
+├── store/                           # Vector store and document storage
+├── tools/                           # Core functionality tools
+├── types/                           # Shared type definitions
+└── utils/                           # Common utilities and helpers
 ```
+
+## Scraper Architecture
+
+The scraping system uses a strategy pattern combined with content abstractions to handle different documentation sources uniformly:
+
+### Content Sources
+
+- Web-based content (HTTP/HTTPS)
+- Local filesystem content (file://)
+- Package registry content (e.g., npm, PyPI)
+
+Each source type has a dedicated strategy that understands its specific protocol and structure, while sharing common processing logic.
+
+### Content Processing Flow
+
+```mermaid
+graph LR
+    S[Source URL] --> R[Registry]
+    R --> ST[Strategy Selection]
+    ST --> F[Fetch Content]
+    F --> P[Process Content]
+    P --> D[Document Creation]
+```
+
+The registry automatically selects the appropriate strategy based on the URL scheme, ensuring:
+
+- Consistent handling across different content sources
+- Unified document format for storage
+- Reusable content processing logic
 
 ## Tools Layer
 
@@ -138,3 +172,10 @@ When adding new functionality:
 4. Add CLI command in `cli.ts`
 5. Add MCP tool in `index.ts`
 6. Maintain consistent error handling and progress reporting
+
+When adding new scraping capabilities:
+
+1. Implement a new strategy in `scraper/strategies/`
+2. Update the registry to handle the new source type
+3. Reuse existing content processing where possible
+4. Consider bulk operations and progress reporting

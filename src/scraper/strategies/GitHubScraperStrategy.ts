@@ -1,17 +1,17 @@
 import type { ProgressCallback } from "../../types";
-import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
-import { DefaultScraperStrategy } from "./DefaultScraperStrategy";
+import type {
+  ScraperOptions,
+  ScraperProgress,
+  ScraperStrategy,
+} from "../types";
+import { WebScraperStrategy } from "./WebScraperStrategy";
 
 export class GitHubScraperStrategy implements ScraperStrategy {
-  private defaultStrategy: DefaultScraperStrategy;
+  private defaultStrategy: WebScraperStrategy;
 
-  static canHandle(url: string): boolean {
+  canHandle(url: string): boolean {
     const { hostname } = new URL(url);
     return ["github.com", "www.github.com"].includes(hostname);
-  }
-
-  static create(): GitHubScraperStrategy {
-    return new GitHubScraperStrategy();
   }
 
   constructor() {
@@ -44,7 +44,7 @@ export class GitHubScraperStrategy implements ScraperStrategy {
       return false;
     };
 
-    this.defaultStrategy = new DefaultScraperStrategy({
+    this.defaultStrategy = new WebScraperStrategy({
       urlNormalizerOptions: {
         ignoreCase: true,
         removeHash: true,
@@ -63,7 +63,7 @@ export class GitHubScraperStrategy implements ScraperStrategy {
 
   async scrape(
     options: ScraperOptions,
-    progressCallback?: ProgressCallback<ScraperProgress>,
+    progressCallback: ProgressCallback<ScraperProgress>
   ): Promise<void> {
     // Validate it's a GitHub URL
     const url = new URL(options.url);
