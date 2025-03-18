@@ -45,10 +45,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     item: QueueItem,
     options: ScraperOptions
   ): Promise<{ document?: Document; links?: string[] }> {
-    const { value: url, depth } = item;
-    logger.info(
-      `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${depth}/${options.maxDepth}): ${url}`
-    );
+    const { value: url } = item;
 
     try {
       const rawContent = await this.httpFetcher.fetch(url);

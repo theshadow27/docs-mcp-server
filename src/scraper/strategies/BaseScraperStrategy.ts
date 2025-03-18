@@ -67,45 +67,66 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
           return [];
         }
 
-        const result = await this.processItem(item, options);
+        try {
+          const result = await this.processItem(item, options);
 
-        if (result.document) {
-          this.pageCount++;
-          await progressCallback({
-            pagesScraped: this.pageCount,
-            maxPages: options.maxPages,
-            currentUrl: item.value,
-            depth: item.depth,
-            maxDepth: options.maxDepth,
-            document: result.document,
-          });
-        }
-
-        const nextItems = result.links || [];
-        return nextItems
-          .map((value) => {
+          if (result.document) {
+            this.pageCount++;
+            logger.info(
+              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.value}`
+            );
             try {
-              // For URLs, normalize and check if visited
-              const targetUrl = new URL(value, baseUrl);
-              const normalizedValue = normalizeUrl(
-                targetUrl.href,
-                this.options.urlNormalizerOptions
-              );
-
-              if (!this.visited.has(normalizedValue)) {
-                this.visited.add(normalizedValue);
-                return {
-                  value: targetUrl.href,
-                  depth: item.depth + 1,
-                };
-              }
+              await progressCallback({
+                pagesScraped: this.pageCount,
+                maxPages: options.maxPages,
+                currentUrl: item.value,
+                depth: item.depth,
+                maxDepth: options.maxDepth,
+                document: result.document,
+              });
             } catch (error) {
-              // Invalid URL or path
-              logger.warn(`Invalid URL: ${value}`);
+              if (options.ignoreErrors) {
+                logger.error(
+                  `Error in progress callback for ${item.value}: ${error}`
+                );
+              } else {
+                throw error;
+              }
             }
-            return null;
-          })
-          .filter((item): item is QueueItem => item !== null);
+          }
+
+          const nextItems = result.links || [];
+          return nextItems
+            .map((value) => {
+              try {
+                // For URLs, normalize and check if visited
+                const targetUrl = new URL(value, baseUrl);
+                const normalizedValue = normalizeUrl(
+                  targetUrl.href,
+                  this.options.urlNormalizerOptions
+                );
+
+                if (!this.visited.has(normalizedValue)) {
+                  this.visited.add(normalizedValue);
+                  return {
+                    value: targetUrl.href,
+                    depth: item.depth + 1,
+                  };
+                }
+              } catch (error) {
+                // Invalid URL or path
+                logger.warn(`Invalid URL: ${value}`);
+              }
+              return null;
+            })
+            .filter((item): item is QueueItem => item !== null);
+        } catch (error) {
+          if (options.ignoreErrors) {
+            logger.error(`Failed to process ${item.value}: ${error}`);
+            return [];
+          }
+          throw error;
+        }
       })
     );
     return results.flat();

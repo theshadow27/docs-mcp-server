@@ -22,6 +22,67 @@ export interface HtmlProcessOptions {
 export class HtmlProcessor implements ContentProcessor {
   private turndownService: TurndownService;
   private options: HtmlProcessOptions;
+  private selectorsToRemove = [
+    "nav",
+    "footer",
+    "script",
+    "style",
+    "noscript",
+    "svg",
+    "link",
+    "meta",
+    "iframe",
+    "header",
+    "button",
+    "input",
+    "textarea",
+    "select",
+    "form",
+    ".ads",
+    ".advertisement",
+    ".banner",
+    ".cookie-banner",
+    ".cookie-consent",
+    ".hidden",
+    ".hide",
+    ".modal",
+    ".nav-bar",
+    ".overlay",
+    ".popup",
+    ".promo",
+    ".mw-editsection",
+    ".side-bar",
+    ".social-share",
+    ".sticky",
+    "#ads",
+    "#banner",
+    "#cookieBanner",
+    "#modal",
+    "#nav",
+    "#overlay",
+    "#popup",
+    "#sidebar",
+    "#socialMediaBox",
+    "#stickyHeader",
+    "#ad-container",
+    ".ad-container",
+    ".login-form",
+    ".signup-form",
+    ".tooltip",
+    ".dropdown-menu",
+    ".alert",
+    ".breadcrumb",
+    ".pagination",
+    '[role="alert"]',
+    '[role="banner"]',
+    '[role="dialog"]',
+    '[role="alertdialog"]',
+    '[role="region"][aria-label*="skip" i]',
+    '[aria-modal="true"]',
+    ".noprint",
+    "figure",
+    "sup",
+  ];
 
   constructor(options?: HtmlProcessOptions) {
     this.turndownService = new TurndownService({
@@ -40,15 +101,23 @@ export class HtmlProcessor implements ContentProcessor {
       filter: ["pre"],
       replacement: (content, node) => {
         const element = node as unknown as HTMLElement;
-        // First look for an ancestor with both 'highlight' and 'highlight-source-*' classes
-        const highlightElement = element.closest(
-          '.highlight[class*="highlight-source-"]'
-        );
+        let language = element.getAttribute("data-language") || "";
+        if (!language) {
+          // Find the closest ancestor with a highlight or language class
+          const highlightElement = element.closest(
+            '[class*="highlight-source-"], [class*="highlight-"], [class*="language-"]'
+          );
 
-        const language =
-          highlightElement?.className.match(/highlight-source-(\w+)/)?.[1] ||
-          element.getAttribute("class")?.replace("language-", "") ||
-          "";
+          if (highlightElement) {
+            const className = highlightElement.className;
+            const match = className.match(
+              /(?:highlight-source-|highlight-|language-)(\w+)/
+            );
+            if (match) {
+              language = match[1];
+            }
+          }
+        }
 
         return `\n\`\`\`${language}\n${content}\n\`\`\`\n`;
       },
@@ -96,67 +165,13 @@ export class HtmlProcessor implements ContentProcessor {
       RETURN_DOM: true,
     }) as unknown as HTMLElement;
 
+    // Note that we extract links before removing elements, so
+    // we don't miss links in the navigation or footer
+    const linkElements = purifiedContent.querySelectorAll("a[href]");
+
     const selectorsToRemove = [
       ...(this.options.excludeSelectors || []),
-      "nav",
-      "footer",
-      "script",
-      "style",
-      "noscript",
-      "svg",
-      "link",
-      "meta",
-      "iframe",
-      "header",
-      "button",
-      "input",
-      "textarea",
-      "select",
-      "form",
-      ".ads",
-      ".advertisement",
-      ".banner",
-      ".cookie-banner",
-      ".cookie-consent",
-      ".hidden",
-      ".hide",
-      ".modal",
-      ".nav-bar",
-      ".overlay",
-      ".popup",
-      ".promo",
-      ".mw-editsection",
-      ".side-bar",
-      ".social-share",
-      ".sticky",
-      "#ads",
-      "#banner",
-      "#cookieBanner",
-      "#modal",
-      "#nav",
-      "#overlay",
-      "#popup",
-      "#sidebar",
-      "#socialMediaBox",
-      "#stickyHeader",
-      "#ad-container",
-      ".ad-container",
-      ".login-form",
-      ".signup-form",
-      ".tooltip",
-      ".dropdown-menu",
-      ".alert",
-      ".breadcrumb",
-      ".pagination",
-      '[role="alert"]',
-      '[role="banner"]',
-      '[role="dialog"]',
-      '[role="alertdialog"]',
-      '[role="region"][aria-label*="skip" i]',
-      '[aria-modal="true"]',
-      ".noprint",
-      "figure",
-      "sup",
+      ...this.selectorsToRemove,
     ];
 
     // Remove unwanted elements using selectorsToRemove
@@ -172,10 +187,9 @@ export class HtmlProcessor implements ContentProcessor {
     // Convert back to string
     const cleanedContent = purifiedContent.innerHTML;
 
-    // Extract links if requested
+    // Filter extracted links if requested
     let links: string[] = [];
     if (this.options.extractLinks !== false) {
-      const linkElements = purifiedContent.querySelectorAll("a[href]");
       links = Array.from(linkElements)
         .map((el) => el.getAttribute("href"))
         .filter((href): href is string => href !== null)

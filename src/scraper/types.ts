@@ -23,6 +23,7 @@ export interface ScraperOptions {
   maxDepth: number;
   subpagesOnly?: boolean;
   maxConcurrency?: number;
+  ignoreErrors?: boolean;
 }
 
 /**

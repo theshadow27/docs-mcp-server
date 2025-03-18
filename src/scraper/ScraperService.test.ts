@@ -27,12 +27,13 @@ describe("ScraperService", () => {
       maxPages: 10,
       maxDepth: 1,
     };
+    const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
-    await service.scrape(options);
+    await service.scrape(options, progressCallback);
 
     expect(mockRegistry.getStrategy).toHaveBeenCalledWith(options.url);
-    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, undefined);
+    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, progressCallback);
   });
 
   it("should pass progress callback to strategy", async () => {
@@ -65,12 +66,13 @@ describe("ScraperService", () => {
       maxPages: 10,
       maxDepth: 1,
     };
+    const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
-    await service.scrape(options);
+    await service.scrape(options, progressCallback);
 
     expect(mockRegistry.getStrategy).toHaveBeenCalledWith(options.url);
-    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, undefined);
+    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, progressCallback);
   });
 
   it("should throw error if no strategy found", async () => {
@@ -84,11 +86,14 @@ describe("ScraperService", () => {
       maxPages: 10,
       maxDepth: 1,
     };
+    const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(null);
 
-    await expect(service.scrape(options)).rejects.toThrow(ScraperError);
-    await expect(service.scrape(options)).rejects.toThrow(
+    await expect(service.scrape(options, progressCallback)).rejects.toThrow(
+      ScraperError
+    );
+    await expect(service.scrape(options, progressCallback)).rejects.toThrow(
       "No scraper strategy found for URL: unknown://example.com"
     );
   });
@@ -104,10 +109,13 @@ describe("ScraperService", () => {
       maxPages: 10,
       maxDepth: 1,
     };
+    const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
     mockStrategy.scrape.mockRejectedValue(new Error("Strategy error"));
 
-    await expect(service.scrape(options)).rejects.toThrow("Strategy error");
+    await expect(service.scrape(options, progressCallback)).rejects.toThrow(
+      "Strategy error"
+    );
   });
 });

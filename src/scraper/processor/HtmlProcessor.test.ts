@@ -83,4 +83,103 @@ describe("HtmlProcessor", () => {
     const result = await processor.process(rawContent);
     expect(result.links).toEqual([]);
   });
+
+  it("should extract links from nav sidebar before removing tags", async () => {
+    const processor = new HtmlProcessor();
+    const rawContent: RawContent = {
+      content:
+        '<html><head><title>Test</title></head><body><nav><ul><li><a href="/home">Home</a></li><li><a href="/about">About</a></li></ul></nav><p>Other content</p></body></html>',
+      mimeType: "text/html",
+      source: "https://example.com",
+    };
+    const result = await processor.process(rawContent);
+    expect(result.links).toEqual([
+      "https://example.com/home",
+      "https://example.com/about",
+    ]);
+  });
+
+  it("should remove unwanted tags and keep text from allowed tags", async () => {
+    const processor = new HtmlProcessor();
+    const rawContent: RawContent = {
+      content:
+        "<html><head><title>Test</title></head><body><nav><ul><li><a href=\"/home\">Home</a></li></ul></nav><p>This text should remain.</p><script>alert('This should be removed');</script></body></html>",
+      mimeType: "text/html",
+      source: "https://example.com",
+    };
+    const result = await processor.process(rawContent);
+    expect(result.content).toContain("This text should remain.");
+    expect(result.content).not.toContain("Home");
+    expect(result.content).not.toContain("This should be removed");
+  });
+
+  describe("Code block language detection", () => {
+    const processor = new HtmlProcessor();
+
+    it("should detect language from highlight-source-<language> on a parent", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><div class="highlight-source-python"><pre><code>print("Hello")</code></pre></div></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```python");
+    });
+
+    it("should detect language from highlight-<language> on a parent", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><div class="highlight-javascript"><pre><code>console.log("Hello")</code></pre></div></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```javascript");
+    });
+
+    it("should detect language from language-<language> on a parent", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><div class="language-typescript"><pre><code>console.log("Hello")</code></pre></div></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```typescript");
+    });
+
+    it("should detect language from language-<language> on the pre tag itself", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><pre class="language-java"><code>System.out.println("Hello")</code></pre></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```java");
+    });
+
+    it("should default to empty language if no language class is present", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><pre><code>print("Hello")</code></pre></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```\n");
+    });
+
+    it("should prioritize data-language attribute", async () => {
+      const rawContent: RawContent = {
+        content:
+          '<html><head><title>Test</title></head><body><div class="highlight-source-python"><pre data-language="typescript"><code>print("Hello")</code></pre></div></body></html>',
+        mimeType: "text/html",
+        source: "https://example.com",
+      };
+      const result = await processor.process(rawContent);
+      expect(result.content).toContain("```typescript");
+    });
+  });
 });
