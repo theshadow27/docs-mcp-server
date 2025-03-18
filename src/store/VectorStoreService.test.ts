@@ -294,6 +294,25 @@ describe("VectorStoreService", () => {
       const error = await promise.catch((e) => e);
       expect(error.availableVersions).toEqual([]);
     });
+
+    it("should handle 'latest' the same as no version specified", async () => {
+      const library = "test-lib";
+      mockStore.queryUniqueVersions.mockResolvedValue([
+        "1.0.0",
+        "2.0.0",
+        "3.0.0",
+      ]);
+
+      const latestVersion = await storeService.findBestVersion(
+        library,
+        "latest"
+      );
+      const defaultVersion = await storeService.findBestVersion(library);
+
+      expect(latestVersion).toBe("3.0.0");
+      expect(defaultVersion).toBe("3.0.0");
+      expect(mockStore.queryUniqueVersions).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("listLibraries", () => {

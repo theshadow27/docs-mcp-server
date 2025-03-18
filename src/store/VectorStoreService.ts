@@ -57,7 +57,7 @@ export class VectorStoreService {
    * Version matching behavior:
    * - Exact versions (e.g., "18.0.0"): Matches that version or any earlier version
    * - X-Range patterns (e.g., "5.x", "5.2.x"): Matches within the specified range
-   * - No version: Returns the latest available version
+   * - "latest" or no version: Returns the latest available version
    *
    * For documentation, we prefer matching older versions over no match at all,
    * since older docs are often still relevant and useful.
@@ -83,17 +83,9 @@ export class VectorStoreService {
       );
     }
 
-    if (targetVersion) {
-      const versionRegex = /^(\d+)(?:\.(?:x(?:\.x)?|\d+(?:\.(?:x|\d+))?))?$|^$/;
-      if (!versionRegex.test(targetVersion)) {
-        logger.warn(`⚠️ Invalid version format: ${targetVersion}`);
-        throw new VersionNotFoundError(library, targetVersion, validVersions);
-      }
-    }
-
     const versionStrings = validVersions.map((v) => v.version);
 
-    if (!targetVersion) {
+    if (!targetVersion || targetVersion === "latest") {
       const result = semver.maxSatisfying(versionStrings, "*");
       if (!result) {
         throw new VersionNotFoundError(
@@ -103,6 +95,12 @@ export class VectorStoreService {
         );
       }
       return result;
+    }
+
+    const versionRegex = /^(\d+)(?:\.(?:x(?:\.x)?|\d+(?:\.(?:x|\d+))?))?$|^$/;
+    if (!versionRegex.test(targetVersion)) {
+      logger.warn(`⚠️ Invalid version format: ${targetVersion}`);
+      throw new VersionNotFoundError(library, targetVersion, validVersions);
     }
 
     let range = targetVersion;
