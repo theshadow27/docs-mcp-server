@@ -1,9 +1,9 @@
 import createDOMPurify, { type WindowLike } from "dompurify";
-import { Window, type HTMLElement } from "happy-dom";
+import { type HTMLElement, Window } from "happy-dom";
 import TurndownService from "turndown";
 import { ScraperError } from "../../utils/errors";
-import type { ContentProcessor, ProcessedContent } from "./types";
 import type { RawContent } from "../fetcher/types";
+import type { ContentProcessor, ProcessedContent } from "./types";
 
 export interface HtmlProcessOptions {
   /** CSS selectors to include in processing */
@@ -105,13 +105,13 @@ export class HtmlProcessor implements ContentProcessor {
         if (!language) {
           // Find the closest ancestor with a highlight or language class
           const highlightElement = element.closest(
-            '[class*="highlight-source-"], [class*="highlight-"], [class*="language-"]'
+            '[class*="highlight-source-"], [class*="highlight-"], [class*="language-"]',
           );
 
           if (highlightElement) {
             const className = highlightElement.className;
             const match = className.match(
-              /(?:highlight-source-|highlight-|language-)(\w+)/
+              /(?:highlight-source-|highlight-|language-)(\w+)/,
             );
             if (match) {
               language = match[1];
@@ -142,16 +142,14 @@ export class HtmlProcessor implements ContentProcessor {
     if (!this.canProcess(content)) {
       throw new ScraperError(
         `HtmlProcessor cannot process content of type ${content.mimeType}`,
-        false
+        false,
       );
     }
 
     const htmlContent =
       typeof content.content === "string"
         ? content.content
-        : content.content.toString(
-            (content.encoding as BufferEncoding) || "utf-8"
-          );
+        : content.content.toString((content.encoding as BufferEncoding) || "utf-8");
 
     // Find title
     const titleMatch = htmlContent.match(/<title>([^<]+)<\/title>/i);

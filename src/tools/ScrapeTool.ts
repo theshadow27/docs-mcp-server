@@ -33,13 +33,7 @@ export class ScrapeTool {
   }
 
   async execute(options: ScrapeToolOptions): Promise<ScrapeResult> {
-    const {
-      library,
-      version,
-      url,
-      onProgress,
-      options: scraperOptions,
-    } = options;
+    const { library, version, url, onProgress, options: scraperOptions } = options;
 
     // Initialize the store
     await this.storeService.initialize();
@@ -48,11 +42,7 @@ export class ScrapeTool {
     await this.storeService.removeAllDocuments(library, version);
     logger.info(`💾 Using clean store for ${library}@${version}`);
 
-    const pipeline = new DocumentProcessingPipeline(
-      this.storeService,
-      library,
-      version
-    );
+    const pipeline = new DocumentProcessingPipeline(this.storeService, library, version);
     let currentPage = 0;
 
     const reportProgress = (text: string) => {
@@ -68,13 +58,13 @@ export class ScrapeTool {
         if (progress.pagesScraped > currentPage) {
           currentPage = progress.pagesScraped;
           reportProgress(
-            `🌐 Indexed page ${currentPage}/${progress.maxPages}: ${progress.currentUrl}`
+            `🌐 Indexed page ${currentPage}/${progress.maxPages}: ${progress.currentUrl}`,
           );
         }
       },
       onError: async (error, doc) => {
         reportProgress(
-          `❌ Error processing ${doc?.metadata.title ?? "document"}: ${error.message}`
+          `❌ Error processing ${doc?.metadata.title ?? "document"}: ${error.message}`,
         );
       },
     });

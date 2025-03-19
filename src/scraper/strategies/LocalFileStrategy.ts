@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
-import type { ScraperOptions, ScraperProgress } from "../types";
 import { FileFetcher } from "../fetcher";
+import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
 
 export class LocalFileStrategy extends BaseScraperStrategy {
@@ -15,7 +15,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
 
   protected async processItem(
     item: QueueItem,
-    options: ScraperOptions
+    options: ScraperOptions,
   ): Promise<{ document?: Document; links?: string[] }> {
     const filePath = item.value.replace(/^file:\/\//, "");
     const stats = await fs.stat(filePath);
@@ -29,9 +29,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
     }
 
     // Process the file
-    logger.info(
-      `📄 Processing file ${this.pageCount}/${options.maxPages}: ${filePath}`
-    );
+    logger.info(`📄 Processing file ${this.pageCount}/${options.maxPages}: ${filePath}`);
 
     const rawContent = await this.fileFetcher.fetch(item.value);
     const processor = this.getProcessor(rawContent.mimeType);
@@ -52,7 +50,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
 
   async scrape(
     options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>
+    progressCallback: ProgressCallback<ScraperProgress>,
   ): Promise<void> {
     await super.scrape(options, progressCallback);
   }

@@ -1,6 +1,6 @@
-import type { ContentProcessor, ProcessedContent } from "./types";
-import type { RawContent } from "../fetcher/types";
 import { ScraperError } from "../../utils/errors";
+import type { RawContent } from "../fetcher/types";
+import type { ContentProcessor, ProcessedContent } from "./types";
 
 /**
  * Processes Markdown content, validates it. In the future, could
@@ -19,16 +19,14 @@ export class MarkdownProcessor implements ContentProcessor {
     if (!this.canProcess(content)) {
       throw new ScraperError(
         `MarkdownProcessor cannot process content of type ${content.mimeType}`,
-        false
+        false,
       );
     }
 
     const markdownContent =
       typeof content.content === "string"
         ? content.content
-        : content.content.toString(
-            (content.encoding as BufferEncoding) || "utf-8"
-          );
+        : content.content.toString((content.encoding as BufferEncoding) || "utf-8");
 
     // Basic Markdown validation (for now, just check if it's not empty)
     if (!markdownContent.trim()) {

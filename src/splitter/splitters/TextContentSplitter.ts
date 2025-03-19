@@ -26,13 +26,10 @@ export class TextContentSplitter implements ContentSplitter {
     // Check for unsplittable content (e.g., a single word longer than maxChunkSize)
     const words = trimmedContent.split(/\s+/);
     const longestWord = words.reduce((max, word) =>
-      word.length > max.length ? word : max
+      word.length > max.length ? word : max,
     );
     if (longestWord.length > this.options.maxChunkSize) {
-      throw new MinimumChunkSizeError(
-        longestWord.length,
-        this.options.maxChunkSize
-      );
+      throw new MinimumChunkSizeError(longestWord.length, this.options.maxChunkSize);
     }
 
     // First try splitting by paragraphs (double newlines)

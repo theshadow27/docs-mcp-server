@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ContentFetcher, FetchOptions, RawContent } from "./types";
 import { ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
+import type { ContentFetcher, FetchOptions, RawContent } from "./types";
 
 /**
  * Fetches content from local file system.
@@ -33,7 +33,7 @@ export class FileFetcher implements ContentFetcher {
           (error as { message?: string }).message ?? "Unknown error"
         }`,
         false,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }

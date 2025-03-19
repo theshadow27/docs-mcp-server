@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { HtmlProcessor } from "./HtmlProcessor";
-import type { RawContent } from "../fetcher/types";
+import { describe, expect, it } from "vitest";
 import { ScraperError } from "../../utils/errors";
+import type { RawContent } from "../fetcher/types";
+import { HtmlProcessor } from "./HtmlProcessor";
 
 describe("HtmlProcessor", () => {
   it("should process valid HTML content", async () => {

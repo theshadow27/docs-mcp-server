@@ -4,12 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
 import { VectorStoreService } from "./store/VectorStoreService";
-import {
-  FindVersionTool,
-  ListLibrariesTool,
-  ScrapeTool,
-  SearchTool,
-} from "./tools";
+import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
@@ -44,11 +39,7 @@ async function main() {
       .description("Scrape and index documentation from a URL")
       .option("-p, --max-pages <number>", "Maximum pages to scrape", "100")
       .option("-d, --max-depth <number>", "Maximum navigation depth", "3")
-      .option(
-        "-c, --max-concurrency <number>",
-        "Maximum concurrent page requests",
-        "3"
-      )
+      .option("-c, --max-concurrency <number>", "Maximum concurrent page requests", "3")
       .option("--ignore-errors", "Ignore errors during scraping", true)
       .action(async (library, version, url, options) => {
         const result = await tools.scrape.execute({
@@ -72,13 +63,13 @@ async function main() {
           "  - search react 18.0.0 'hooks' -> matches docs for React 18.0.0 or earlier versions\n" +
           "  - search react 18.0.0 'hooks' --exact-match -> only matches React 18.0.0\n" +
           "  - search typescript 5.x 'types' -> matches any TypeScript 5.x.x version\n" +
-          "  - search typescript 5.2.x 'types' -> matches any TypeScript 5.2.x version"
+          "  - search typescript 5.2.x 'types' -> matches any TypeScript 5.2.x version",
       )
       .option("-l, --limit <number>", "Maximum number of results", "5")
       .option(
         "-e, --exact-match",
         "Only use exact version match (e.g., '18.0.0' matches only 18.0.0, not 17.x.x) (default: false)",
-        false
+        false,
       )
       .action(async (library, version, query, options) => {
         const result = await tools.search.execute({
@@ -115,10 +106,7 @@ async function main() {
 
     await program.parseAsync();
   } catch (error) {
-    console.error(
-      "Error:",
-      error instanceof Error ? error.message : String(error)
-    );
+    console.error("Error:", error instanceof Error ? error.message : String(error));
     await storeService.shutdown();
     process.exit(1);
   }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HttpFetcher } from "../fetcher";
 import type { ScraperOptions } from "../types";
 import { WebScraperStrategy } from "./WebScraperStrategy";
-import { HttpFetcher } from "../fetcher";
 describe("WebScraperStrategy", () => {
   let options: ScraperOptions;
 
@@ -37,9 +37,7 @@ describe("WebScraperStrategy", () => {
 
     await strategy.scrape(options, progressCallback);
 
-    expect(HttpFetcher.prototype.fetch).toHaveBeenCalledWith(
-      "https://example.com"
-    );
+    expect(HttpFetcher.prototype.fetch).toHaveBeenCalledWith("https://example.com");
   });
 
   it("should respect the maxConcurrency option", async () => {
@@ -55,11 +53,7 @@ describe("WebScraperStrategy", () => {
 
     // Mock HttpFetcher.fetch with different delays
     vi.spyOn(HttpFetcher.prototype, "fetch").mockImplementation(async (url) => {
-      const delay = url.includes("page1")
-        ? 300
-        : url.includes("page2")
-          ? 200
-          : 100;
+      const delay = url.includes("page1") ? 300 : url.includes("page2") ? 200 : 100;
       await new Promise((resolve) => setTimeout(resolve, delay));
       return {
         content: `Mock content for ${url}`,

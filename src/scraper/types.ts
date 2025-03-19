@@ -8,7 +8,7 @@ export interface ScraperStrategy {
   canHandle(url: string): boolean;
   scrape(
     options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>
+    progressCallback: ProgressCallback<ScraperProgress>,
   ): Promise<void>;
 }
 

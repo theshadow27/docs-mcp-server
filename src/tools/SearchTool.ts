@@ -32,16 +32,10 @@ export class SearchTool {
   }
 
   async execute(options: SearchToolOptions): Promise<SearchToolResult> {
-    const {
-      library,
-      version = "latest",
-      query,
-      limit = 5,
-      exactMatch = false,
-    } = options;
+    const { library, version = "latest", query, limit = 5, exactMatch = false } = options;
 
     logger.info(
-      `🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`
+      `🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`,
     );
 
     try {
@@ -53,7 +47,7 @@ export class SearchTool {
         library,
         bestVersion,
         query,
-        limit
+        limit,
       );
       logger.info(`✅ Found ${results.length} matching results`);
 
@@ -71,7 +65,7 @@ export class SearchTool {
       }
 
       logger.error(
-        `❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        `❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
       throw error;
     }

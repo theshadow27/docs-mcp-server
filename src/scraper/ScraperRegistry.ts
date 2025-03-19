@@ -1,11 +1,11 @@
+import { ScraperError } from "../utils/errors";
 import { validateUrl } from "../utils/url";
-import { WebScraperStrategy } from "./strategies/WebScraperStrategy";
 import { GitHubScraperStrategy } from "./strategies/GitHubScraperStrategy";
 import { LocalFileStrategy } from "./strategies/LocalFileStrategy";
 import { NpmScraperStrategy } from "./strategies/NpmScraperStrategy";
 import { PyPiScraperStrategy } from "./strategies/PyPiScraperStrategy";
+import { WebScraperStrategy } from "./strategies/WebScraperStrategy";
 import type { ScraperStrategy } from "./types";
-import { ScraperError } from "../utils/errors";
 
 export class ScraperRegistry {
   private strategies: ScraperStrategy[];

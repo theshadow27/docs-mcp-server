@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { vol } from "memfs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScraperError } from "../../utils/errors";
 import { FileFetcher } from "./FileFetcher";
 
@@ -42,9 +42,7 @@ describe("FileFetcher", () => {
   it("should throw error if file does not exist", async () => {
     const fetcher = new FileFetcher();
 
-    await expect(fetcher.fetch("file:///path/to/file.txt")).rejects.toThrow(
-      ScraperError
-    );
+    await expect(fetcher.fetch("file:///path/to/file.txt")).rejects.toThrow(ScraperError);
   });
 
   it("should only handle file protocol", async () => {

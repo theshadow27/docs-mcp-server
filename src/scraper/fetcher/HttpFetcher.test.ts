@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import { HttpFetcher } from "./HttpFetcher";
 import axios from "axios";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ScraperError } from "../../utils/errors";
+import { HttpFetcher } from "./HttpFetcher";
 
 vi.mock("axios");
 const mockedAxios = vi.mocked(axios, true);
@@ -47,9 +47,7 @@ describe("HttpFetcher", () => {
     const fetcher = new HttpFetcher();
     mockedAxios.get.mockRejectedValue({ response: { status: 404 } });
 
-    await expect(fetcher.fetch("https://example.com")).rejects.toThrow(
-      ScraperError
-    );
+    await expect(fetcher.fetch("https://example.com")).rejects.toThrow(ScraperError);
     expect(mockedAxios.get).toHaveBeenCalledTimes(1);
   });
 
@@ -68,9 +66,7 @@ describe("HttpFetcher", () => {
     await vi.runAllTimersAsync();
 
     expect(mockedAxios.get).toHaveBeenCalledTimes(2);
-    expect((await fetchPromise).content).toBe(
-      "<html><body><h1>Hello</h1></body></html>"
-    );
+    expect((await fetchPromise).content).toBe("<html><body><h1>Hello</h1></body></html>");
   });
 
   it("should throw error after max retries", async () => {

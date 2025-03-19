@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from "axios";
-import type { ContentFetcher, FetchOptions, RawContent } from "./types";
 import { ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
+import type { ContentFetcher, FetchOptions, RawContent } from "./types";
 
 /**
  * Fetches content from remote sources using HTTP/HTTPS.
@@ -32,8 +32,7 @@ export class HttpFetcher implements ContentFetcher {
 
         return {
           content: response.data,
-          mimeType:
-            response.headers["content-type"] || "application/octet-stream",
+          mimeType: response.headers["content-type"] || "application/octet-stream",
           source: source,
           encoding: response.headers["content-encoding"],
         } satisfies RawContent;
@@ -50,7 +49,7 @@ export class HttpFetcher implements ContentFetcher {
           logger.warn(
             `Attempt ${attempt + 1}/${
               maxRetries + 1
-            } failed for ${source} (Status: ${status}, Code: ${code}). Retrying in ${delay}ms...`
+            } failed for ${source} (Status: ${status}, Code: ${code}). Retrying in ${delay}ms...`,
           );
           await this.delay(delay);
           continue;
@@ -62,13 +61,13 @@ export class HttpFetcher implements ContentFetcher {
             attempt + 1
           } attempts: ${axiosError.message ?? "Unknown error"}`,
           true,
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
         );
       }
     }
     throw new ScraperError(
       `Failed to fetch ${source} after ${maxRetries + 1} attempts`,
-      true
+      true,
     );
   }
 }

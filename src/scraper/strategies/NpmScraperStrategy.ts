@@ -1,9 +1,5 @@
 import type { ProgressCallback } from "../../types";
-import type {
-  ScraperOptions,
-  ScraperProgress,
-  ScraperStrategy,
-} from "../types";
+import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
 import { WebScraperStrategy } from "./WebScraperStrategy";
 
 export class NpmScraperStrategy implements ScraperStrategy {
@@ -27,7 +23,7 @@ export class NpmScraperStrategy implements ScraperStrategy {
 
   async scrape(
     options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>
+    progressCallback: ProgressCallback<ScraperProgress>,
   ): Promise<void> {
     // Use default strategy with our configuration
     await this.defaultStrategy.scrape(options, progressCallback);

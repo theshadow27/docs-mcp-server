@@ -1,19 +1,17 @@
-import { describe, it, expect } from "vitest";
-import { ScraperRegistry } from "./ScraperRegistry";
+import { describe, expect, it } from "vitest";
 import { ScraperError } from "../utils/errors";
-import { LocalFileStrategy } from "./strategies/LocalFileStrategy";
+import { ScraperRegistry } from "./ScraperRegistry";
 import { GitHubScraperStrategy } from "./strategies/GitHubScraperStrategy";
+import { LocalFileStrategy } from "./strategies/LocalFileStrategy";
 import { NpmScraperStrategy } from "./strategies/NpmScraperStrategy";
 import { PyPiScraperStrategy } from "./strategies/PyPiScraperStrategy";
 
 describe("ScraperRegistry", () => {
   it("should throw error for unknown URLs", () => {
     const registry = new ScraperRegistry();
+    expect(() => registry.getStrategy("invalid://example.com")).toThrow(ScraperError);
     expect(() => registry.getStrategy("invalid://example.com")).toThrow(
-      ScraperError
-    );
-    expect(() => registry.getStrategy("invalid://example.com")).toThrow(
-      "No strategy found for URL"
+      "No strategy found for URL",
     );
   });
 

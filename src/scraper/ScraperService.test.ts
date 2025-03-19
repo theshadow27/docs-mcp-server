@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, type Mock } from "vitest";
+import { type Mock, describe, expect, it, vi } from "vitest";
 import type { ProgressCallback } from "../types";
 import { ScraperError } from "../utils/errors";
+import type { ScraperRegistry } from "./ScraperRegistry";
 import { ScraperService } from "./ScraperService";
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "./types";
-import type { ScraperRegistry } from "./ScraperRegistry";
 
 describe("ScraperService", () => {
   // Mock registry
@@ -17,9 +17,7 @@ describe("ScraperService", () => {
   };
 
   it("should use registry to get correct strategy", async () => {
-    const service = new ScraperService(
-      mockRegistry as unknown as ScraperRegistry
-    );
+    const service = new ScraperService(mockRegistry as unknown as ScraperRegistry);
     const options: ScraperOptions = {
       url: "https://example.com",
       library: "test",
@@ -37,9 +35,7 @@ describe("ScraperService", () => {
   });
 
   it("should pass progress callback to strategy", async () => {
-    const service = new ScraperService(
-      mockRegistry as unknown as ScraperRegistry
-    );
+    const service = new ScraperService(mockRegistry as unknown as ScraperRegistry);
     const options: ScraperOptions = {
       url: "https://example.com",
       library: "test",
@@ -56,9 +52,7 @@ describe("ScraperService", () => {
   });
 
   it("should handle file:// URLs", async () => {
-    const service = new ScraperService(
-      mockRegistry as unknown as ScraperRegistry
-    );
+    const service = new ScraperService(mockRegistry as unknown as ScraperRegistry);
     const options: ScraperOptions = {
       url: "file:///path/to/file.md",
       library: "test",
@@ -76,9 +70,7 @@ describe("ScraperService", () => {
   });
 
   it("should throw error if no strategy found", async () => {
-    const service = new ScraperService(
-      mockRegistry as unknown as ScraperRegistry
-    );
+    const service = new ScraperService(mockRegistry as unknown as ScraperRegistry);
     const options: ScraperOptions = {
       url: "unknown://example.com",
       library: "test",
@@ -90,18 +82,14 @@ describe("ScraperService", () => {
 
     mockRegistry.getStrategy.mockReturnValue(null);
 
+    await expect(service.scrape(options, progressCallback)).rejects.toThrow(ScraperError);
     await expect(service.scrape(options, progressCallback)).rejects.toThrow(
-      ScraperError
-    );
-    await expect(service.scrape(options, progressCallback)).rejects.toThrow(
-      "No scraper strategy found for URL: unknown://example.com"
+      "No scraper strategy found for URL: unknown://example.com",
     );
   });
 
   it("should propagate errors from strategy", async () => {
-    const service = new ScraperService(
-      mockRegistry as unknown as ScraperRegistry
-    );
+    const service = new ScraperService(mockRegistry as unknown as ScraperRegistry);
     const options: ScraperOptions = {
       url: "https://example.com",
       library: "test",
@@ -115,7 +103,7 @@ describe("ScraperService", () => {
     mockStrategy.scrape.mockRejectedValue(new Error("Strategy error"));
 
     await expect(service.scrape(options, progressCallback)).rejects.toThrow(
-      "Strategy error"
+      "Strategy error",
     );
   });
 });

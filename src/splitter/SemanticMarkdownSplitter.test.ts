@@ -252,8 +252,7 @@ console.log('Hello');
       },
       {
         types: ["code"],
-        content:
-          "```javascript\n// Some code in JavaScript\nconsole.log('Hello');\n```",
+        content: "```javascript\n// Some code in JavaScript\nconsole.log('Hello');\n```",
         section: {
           level: 1,
           path: ["Mixed Content Section"],
@@ -276,7 +275,7 @@ console.log('Hello');
     // Create a table with many rows that will exceed maxChunkSize
     const tableRows = Array.from(
       { length: 20 },
-      (_, i) => `| ${i + 1} | This is row ${i + 1} | ${(i + 1) * 100} |`
+      (_, i) => `| ${i + 1} | This is row ${i + 1} | ${(i + 1) * 100} |`,
     ).join("\n");
 
     const markdown = `
@@ -313,7 +312,7 @@ ${tableRows}
     const codeLines = Array.from(
       { length: 20 },
       (_, i) =>
-        `console.log("This is line ${i + 1} with some extra text to make it longer");`
+        `console.log("This is line ${i + 1} with some extra text to make it longer");`,
     ).join("\n");
 
     const markdown = `
@@ -348,17 +347,13 @@ ${codeLines}
 |---------|---------|
 | Cell1   | Cell2   |`;
 
-    await expect(splitter.splitText(markdown)).rejects.toThrow(
-      MinimumChunkSizeError
-    );
+    await expect(splitter.splitText(markdown)).rejects.toThrow(MinimumChunkSizeError);
   });
 
   it("should throw MinimumChunkSizeError when code block cannot be split further", async () => {
     const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 20 });
     const markdown = "```javascript\nconst x = 1;\n```";
 
-    await expect(splitter.splitText(markdown)).rejects.toThrow(
-      MinimumChunkSizeError
-    );
+    await expect(splitter.splitText(markdown)).rejects.toThrow(MinimumChunkSizeError);
   });
 });

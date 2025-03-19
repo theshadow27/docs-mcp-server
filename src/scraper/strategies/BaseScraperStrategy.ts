@@ -1,17 +1,9 @@
-import type { Document, ProgressCallback } from "../../types";
-import type {
-  ScraperOptions,
-  ScraperProgress,
-  ScraperStrategy,
-} from "../types";
-import {
-  type ContentProcessor,
-  HtmlProcessor,
-  MarkdownProcessor,
-} from "../processor";
-import { normalizeUrl, type UrlNormalizerOptions } from "../../utils/url";
 import { URL } from "node:url";
+import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
+import { type UrlNormalizerOptions, normalizeUrl } from "../../utils/url";
+import { type ContentProcessor, HtmlProcessor, MarkdownProcessor } from "../processor";
+import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
 
 export type QueueItem = {
   value: string;
@@ -42,7 +34,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
   protected abstract processItem(
     item: QueueItem,
     options: ScraperOptions,
-    progressCallback?: ProgressCallback<ScraperProgress>
+    progressCallback?: ProgressCallback<ScraperProgress>,
   ): Promise<{
     document?: Document;
     links?: string[];
@@ -59,7 +51,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     batch: QueueItem[],
     baseUrl: URL,
     options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>
+    progressCallback: ProgressCallback<ScraperProgress>,
   ): Promise<QueueItem[]> {
     const results = await Promise.all(
       batch.map(async (item) => {
@@ -73,7 +65,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
           if (result.document) {
             this.pageCount++;
             logger.info(
-              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.value}`
+              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.value}`,
             );
             try {
               await progressCallback({
@@ -86,9 +78,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
               });
             } catch (error) {
               if (options.ignoreErrors) {
-                logger.error(
-                  `Error in progress callback for ${item.value}: ${error}`
-                );
+                logger.error(`Error in progress callback for ${item.value}: ${error}`);
               } else {
                 throw error;
               }
@@ -103,7 +93,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
                 const targetUrl = new URL(value, baseUrl);
                 const normalizedValue = normalizeUrl(
                   targetUrl.href,
-                  this.options.urlNormalizerOptions
+                  this.options.urlNormalizerOptions,
                 );
 
                 if (!this.visited.has(normalizedValue)) {
@@ -127,14 +117,14 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
           }
           throw error;
         }
-      })
+      }),
     );
     return results.flat();
   }
 
   async scrape(
     options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>
+    progressCallback: ProgressCallback<ScraperProgress>,
   ): Promise<void> {
     this.visited.clear();
     this.pageCount = 0;
@@ -143,9 +133,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     const queue = [{ value: options.url, depth: 0 }];
 
     // Track values we've seen (either queued or visited)
-    this.visited.add(
-      normalizeUrl(options.url, this.options.urlNormalizerOptions)
-    );
+    this.visited.add(normalizeUrl(options.url, this.options.urlNormalizerOptions));
 
     while (queue.length > 0 && this.pageCount < options.maxPages) {
       const remainingPages = options.maxPages - this.pageCount;
@@ -156,16 +144,11 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
       const batchSize = Math.min(
         options.maxConcurrency ?? 3,
         remainingPages,
-        queue.length
+        queue.length,
       );
 
       const batch = queue.splice(0, batchSize);
-      const newUrls = await this.processBatch(
-        batch,
-        baseUrl,
-        options,
-        progressCallback
-      );
+      const newUrls = await this.processBatch(batch, baseUrl, options, progressCallback);
 
       queue.push(...newUrls);
     }

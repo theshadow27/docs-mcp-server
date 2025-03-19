@@ -9,11 +9,7 @@ import { ContentSplitterError, MinimumChunkSizeError } from "./errors";
 import { CodeContentSplitter } from "./splitters/CodeContentSplitter";
 import { TableContentSplitter } from "./splitters/TableContentSplitter";
 import { TextContentSplitter } from "./splitters/TextContentSplitter";
-import type {
-  ContentChunk,
-  DocumentSplitter,
-  SectionContentType,
-} from "./types";
+import type { ContentChunk, DocumentSplitter, SectionContentType } from "./types";
 
 /**
  * Configuration for the markdown splitter
@@ -72,10 +68,10 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
       replacement: (content, node) => {
         const table = node as HTMLTableElement;
         const headers = Array.from(table.querySelectorAll("th")).map(
-          (th) => th.textContent?.trim() || ""
+          (th) => th.textContent?.trim() || "",
         );
         const rows = Array.from(table.querySelectorAll("tr")).filter(
-          (tr) => !tr.querySelector("th")
+          (tr) => !tr.querySelector("th"),
         );
 
         if (headers.length === 0 && rows.length === 0) return "";
@@ -88,7 +84,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
 
         for (const row of rows) {
           const cells = Array.from(row.querySelectorAll("td")).map(
-            (td) => td.textContent?.trim() || ""
+            (td) => td.textContent?.trim() || "",
           );
           markdown += `| ${cells.join(" | ")} |\n`;
         }
@@ -122,9 +118,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
    * Step 1: Split document into sections based on H1-H6 headings,
    * as well as code blocks and tables.
    */
-  private async splitIntoSections(
-    dom: HappyDocument
-  ): Promise<DocumentSection[]> {
+  private async splitIntoSections(dom: HappyDocument): Promise<DocumentSection[]> {
     const body = dom.querySelector("body");
     if (!body) {
       throw new Error("Invalid HTML structure: no body element found");
@@ -189,9 +183,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
         sections.push(currentSection);
       } else if (element.tagName === "TABLE") {
         // Tables are kept as separate chunks
-        const markdown = fullTrim(
-          this.turndownService.turndown(element.outerHTML)
-        );
+        const markdown = fullTrim(this.turndownService.turndown(element.outerHTML));
 
         currentSection = {
           level: currentSection.level,
@@ -205,9 +197,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
         } satisfies DocumentSection;
         sections.push(currentSection);
       } else {
-        const markdown = fullTrim(
-          this.turndownService.turndown(element.innerHTML)
-        );
+        const markdown = fullTrim(this.turndownService.turndown(element.innerHTML));
         if (markdown) {
           // Create a new section for the text content
           currentSection = {
@@ -232,7 +222,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
    * Step 2: Split section content into smaller chunks
    */
   private async splitSectionContent(
-    sections: DocumentSection[]
+    sections: DocumentSection[],
   ): Promise<ContentChunk[]> {
     const chunks: ContentChunk[] = [];
 
@@ -264,7 +254,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
           // Convert error message to string, handling non-Error objects
           const errMessage = err instanceof Error ? err.message : String(err);
           throw new ContentSplitterError(
-            `Failed to split ${content.type} content: ${errMessage}`
+            `Failed to split ${content.type} content: ${errMessage}`,
           );
         }
 
@@ -278,8 +268,8 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
                 level: section.level,
                 path: section.path,
               },
-            })
-          )
+            }),
+          ),
         );
       }
     }

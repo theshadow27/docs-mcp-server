@@ -1,8 +1,8 @@
-import { logger } from "../../utils/logger";
 import type { Document, ProgressCallback } from "../../types";
+import { logger } from "../../utils/logger";
 import type { UrlNormalizerOptions } from "../../utils/url";
-import type { ScraperOptions, ScraperProgress } from "../types";
 import { HttpFetcher } from "../fetcher";
+import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
 
 export interface WebScraperStrategyOptions {
@@ -12,10 +12,7 @@ export interface WebScraperStrategyOptions {
 
 export class WebScraperStrategy extends BaseScraperStrategy {
   private readonly httpFetcher = new HttpFetcher();
-  private readonly shouldFollowLinkFn?: (
-    baseUrl: URL,
-    targetUrl: URL
-  ) => boolean;
+  private readonly shouldFollowLinkFn?: (baseUrl: URL, targetUrl: URL) => boolean;
 
   constructor(options: WebScraperStrategyOptions = {}) {
     super({ urlNormalizerOptions: options.urlNormalizerOptions });
@@ -43,7 +40,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
 
   protected async processItem(
     item: QueueItem,
-    options: ScraperOptions
+    options: ScraperOptions,
   ): Promise<{ document?: Document; links?: string[] }> {
     const { value: url } = item;
 
@@ -59,8 +56,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
           const targetUrl = new URL(link, baseUrl);
           return (
             (!options.subpagesOnly || this.isSubpage(baseUrl, targetUrl)) &&
-            (!this.shouldFollowLinkFn ||
-              this.shouldFollowLinkFn(baseUrl, targetUrl))
+            (!this.shouldFollowLinkFn || this.shouldFollowLinkFn(baseUrl, targetUrl))
           );
         } catch {
           return false;

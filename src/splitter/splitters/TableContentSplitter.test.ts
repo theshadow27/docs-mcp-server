@@ -53,7 +53,7 @@ ${rows.join("\n")}`;
     await expect(splitter.split(table)).rejects.toThrow(MinimumChunkSizeError);
 
     await expect(splitter.split(table)).rejects.toThrowError(
-      "Cannot split content any further"
+      "Cannot split content any further",
     );
   });
 

@@ -12,19 +12,14 @@ export class CodeContentSplitter implements ContentSplitter {
   async split(content: string): Promise<string[]> {
     // Determine language and strip triple backticks from content
     const language = content.match(/^```(\w+)\n/)?.[1];
-    const strippedContent = content
-      .replace(/^```(\w*)\n/, "")
-      .replace(/```\s*$/, "");
+    const strippedContent = content.replace(/^```(\w*)\n/, "").replace(/```\s*$/, "");
 
     const lines = strippedContent.split("\n");
     if (lines.length > 0) {
       // Check if a single line with code block markers exceeds maxChunkSize
       const singleLineSize = this.wrap(lines[0], language).length;
       if (singleLineSize > this.options.maxChunkSize) {
-        throw new MinimumChunkSizeError(
-          singleLineSize,
-          this.options.maxChunkSize
-        );
+        throw new MinimumChunkSizeError(singleLineSize, this.options.maxChunkSize);
       }
     }
 
@@ -36,10 +31,7 @@ export class CodeContentSplitter implements ContentSplitter {
       const newChunkContent = this.wrap(currentChunkLines.join("\n"), language);
       const newChunkSize = newChunkContent.length;
 
-      if (
-        newChunkSize > this.options.maxChunkSize &&
-        currentChunkLines.length > 1
-      ) {
+      if (newChunkSize > this.options.maxChunkSize && currentChunkLines.length > 1) {
         // remove last item
         const lastLine = currentChunkLines.pop();
         // wrap content and create chunk

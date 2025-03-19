@@ -1,8 +1,4 @@
-import type {
-  ContentChunk,
-  DocumentSplitter,
-  SectionContentType,
-} from "./types";
+import type { ContentChunk, DocumentSplitter, SectionContentType } from "./types";
 
 /**
  * Takes small document chunks and greedily concatenates them into larger, more meaningful units
@@ -27,7 +23,7 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
   constructor(
     baseSplitter: DocumentSplitter,
     minChunkSize: number,
-    maxChunkSize: number
+    maxChunkSize: number,
   ) {
     this.baseSplitter = baseSplitter;
     this.minChunkSize = minChunkSize;
@@ -64,12 +60,9 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
         currentChunk.section = this.mergeSectionInfo(
           currentChunk,
           nextChunk,
-          concatenatedChunks
+          concatenatedChunks,
         );
-        currentChunk.types = this.mergeTypes(
-          currentChunk.types,
-          nextChunk.types
-        );
+        currentChunk.types = this.mergeTypes(currentChunk.types, nextChunk.types);
       } else {
         currentChunk = this.cloneChunk(nextChunk);
       }
@@ -108,14 +101,12 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
    */
   private wouldExceedMaxSize(
     currentChunk: ContentChunk | null,
-    nextChunk: ContentChunk
+    nextChunk: ContentChunk,
   ): boolean {
     if (!currentChunk) {
       return false;
     }
-    return (
-      currentChunk.content.length + nextChunk.content.length > this.maxChunkSize
-    );
+    return currentChunk.content.length + nextChunk.content.length > this.maxChunkSize;
   }
 
   /**
@@ -137,7 +128,7 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
   private mergeSectionInfo(
     currentChunk: ContentChunk,
     nextChunk: ContentChunk,
-    previousMerges: ContentChunk[] = []
+    previousMerges: ContentChunk[] = [],
   ): ContentChunk["section"] {
     // Always use the lowest level
     const level = Math.min(currentChunk.section.level, nextChunk.section.level);
@@ -152,18 +143,14 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
     }
 
     // Check if one path includes the other
-    if (
-      this.isPathIncluded(currentChunk.section.path, nextChunk.section.path)
-    ) {
+    if (this.isPathIncluded(currentChunk.section.path, nextChunk.section.path)) {
       return {
         path: nextChunk.section.path,
         level,
       };
     }
 
-    if (
-      this.isPathIncluded(nextChunk.section.path, currentChunk.section.path)
-    ) {
+    if (this.isPathIncluded(nextChunk.section.path, currentChunk.section.path)) {
       return {
         path: currentChunk.section.path,
         level,
@@ -173,7 +160,7 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
     // Find common parent path
     const commonPath = this.findCommonPrefix(
       currentChunk.section.path,
-      nextChunk.section.path
+      nextChunk.section.path,
     );
 
     // If no common path, use root
@@ -192,7 +179,7 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
 
   private mergeTypes(
     currentTypes: SectionContentType[],
-    nextTypes: SectionContentType[]
+    nextTypes: SectionContentType[],
   ): SectionContentType[] {
     return [...new Set([...currentTypes, ...nextTypes])];
   }

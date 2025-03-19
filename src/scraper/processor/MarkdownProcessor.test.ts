@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { MarkdownProcessor } from "./MarkdownProcessor";
-import type { RawContent } from "../fetcher/types";
+import { describe, expect, it } from "vitest";
 import { ScraperError } from "../../utils/errors";
+import type { RawContent } from "../fetcher/types";
+import { MarkdownProcessor } from "./MarkdownProcessor";
 
 describe("MarkdownProcessor", () => {
   it("should process valid Markdown content", async () => {

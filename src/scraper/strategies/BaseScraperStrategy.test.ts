@@ -1,7 +1,7 @@
-import { BaseScraperStrategy, QueueItem } from "./BaseScraperStrategy";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Document, ProgressCallback } from "../../types";
 import type { ScraperOptions } from "../types";
-import type { ProgressCallback, Document } from "../../types";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { BaseScraperStrategy, QueueItem } from "./BaseScraperStrategy";
 
 // Mock implementation for testing abstract class
 class TestScraperStrategy extends BaseScraperStrategy {
@@ -102,9 +102,9 @@ describe("BaseScraperStrategy", () => {
     strategy.processItem.mockRejectedValue(error);
 
     // Use resolves.toThrowError to check if the promise rejects with the expected error
-    await expect(
-      strategy.scrape(options, progressCallback)
-    ).rejects.toThrowError("Test error");
+    await expect(strategy.scrape(options, progressCallback)).rejects.toThrowError(
+      "Test error",
+    );
     expect(strategy.processItem).toHaveBeenCalledTimes(1);
     expect(progressCallback).not.toHaveBeenCalled();
   });

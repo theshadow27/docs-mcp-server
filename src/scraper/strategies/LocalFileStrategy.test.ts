@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { ScraperOptions } from "../types";
 import { vol } from "memfs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ScraperOptions } from "../types";
 import { LocalFileStrategy } from "./LocalFileStrategy";
 
 vi.mock("node:fs/promises", () => ({ default: vol.promises }));
@@ -32,7 +32,7 @@ describe("LocalFileStrategy", () => {
       {
         "/test.md": "# Test\n\nThis is a test file.",
       },
-      "/"
+      "/",
     ); // Set root for relative paths
 
     await strategy.scrape(options, progressCallback);
@@ -54,7 +54,7 @@ describe("LocalFileStrategy", () => {
             version: "1.0",
           },
         },
-      })
+      }),
     );
   });
 
@@ -78,7 +78,7 @@ describe("LocalFileStrategy", () => {
         "/testdir/subdir/subsubdir/file4.md": "# File 4",
         "/testdir/file5.md": "# File 5",
       },
-      "/"
+      "/",
     );
 
     await strategy.scrape(options, progressCallback);
@@ -104,7 +104,7 @@ describe("LocalFileStrategy", () => {
         "/testdir/subdir/subsubdir/file3.txt": "File 3",
         "/testdir/file4.md": "# File 4",
       },
-      "/"
+      "/",
     );
 
     await strategy.scrape(options, progressCallback);
@@ -130,7 +130,7 @@ describe("LocalFileStrategy", () => {
         "/testdir/subdir/subsubdir/file3.txt": "File 3",
         "/testdir/file4.md": "# File 4",
       },
-      "/"
+      "/",
     );
 
     await strategy.scrape(options, progressCallback);
@@ -155,7 +155,7 @@ describe("LocalFileStrategy", () => {
           "<html><head><title>File 2 Title</title></head><body><h1>File 2</h1></body></html>",
         "/testdir/file3.txt": "File 3",
       },
-      "/"
+      "/",
     );
 
     await strategy.scrape(options, progressCallback);
@@ -178,7 +178,7 @@ describe("LocalFileStrategy", () => {
             version: "1.0",
           },
         },
-      })
+      }),
     );
     expect(progressCallback).toHaveBeenNthCalledWith(
       2,
@@ -197,7 +197,7 @@ describe("LocalFileStrategy", () => {
             version: "1.0",
           },
         },
-      })
+      }),
     );
     expect(progressCallback).toHaveBeenNthCalledWith(
       3,
@@ -216,7 +216,7 @@ describe("LocalFileStrategy", () => {
             version: "1.0",
           },
         },
-      })
+      }),
     );
   });
 
@@ -235,10 +235,10 @@ describe("LocalFileStrategy", () => {
       {
         "/testdir/empty.md": "",
       },
-      "/"
+      "/",
     );
-    await expect(
-      strategy.scrape(options, progressCallback)
-    ).rejects.toThrowError("Empty Markdown content");
+    await expect(strategy.scrape(options, progressCallback)).rejects.toThrowError(
+      "Empty Markdown content",
+    );
   });
 });
