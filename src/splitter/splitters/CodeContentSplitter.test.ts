@@ -12,19 +12,19 @@ describe("CodeContentSplitter", () => {
     const code = `function test() {
   console.log("Hello");
 }`;
-    const chunks = await splitter.split(code, { language: "typescript" });
+    const markdown = `\`\`\`typescript\n${code}\n\`\`\``;
+    const chunks = await splitter.split(markdown);
     expect(chunks.length).toBe(1);
-    expect(chunks[0].content).toBe(`\`\`\`typescript\n${code}\n\`\`\``);
-    expect(chunks[0].metadata).toEqual({ language: "typescript" });
+    expect(chunks[0]).toBe(markdown);
   });
 
   it("should handle code without language", async () => {
     const code = `const x = 1;
 const y = 2;`;
-    const chunks = await splitter.split(code);
+    const markdown = `\`\`\`\n${code}\n\`\`\``;
+    const chunks = await splitter.split(markdown);
     expect(chunks.length).toBe(1);
-    expect(chunks[0].content).toBe(`\`\`\`\n${code}\n\`\`\``);
-    expect(chunks[0].metadata).toBeUndefined();
+    expect(chunks[0]).toBe(markdown);
   });
 
   it("should split large code blocks by lines", async () => {
@@ -32,19 +32,21 @@ const y = 2;`;
       "console.log('This is a very long line of code that should be split.');";
     const code = Array(10).fill(longLine).join("\n");
 
-    const chunks = await splitter.split(code, { language: "javascript" });
+    const markdown = `\`\`\`javascript\n${code}\n\`\`\``;
+    const chunks = await splitter.split(markdown);
     expect(chunks.length).toBeGreaterThan(1);
     for (const chunk of chunks) {
-      expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
-      expect(chunk.content.startsWith("```javascript\n")).toBe(true);
-      expect(chunk.content.endsWith("\n```")).toBe(true);
+      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.startsWith("```javascript\n")).toBe(true);
+      expect(chunk.endsWith("\n```")).toBe(true);
     }
   });
 
   it("should handle empty code blocks", async () => {
-    const chunks = await splitter.split("", { language: "python" });
+    const markdown = "```python\n\n```";
+    const chunks = await splitter.split(markdown);
     expect(chunks.length).toBe(1);
-    expect(chunks[0].content).toBe("```python\n\n```");
+    expect(chunks[0]).toBe(markdown);
   });
 
   it("should preserve indentation", async () => {
@@ -55,10 +57,11 @@ const y = 2;`;
     }
   }
 }`;
-    const chunks = await splitter.split(code, { language: "typescript" });
+    const markdown = `\`\`\`typescript\n${code}\n\`\`\``;
+    const chunks = await splitter.split(markdown);
     for (const chunk of chunks) {
       // Check if indentation is preserved within the chunk
-      const lines = chunk.content.split("\n");
+      const lines = chunk.split("\n");
       for (let i = 1; i < lines.length - 1; i++) {
         // Skip the first (```typescript) and last (```) lines
         if (lines[i].includes("if")) {

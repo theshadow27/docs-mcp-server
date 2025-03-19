@@ -15,12 +15,10 @@ describe("TableContentSplitter", () => {
 | Data A1  | Data A2   | Data A3   |
 | Data B1  | Data B2   | Data B3   |`;
 
-    const chunks = await splitter.split(table, {
-      headers: ["Column 1", "Column 2", "Column 3"],
-    });
+    const chunks = await splitter.split(table);
 
     for (const chunk of chunks) {
-      const lines = chunk.content.split("\n");
+      const lines = chunk.split("\n");
       expect(lines[0]).toBe("| Column 1 | Column 2 | Column 3 |");
       expect(lines[1]).toBe("|---|---|---|");
     }
@@ -35,12 +33,10 @@ describe("TableContentSplitter", () => {
 |----------|-----------|
 ${rows.join("\n")}`;
 
-    const chunks = await splitter.split(table, {
-      headers: ["Header A", "Header B"],
-    });
+    const chunks = await splitter.split(table);
     expect(chunks.length).toBeGreaterThan(0); // It will split, even if not > 1
     for (const chunk of chunks) {
-      const lines = chunk.content.split("\n");
+      const lines = chunk.split("\n");
       expect(lines[0]).toBe("| Header A | Header B |");
       expect(lines[1]).toBe("|---|---|");
     }
@@ -54,17 +50,11 @@ ${rows.join("\n")}`;
 |----------|-----------|-----------|
 | Very long data that exceeds max chunk size with headers | More data | And more |`;
 
-    await expect(
-      splitter.split(table, {
-        headers: ["Header A", "Header B", "Header C"],
-      }),
-    ).rejects.toThrow(MinimumChunkSizeError);
+    await expect(splitter.split(table)).rejects.toThrow(MinimumChunkSizeError);
 
-    await expect(
-      splitter.split(table, {
-        headers: ["Header A", "Header B", "Header C"],
-      }),
-    ).rejects.toThrowError("Cannot split content any further");
+    await expect(splitter.split(table)).rejects.toThrowError(
+      "Cannot split content any further"
+    );
   });
 
   it("should handle empty table", async () => {
@@ -72,7 +62,7 @@ ${rows.join("\n")}`;
     const table = "";
     const chunks = await splitter.split(table);
     expect(chunks.length).toBe(1);
-    expect(chunks[0].content).toBe("");
+    expect(chunks[0]).toBe("");
   });
 
   it("should preserve special characters", async () => {
@@ -84,10 +74,8 @@ ${rows.join("\n")}`;
 | &copy;  | Copyright   |
 | <tag>   | HTML Tag    |`;
 
-    const chunks = await splitter.split(table, {
-      headers: ["Symbol", "Description"],
-    });
-    const allContent = chunks.map((c) => c.content).join("");
+    const chunks = await splitter.split(table);
+    const allContent = chunks.join("");
     expect(allContent).toContain("→");
     expect(allContent).toContain("👋");
     expect(allContent).toContain("&copy;");

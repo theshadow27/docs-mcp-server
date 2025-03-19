@@ -1,11 +1,12 @@
 import type { Document } from "@langchain/core/documents";
 import semver from "semver";
-import { type ContentChunk, SemanticMarkdownSplitter } from "../splitter";
+import { SemanticMarkdownSplitter } from "../splitter";
 import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentStore } from "./DocumentStore";
 import { ConnectionError, StoreError } from "./errors";
 import type { LibraryVersion, StoreSearchResult } from "./types";
+import type { ContentChunk } from "../splitter/types";
 
 /**
  * Provides semantic search capabilities across different versions of library documentation.
@@ -156,7 +157,7 @@ export class VectorStoreService {
     logger.info(`📚 Adding document: ${document.metadata.title}`);
 
     const splitter = new SemanticMarkdownSplitter({
-      maxChunkSize: 4000,
+      maxChunkSize: 1500,
     });
 
     if (!document.pageContent.trim()) {

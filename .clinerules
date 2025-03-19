@@ -1,18 +1,17 @@
 # Cline Custom Instructions
 
-- Always refer to the README.md for the latest information on the project.
-- Always refer to ARCHITECTURE.md for the latest information on the architecture of the project.
+- Always refer to the `README.md` for the latest information on the project.
+- Always refer to `ARCHITECTURE.md` for the latest information on the architecture of the project.
 - Follow programming principles such as DRY, KISS, YAGNI, and SOLID
 - Always use the latest version of the programming language and libraries.
 - Always prefer the simplest solution.
 - When importing a relative path, avoid using file extensions like ".js" and ".ts".
-- NEVER update any files in the following directories: .git, node_modules
-- Add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
-- Git commit messages must be formatted as markdown
+- Always add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
+- Always format Git commit messages as markdown
 
 ## Architecture Documentation Guidelines
 
-Keep ARCHITECTURE.md high-level:
+Keep `ARCHITECTURE.md` high-level:
 
 - Focus on system concepts and component relationships
 - Include design principles and code conventions

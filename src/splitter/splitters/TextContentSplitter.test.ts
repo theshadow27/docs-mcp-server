@@ -18,9 +18,9 @@ Third paragraph to complete the example.`;
     const chunks = await splitter.split(text);
 
     expect(chunks.length).toBe(3);
-    expect(chunks[0].content).toBe("First paragraph with some content.");
-    expect(chunks[1].content).toBe("Second paragraph that continues the text.");
-    expect(chunks[2].content).toBe("Third paragraph to complete the example.");
+    expect(chunks[0]).toBe("First paragraph with some content.");
+    expect(chunks[1]).toBe("Second paragraph that continues the text.");
+    expect(chunks[2]).toBe("Third paragraph to complete the example.");
   });
 
   it("should fall back to line breaks when paragraphs too large", async () => {
@@ -39,7 +39,7 @@ And line four finishes it.`;
     // Should split into multiple chunks at line boundaries
     expect(chunks.length).toBeGreaterThan(1);
     for (const chunk of chunks) {
-      expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
     }
   });
 
@@ -52,18 +52,18 @@ And line four finishes it.`;
     // Small consecutive lines should be merged
     expect(chunks.length).toBeLessThan(6); // Less than total number of lines
     for (const chunk of chunks) {
-      expect(chunk.content.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
     }
   });
 
   it("should handle empty content gracefully", async () => {
     const emptyChunks = await splitter.split("");
     expect(emptyChunks.length).toBe(1);
-    expect(emptyChunks[0].content).toBe("");
+    expect(emptyChunks[0]).toBe("");
 
     const whitespaceChunks = await splitter.split("   \n  \n  ");
     expect(whitespaceChunks.length).toBe(1);
-    expect(whitespaceChunks[0].content).toBe("");
+    expect(whitespaceChunks[0]).toBe("");
   });
 
   it("should split words as last resort", async () => {
@@ -78,7 +78,7 @@ And line four finishes it.`;
 
     expect(chunks.length).toBeGreaterThan(1);
     for (const chunk of chunks) {
-      expect(chunk.content.length).toBeLessThanOrEqual(20);
+      expect(chunk.length).toBeLessThanOrEqual(20);
     }
   });
 });

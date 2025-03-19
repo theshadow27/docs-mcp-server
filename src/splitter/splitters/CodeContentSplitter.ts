@@ -1,5 +1,5 @@
 import { MinimumChunkSizeError } from "../errors";
-import type { ContentChunk, ContentSplitter, ContentSplitterOptions } from "./types";
+import type { ContentSplitter, ContentSplitterOptions } from "./types";
 
 /**
  * Splits code content while preserving language information and formatting.
@@ -9,52 +9,53 @@ import type { ContentChunk, ContentSplitter, ContentSplitterOptions } from "./ty
 export class CodeContentSplitter implements ContentSplitter {
   constructor(private options: ContentSplitterOptions) {}
 
-  async split(
-    content: string,
-    metadata?: { language?: string },
-  ): Promise<ContentChunk[]> {
-    const lines = content.split("\n");
+  async split(content: string): Promise<string[]> {
+    // Determine language and strip triple backticks from content
+    const language = content.match(/^```(\w+)\n/)?.[1];
+    const strippedContent = content
+      .replace(/^```(\w*)\n/, "")
+      .replace(/```\s*$/, "");
+
+    const lines = strippedContent.split("\n");
     if (lines.length > 0) {
       // Check if a single line with code block markers exceeds maxChunkSize
-      const singleLineSize = this.wrap(lines[0], metadata).length;
+      const singleLineSize = this.wrap(lines[0], language).length;
       if (singleLineSize > this.options.maxChunkSize) {
-        throw new MinimumChunkSizeError(singleLineSize, this.options.maxChunkSize);
+        throw new MinimumChunkSizeError(
+          singleLineSize,
+          this.options.maxChunkSize
+        );
       }
     }
 
-    const chunks: ContentChunk[] = [];
+    const chunks: string[] = [];
     let currentChunkLines: string[] = [];
-    const language = metadata?.language || "";
 
     for (const line of lines) {
       currentChunkLines.push(line);
-      const newChunkContent = this.wrap(currentChunkLines.join("\n"), metadata);
+      const newChunkContent = this.wrap(currentChunkLines.join("\n"), language);
       const newChunkSize = newChunkContent.length;
 
-      if (newChunkSize > this.options.maxChunkSize && currentChunkLines.length > 1) {
+      if (
+        newChunkSize > this.options.maxChunkSize &&
+        currentChunkLines.length > 1
+      ) {
         // remove last item
         const lastLine = currentChunkLines.pop();
         // wrap content and create chunk
-        chunks.push({
-          content: this.wrap(currentChunkLines.join("\n"), metadata),
-          metadata,
-        });
+        chunks.push(this.wrap(currentChunkLines.join("\n"), language));
         currentChunkLines = [lastLine as string];
       }
     }
 
     if (currentChunkLines.length > 0) {
-      chunks.push({
-        content: this.wrap(currentChunkLines.join("\n"), metadata),
-        metadata,
-      });
+      chunks.push(this.wrap(currentChunkLines.join("\n"), language));
     }
 
     return chunks;
   }
 
-  protected wrap(content: string, metadata?: { language?: string }): string {
-    const language = metadata?.language || "";
-    return `\`\`\`${language}\n${content.replace(/\n+$/, "")}\n\`\`\``;
+  protected wrap(content: string, language?: string | null): string {
+    return `\`\`\`${language || ""}\n${content.replace(/\n+$/, "")}\n\`\`\``;
   }
 }
