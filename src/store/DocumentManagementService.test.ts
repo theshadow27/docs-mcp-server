@@ -1,11 +1,11 @@
 import { Document } from "@langchain/core/documents";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VersionNotFoundError } from "../tools/errors";
-import { VectorStoreService } from "./VectorStoreService";
+import { DocumentManagementService } from "./DocumentManagementService";
+import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { StoreError } from "./errors";
 
-// Mock document store
-let mockDocuments: Document[] = [];
+// Mock document store and retriever
 const mockStore = {
   initialize: vi.fn(),
   shutdown: vi.fn(),
@@ -14,11 +14,18 @@ const mockStore = {
   queryLibraryVersions: vi.fn(),
   addDocuments: vi.fn(),
   deleteDocuments: vi.fn(),
+};
+
+const mockRetriever = {
   search: vi.fn(),
 };
 
 vi.mock("./DocumentStore", () => ({
   DocumentStore: vi.fn().mockImplementation(() => mockStore),
+}));
+
+vi.mock("./DocumentRetrieverService", () => ({
+  DocumentRetrieverService: vi.fn().mockImplementation(() => mockRetriever),
 }));
 
 vi.mock("../utils/logger", () => ({
@@ -29,22 +36,21 @@ vi.mock("../utils/logger", () => ({
   },
 }));
 
-describe("VectorStoreService", () => {
-  let storeService: VectorStoreService;
+describe("DocumentManagementService", () => {
+  let docService: DocumentManagementService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDocuments = [];
     process.env.POSTGRES_CONNECTION = "postgres://user:pass@localhost:5432/testdb";
-    storeService = new VectorStoreService();
+    docService = new DocumentManagementService();
   });
 
   afterEach(async () => {
-    await storeService.shutdown();
+    await docService.shutdown();
   });
 
   it("should initialize correctly", async () => {
-    await storeService.initialize();
+    await docService.initialize();
     expect(mockStore.initialize).toHaveBeenCalled();
   });
 
@@ -52,7 +58,7 @@ describe("VectorStoreService", () => {
     mockStore.checkDocumentExists.mockImplementation((lib, ver) =>
       Promise.resolve(false),
     );
-    const exists = await storeService.exists("test-lib", "1.0.0");
+    const exists = await docService.exists("test-lib", "1.0.0");
     expect(exists).toBe(false);
   });
 
@@ -77,30 +83,19 @@ describe("VectorStoreService", () => {
 
       // Should fail when URL is missing
       await expect(
-        storeService.addDocument(library, version, documentNoUrl),
+        docService.addDocument(library, version, documentNoUrl),
       ).rejects.toThrow(StoreError);
 
       await expect(
-        storeService.addDocument(library, version, documentNoUrl),
+        docService.addDocument(library, version, documentNoUrl),
       ).rejects.toHaveProperty("message", "Document metadata must include a valid URL");
 
       // Should succeed with valid URL
-      mockStore.search.mockResolvedValue([
-        {
-          pageContent: "Test document content about testing",
-          metadata: {
-            url: "http://example.com",
-            title: "Test Doc",
-            library,
-            version,
-            score: 0.8,
-          },
-        },
-      ]);
+      mockRetriever.search.mockResolvedValue(["Mocked search result"]);
 
-      await storeService.addDocument(library, version, validDocument);
+      await docService.addDocument(library, version, validDocument);
 
-      const results = await storeService.searchStore(library, version, "testing");
+      const results = await docService.searchStore(library, version, "testing");
       expect(mockStore.addDocuments).toHaveBeenCalledWith(
         library,
         version,
@@ -108,18 +103,7 @@ describe("VectorStoreService", () => {
           expect.objectContaining({ pageContent: validDocument.pageContent }),
         ]),
       );
-      expect(results).toEqual([
-        {
-          content: "Test document content about testing",
-          score: 0.8,
-          metadata: {
-            url: "http://example.com",
-            title: "Test Doc",
-            library: "test-lib",
-            version: "1.0.0",
-          },
-        },
-      ]);
+      expect(results).toEqual(["Mocked search result"]); // Expect mocked result
     });
 
     it("should preserve semantic metadata when processing markdown documents", async () => {
@@ -134,22 +118,9 @@ describe("VectorStoreService", () => {
       });
 
       // Mock the search result to match what would actually be stored after processing
-      mockStore.search.mockResolvedValue([
-        {
-          pageContent: "More testing content",
-          metadata: {
-            url: "http://example.com/docs",
-            title: "Root Doc", // Should match the original document metadata
-            library,
-            version,
-            level: 2,
-            path: ["Chapter 1", "Section 1.1"],
-            score: 0.8,
-          },
-        },
-      ]);
+      mockRetriever.search.mockResolvedValue(["Mocked search result"]);
 
-      await storeService.addDocument(library, version, document);
+      await docService.addDocument(library, version, document);
 
       // Verify the documents were stored with semantic metadata
       expect(mockStore.addDocuments).toHaveBeenCalledWith(
@@ -158,7 +129,7 @@ describe("VectorStoreService", () => {
         expect.arrayContaining([
           expect.objectContaining({
             metadata: expect.objectContaining({
-              level: 2,
+              level: 1,
               path: expect.arrayContaining(["Chapter 1", "Section 1.1"]),
             }),
           }),
@@ -166,15 +137,8 @@ describe("VectorStoreService", () => {
       );
 
       // Verify search results preserve metadata
-      const results = await storeService.searchStore(library, version, "testing");
-      expect(results[0].metadata).toEqual({
-        url: "http://example.com/docs",
-        title: "Root Doc",
-        library: "test-lib",
-        version: "1.0.0",
-        level: 2,
-        path: ["Chapter 1", "Section 1.1"],
-      });
+      const results = await docService.searchStore(library, version, "testing");
+      expect(results).toEqual(["Mocked search result"]);
     });
   });
 
@@ -182,14 +146,14 @@ describe("VectorStoreService", () => {
     const library = "test-lib";
     const version = "1.0.0";
 
-    await storeService.removeAllDocuments(library, version);
+    await docService.removeAllDocuments(library, version);
     expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, version);
   });
 
   describe("listVersions", () => {
     it("should return an empty array if the library has no documents", async () => {
       mockStore.queryUniqueVersions.mockResolvedValue([]);
-      const versions = await storeService.listVersions("nonexistent-lib");
+      const versions = await docService.listVersions("nonexistent-lib");
       expect(versions).toEqual([]);
     });
 
@@ -197,7 +161,7 @@ describe("VectorStoreService", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "1.2.0"]);
 
-      const versions = await storeService.listVersions(library);
+      const versions = await docService.listVersions(library);
       expect(versions).toEqual([
         { version: "1.0.0", indexed: true },
         { version: "1.1.0", indexed: true },
@@ -212,7 +176,7 @@ describe("VectorStoreService", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "2.0.0"]);
 
-      const bestVersion = await storeService.findBestVersion(library, "1.5.0");
+      const bestVersion = await docService.findBestVersion(library, "1.5.0");
       expect(bestVersion).toBe("1.1.0");
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
@@ -221,8 +185,8 @@ describe("VectorStoreService", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "1.1.1"]);
 
-      expect(await storeService.findBestVersion(library, "1.5.0")).toBe("1.1.1");
-      expect(await storeService.findBestVersion(library, "2.0.0")).toBe("1.1.1");
+      expect(await docService.findBestVersion(library, "1.5.0")).toBe("1.1.1");
+      expect(await docService.findBestVersion(library, "2.0.0")).toBe("1.1.1");
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
 
@@ -234,19 +198,17 @@ describe("VectorStoreService", () => {
         { version: "1.1.0", indexed: true },
       ];
 
-      await expect(storeService.findBestVersion(library, "invalid")).rejects.toThrow(
+      await expect(docService.findBestVersion(library, "invalid")).rejects.toThrow(
         VersionNotFoundError,
       );
-      await expect(storeService.findBestVersion(library, "1.x.2")).rejects.toThrow(
+      await expect(docService.findBestVersion(library, "1.x.2")).rejects.toThrow(
         VersionNotFoundError,
       );
-      await expect(storeService.findBestVersion(library, "1.2.3-alpha")).rejects.toThrow(
+      await expect(docService.findBestVersion(library, "1.2.3-alpha")).rejects.toThrow(
         VersionNotFoundError,
       );
 
-      const error = await storeService
-        .findBestVersion(library, "invalid")
-        .catch((e) => e);
+      const error = await docService.findBestVersion(library, "invalid").catch((e) => e);
       expect(error).toBeInstanceOf(VersionNotFoundError);
       expect(error.library).toBe(library);
       expect(error.requestedVersion).toBe("invalid");
@@ -259,7 +221,7 @@ describe("VectorStoreService", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue([]);
 
-      const promise = storeService.findBestVersion(library, "1.0.0");
+      const promise = docService.findBestVersion(library, "1.0.0");
       await expect(promise).rejects.toThrow(VersionNotFoundError);
 
       const error = await promise.catch((e) => e);
@@ -270,8 +232,8 @@ describe("VectorStoreService", () => {
       const library = "test-lib";
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "2.0.0", "3.0.0"]);
 
-      const latestVersion = await storeService.findBestVersion(library, "latest");
-      const defaultVersion = await storeService.findBestVersion(library);
+      const latestVersion = await docService.findBestVersion(library, "latest");
+      const defaultVersion = await docService.findBestVersion(library);
 
       expect(latestVersion).toBe("3.0.0");
       expect(defaultVersion).toBe("3.0.0");
@@ -287,7 +249,7 @@ describe("VectorStoreService", () => {
       ]);
       mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
 
-      const result = await storeService.listLibraries();
+      const result = await docService.listLibraries();
       expect(result).toEqual([
         {
           library: "lib1",
@@ -305,7 +267,7 @@ describe("VectorStoreService", () => {
 
     it("should return an empty array if there are no libraries", async () => {
       mockStore.queryLibraryVersions.mockResolvedValue(new Map());
-      const result = await storeService.listLibraries();
+      const result = await docService.listLibraries();
       expect(result).toEqual([]);
     });
   });

@@ -119,7 +119,8 @@ export class HtmlProcessor implements ContentProcessor {
           }
         }
 
-        return `\n\`\`\`${language}\n${content}\n\`\`\`\n`;
+        // use `node.textContent` to avoid escaping
+        return `\n\`\`\`${language}\n${node.textContent}\n\`\`\`\n`;
       },
     });
 

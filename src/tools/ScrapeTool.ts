@@ -1,6 +1,6 @@
 import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
 import type { ScraperProgress } from "../scraper/types";
-import type { VectorStoreService } from "../store/VectorStoreService";
+import type { DocumentManagementService } from "../store/DocumentManagementService";
 import type { ProgressResponse } from "../types";
 import { logger } from "../utils/logger";
 
@@ -26,23 +26,23 @@ export interface ScrapeResult {
  * Handles initialization of document processing pipeline and progress reporting.
  */
 export class ScrapeTool {
-  private storeService: VectorStoreService;
+  private docService: DocumentManagementService;
 
-  constructor(storeService: VectorStoreService) {
-    this.storeService = storeService;
+  constructor(docService: DocumentManagementService) {
+    this.docService = docService;
   }
 
   async execute(options: ScrapeToolOptions): Promise<ScrapeResult> {
     const { library, version, url, onProgress, options: scraperOptions } = options;
 
     // Initialize the store
-    await this.storeService.initialize();
+    await this.docService.initialize();
 
     // Remove any existing documents for this library/version
-    await this.storeService.removeAllDocuments(library, version);
+    await this.docService.removeAllDocuments(library, version);
     logger.info(`💾 Using clean store for ${library}@${version}`);
 
-    const pipeline = new DocumentProcessingPipeline(this.storeService, library, version);
+    const pipeline = new DocumentProcessingPipeline(this.docService, library, version);
     let currentPage = 0;
 
     const reportProgress = (text: string) => {

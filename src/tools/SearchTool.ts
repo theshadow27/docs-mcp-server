@@ -1,4 +1,4 @@
-import type { VectorStoreService } from "../store";
+import type { DocumentManagementService } from "../store";
 import type { StoreSearchResult } from "../store/types";
 import { logger } from "../utils/logger";
 import { VersionNotFoundError } from "./errors";
@@ -25,10 +25,10 @@ export interface SearchToolResult {
  * Returns available versions when requested version is not found.
  */
 export class SearchTool {
-  private storeService: VectorStoreService;
+  private docService: DocumentManagementService;
 
-  constructor(storeService: VectorStoreService) {
-    this.storeService = storeService;
+  constructor(docService: DocumentManagementService) {
+    this.docService = docService;
   }
 
   async execute(options: SearchToolOptions): Promise<SearchToolResult> {
@@ -41,9 +41,9 @@ export class SearchTool {
     try {
       const bestVersion = exactMatch
         ? version
-        : await this.storeService.findBestVersion(library, version);
+        : await this.docService.findBestVersion(library, version);
 
-      const results = await this.storeService.searchStore(
+      const results = await this.docService.searchStore(
         library,
         bestVersion,
         query,

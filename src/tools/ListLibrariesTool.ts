@@ -1,4 +1,4 @@
-import type { VectorStoreService } from "../store/VectorStoreService";
+import type { DocumentManagementService } from "../store/DocumentManagementService";
 
 export interface LibraryVersion {
   version: string;
@@ -18,14 +18,14 @@ export interface ListLibrariesResult {
  * Tool for listing all available libraries and their indexed versions in the store.
  */
 export class ListLibrariesTool {
-  private storeService: VectorStoreService;
+  private docService: DocumentManagementService;
 
-  constructor(storeService: VectorStoreService) {
-    this.storeService = storeService;
+  constructor(docService: DocumentManagementService) {
+    this.docService = docService;
   }
 
   async execute(options?: Record<string, never>): Promise<ListLibrariesResult> {
-    const rawLibraries = await this.storeService.listLibraries();
+    const rawLibraries = await this.docService.listLibraries();
 
     const libraries = rawLibraries.map(({ library, versions }) => ({
       name: library,

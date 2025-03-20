@@ -3,29 +3,29 @@ import "dotenv/config";
 import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
-import { VectorStoreService } from "./store/VectorStoreService";
+import { DocumentManagementService } from "./store/DocumentManagementService";
 import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
 async function main() {
-  const storeService = new VectorStoreService();
+  const docService = new DocumentManagementService();
 
   try {
-    await storeService.initialize();
+    await docService.initialize();
 
     const tools = {
-      listLibraries: new ListLibrariesTool(storeService),
-      findVersion: new FindVersionTool(storeService),
-      scrape: new ScrapeTool(storeService),
-      search: new SearchTool(storeService),
+      listLibraries: new ListLibrariesTool(docService),
+      findVersion: new FindVersionTool(docService),
+      scrape: new ScrapeTool(docService),
+      search: new SearchTool(docService),
     };
 
     const program = new Command();
 
     // Handle cleanup on SIGINT
     process.on("SIGINT", async () => {
-      await storeService.shutdown();
+      await docService.shutdown();
       process.exit(0);
     });
 
@@ -107,12 +107,12 @@ async function main() {
     await program.parseAsync();
   } catch (error) {
     console.error("Error:", error instanceof Error ? error.message : String(error));
-    await storeService.shutdown();
+    await docService.shutdown();
     process.exit(1);
   }
 
   // Clean shutdown after successful execution
-  await storeService.shutdown();
+  await docService.shutdown();
   process.exit(0);
 }
 

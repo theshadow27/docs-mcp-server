@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { GreedyMarkdownSplitter } from "./GreedyMarkdownSplitter";
+import { GreedySplitter } from "./GreedySplitter";
 import { SemanticMarkdownSplitter } from "./SemanticMarkdownSplitter";
 import type { ContentChunk } from "./types";
 
@@ -12,10 +12,10 @@ const createMockSemanticSplitter = (chunks: ContentChunk[]) => {
   return mockSemanticSplitter;
 };
 
-describe("GreedyMarkdownSplitter", () => {
+describe("GreedySplitter", () => {
   it("should handle empty input", async () => {
     const mockSemanticSplitter = createMockSemanticSplitter([]);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 15, 200); // Small enough that each chunk is above minimum
+    const splitter = new GreedySplitter(mockSemanticSplitter, 15, 200); // Small enough that each chunk is above minimum
     const result = await splitter.splitText("");
     expect(result).toEqual([]);
   });
@@ -29,7 +29,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 10, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual(initialChunks);
   });
@@ -48,7 +48,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 15, 200); // Small enough that each chunk is above minimum
+    const splitter = new GreedySplitter(mockSemanticSplitter, 15, 200); // Small enough that each chunk is above minimum
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -78,7 +78,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 10, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -113,7 +113,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 10, 30); // maxChunkSize = 30
+    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 30); // maxChunkSize = 30
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -143,7 +143,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 10, 200); // Small enough that each chunk is above minimum
+    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 200); // Small enough that each chunk is above minimum
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -168,7 +168,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -193,7 +193,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 0, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 0, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual(initialChunks);
   });
@@ -215,7 +215,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -249,7 +249,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -283,7 +283,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -316,7 +316,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -351,7 +351,7 @@ describe("GreedyMarkdownSplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 20, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 20, 200);
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -382,13 +382,11 @@ Some other text
 `;
 
     // Create a *real* SemanticMarkdownSplitter to get the initial chunks
-    const realSemanticSplitter = new SemanticMarkdownSplitter({
-      maxChunkSize: 200,
-    });
+    const realSemanticSplitter = new SemanticMarkdownSplitter(200);
     const initialChunks = await realSemanticSplitter.splitText(markdown);
 
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedyMarkdownSplitter(mockSemanticSplitter, 50, 200);
+    const splitter = new GreedySplitter(mockSemanticSplitter, 50, 200);
     const result = await splitter.splitText(markdown);
 
     expect(result.length).toBe(2);

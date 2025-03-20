@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScraperRegistry, ScraperService } from "../scraper";
 import type { ScraperOptions, ScraperProgress } from "../scraper/types";
-import { VectorStoreService } from "../store";
+import { DocumentManagementService } from "../store";
 import { logger } from "../utils/logger";
 import { DocumentProcessingPipeline } from "./DocumentProcessingPipeline";
 import { DocumentProcessingError, PipelineStateError } from "./errors";
@@ -10,9 +10,9 @@ import { DocumentProcessingError, PipelineStateError } from "./errors";
 const mockScrape = vi.fn();
 const mockAddDocument = vi.fn();
 
-// Create VectorStoreService instance and extend with mocked methods
-const vectorStoreService = new VectorStoreService();
-const mockedService = Object.assign(vectorStoreService, {
+// Create DocumentManagementService instance and extend with mocked methods
+const docMgmntService = new DocumentManagementService();
+const mockedService = Object.assign(docMgmntService, {
   initialize: vi.fn(),
   exists: vi.fn(),
   addDocument: mockAddDocument,
@@ -68,7 +68,7 @@ describe("DocumentProcessingPipeline", () => {
     vi.clearAllMocks();
     mockedService.initialize.mockResolvedValue(undefined);
     mockedService.exists.mockResolvedValue(true);
-    pipeline = new DocumentProcessingPipeline(vectorStoreService, "test-lib", "1.0.0");
+    pipeline = new DocumentProcessingPipeline(docMgmntService, "test-lib", "1.0.0");
   });
 
   it("should initialize with correct state", () => {

@@ -12,13 +12,6 @@ import { TextContentSplitter } from "./splitters/TextContentSplitter";
 import type { ContentChunk, DocumentSplitter, SectionContentType } from "./types";
 
 /**
- * Configuration for the markdown splitter
- */
-export interface SemanticMarkdownSplitterOptions {
-  maxChunkSize: number; // Default: 1500
-}
-
-/**
  * Represents a section of content within a document,
  * typically defined by a heading
  */
@@ -41,16 +34,11 @@ interface DocumentSection {
  */
 export class SemanticMarkdownSplitter implements DocumentSplitter {
   private turndownService: TurndownService;
-  private readonly config: Required<SemanticMarkdownSplitterOptions>;
   public textSplitter: TextContentSplitter;
   public codeSplitter: CodeContentSplitter;
   public tableSplitter: TableContentSplitter;
 
-  constructor(options: Partial<SemanticMarkdownSplitterOptions> = {}) {
-    this.config = {
-      maxChunkSize: options.maxChunkSize ?? 1500,
-    };
-
+  constructor(private maxChunkSize: number) {
     this.turndownService = new TurndownService({
       headingStyle: "atx",
       hr: "---",
@@ -94,13 +82,13 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
     });
 
     this.textSplitter = new TextContentSplitter({
-      maxChunkSize: this.config.maxChunkSize,
+      maxChunkSize: this.maxChunkSize,
     });
     this.codeSplitter = new CodeContentSplitter({
-      maxChunkSize: this.config.maxChunkSize,
+      maxChunkSize: this.maxChunkSize,
     });
     this.tableSplitter = new TableContentSplitter({
-      maxChunkSize: this.config.maxChunkSize,
+      maxChunkSize: this.maxChunkSize,
     });
   }
 
@@ -166,7 +154,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
       } else if (element.tagName === "PRE") {
         // Code blocks are kept as separate chunks
         const code = element.querySelector("code");
-        const language = code?.className.replace("language-", "") || undefined;
+        const language = code?.className.replace("language-", "") || "";
         const content = code?.textContent || element.textContent || "";
         const markdown = `${"```"}${language}\n${content}\n${"```"}`;
 

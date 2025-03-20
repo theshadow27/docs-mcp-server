@@ -4,13 +4,13 @@ import { MinimumChunkSizeError } from "./errors";
 
 describe("SemanticMarkdownSplitter", () => {
   it("should handle empty markdown", async () => {
-    const splitter = new SemanticMarkdownSplitter();
+    const splitter = new SemanticMarkdownSplitter(100);
     const result = await splitter.splitText("");
     expect(result).toEqual([]);
   });
 
   it("should handle markdown with no headings", async () => {
-    const splitter = new SemanticMarkdownSplitter();
+    const splitter = new SemanticMarkdownSplitter(100);
     const markdown = "This is some text without any headings.";
     const result = await splitter.splitText(markdown);
 
@@ -27,7 +27,7 @@ describe("SemanticMarkdownSplitter", () => {
   });
 
   it("should correctly split on H1-H6 headings", async () => {
-    const splitter = new SemanticMarkdownSplitter();
+    const splitter = new SemanticMarkdownSplitter(100);
     const markdown = `
 # Chapter 1
 Some text in chapter 1.
@@ -215,7 +215,7 @@ Text in chapter 2.
   });
 
   it("should separate headings, text, code, and tables", async () => {
-    const splitter = new SemanticMarkdownSplitter();
+    const splitter = new SemanticMarkdownSplitter(100);
     const markdown = `
 # Mixed Content Section
 
@@ -270,7 +270,7 @@ console.log('Hello');
   });
 
   it("should correctly split long tables while preserving headers", async () => {
-    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 100 });
+    const splitter = new SemanticMarkdownSplitter(100);
 
     // Create a table with many rows that will exceed maxChunkSize
     const tableRows = Array.from(
@@ -306,7 +306,7 @@ ${tableRows}
   });
 
   it("should correctly split long code blocks while preserving language", async () => {
-    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 100 });
+    const splitter = new SemanticMarkdownSplitter(100);
 
     // Create a long code block that will exceed maxChunkSize
     const codeLines = Array.from(
@@ -341,7 +341,7 @@ ${codeLines}
   });
 
   it("should throw MinimumChunkSizeError when table cannot be split further", async () => {
-    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 20 });
+    const splitter = new SemanticMarkdownSplitter(20);
     const markdown = `
 | Header1 | Header2 |
 |---------|---------|
@@ -351,7 +351,7 @@ ${codeLines}
   });
 
   it("should throw MinimumChunkSizeError when code block cannot be split further", async () => {
-    const splitter = new SemanticMarkdownSplitter({ maxChunkSize: 20 });
+    const splitter = new SemanticMarkdownSplitter(20);
     const markdown = "```javascript\nconst x = 1;\n```";
 
     await expect(splitter.splitText(markdown)).rejects.toThrow(MinimumChunkSizeError);

@@ -9,7 +9,7 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 
 ### Core File Naming and Code Quality Conventions
 
-- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `VectorStoreService.ts`)
+- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `DocumentManagementService.ts`)
 - Other files use kebab-case or regular camelCase (e.g., `index.ts`, `scraper-service.ts`)
 - Avoid typecasting where possible. Never use `any` type but prefer `unknown` or `never`.
 
@@ -24,11 +24,16 @@ src/
 │   ├── strategies/                  # Scraping strategies for different sources
 │   │   ├── WebScraperStrategy.ts    # Handles HTTP/HTTPS content
 │   │   └── LocalFileStrategy.ts     # Handles local filesystem content
+│   │   └── ...
 │   ├── fetcher/                     # Content fetching abstractions
 │   ├── processor/                   # Content processing abstractions
-│   └── types.ts                     # Shared scraper types
+│   └── ...
 ├── splitter/                        # Document splitting and chunking
-├── store/                           # Vector store and document storage
+├── store/                           # Document storage and retrieval
+│   ├── DocumentManagementService.ts # Manages document storage and updates
+│   ├── DocumentRetrieverService.ts  # Handles document retrieval and context
+│   ├── DocumentStore.ts             # Low-level database interactions
+│   └── ...
 ├── tools/                           # Core functionality tools
 ├── types/                           # Shared type definitions
 └── utils/                           # Common utilities and helpers
@@ -78,6 +83,8 @@ Current tools include:
 - Library version management
 - Document management operations
 
+The tools interact with the `DocumentManagementService` for managing and retrieving documents. This ensures a consistent interface for all tools and simplifies the integration with the document storage system.
+
 ### Document Storage Design
 
 Documents are stored with URLs and sequential ordering to maintain source context:
@@ -91,6 +98,15 @@ graph LR
 ```
 
 Search results include surrounding content to provide more complete responses, while maintaining efficient retrieval through compound indexing.
+
+### Document Management and Retrieval
+
+The document storage and retrieval system is divided into two main services:
+
+- **DocumentManagementService:** This service is responsible for managing documents within the store. It handles adding new documents, deleting existing documents, and updating the store. It also includes functionality for finding the best matching version of a library's documentation.
+- **DocumentRetrieverService:** This service focuses on retrieving documents and providing contextual information. It handles searching for documents and retrieving related content, such as parent, child, preceding, and subsequent sibling chunks, to provide more complete search results.
+
+This separation of concerns improves the modularity, maintainability, and testability of the system.
 
 ### Interface-Specific Adapters
 

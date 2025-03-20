@@ -1,3 +1,3 @@
 export * from "./SemanticMarkdownSplitter";
-export * from "./GreedyMarkdownSplitter";
+export * from "./GreedySplitter";
 export * from "./errors";

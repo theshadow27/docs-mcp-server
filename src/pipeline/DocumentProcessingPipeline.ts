@@ -1,6 +1,6 @@
 import { ScraperRegistry, ScraperService } from "../scraper";
 import type { ScraperOptions, ScraperProgress } from "../scraper/types";
-import type { VectorStoreService } from "../store";
+import type { DocumentManagementService } from "../store";
 import { logger } from "../utils/logger";
 import { DocumentProcessingError, PipelineStateError } from "./errors";
 import type { DocumentPipeline, DocumentPipelineCallbacks } from "./types";
@@ -13,7 +13,7 @@ import type { DocumentPipeline, DocumentPipelineCallbacks } from "./types";
  * from source to vector store.
  */
 export class DocumentProcessingPipeline implements DocumentPipeline {
-  private readonly store: VectorStoreService;
+  private readonly store: DocumentManagementService;
   private readonly library: string;
   private readonly version: string;
   private callbacks: DocumentPipelineCallbacks = {};
@@ -21,7 +21,7 @@ export class DocumentProcessingPipeline implements DocumentPipeline {
   private registry: ScraperRegistry;
   private scraperService: ScraperService;
 
-  constructor(store: VectorStoreService, library: string, version: string) {
+  constructor(store: DocumentManagementService, library: string, version: string) {
     this.store = store;
     this.library = library;
     this.version = version;

@@ -105,14 +105,14 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
                 }
               } catch (error) {
                 // Invalid URL or path
-                logger.warn(`Invalid URL: ${value}`);
+                logger.warn(`❌ Invalid URL: ${value}`);
               }
               return null;
             })
             .filter((item): item is QueueItem => item !== null);
         } catch (error) {
           if (options.ignoreErrors) {
-            logger.error(`Failed to process ${item.value}: ${error}`);
+            logger.error(`❌ Failed to process ${item.value}: ${error}`);
             return [];
           }
           throw error;

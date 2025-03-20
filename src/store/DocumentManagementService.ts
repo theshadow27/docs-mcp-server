@@ -1,9 +1,10 @@
 import type { Document } from "@langchain/core/documents";
 import semver from "semver";
-import { SemanticMarkdownSplitter } from "../splitter";
-import type { ContentChunk } from "../splitter/types";
+import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
+import type { ContentChunk, DocumentSplitter } from "../splitter/types";
 import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
+import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
 import { ConnectionError, StoreError } from "./errors";
 import type { LibraryVersion, StoreSearchResult } from "./types";
@@ -11,8 +12,10 @@ import type { LibraryVersion, StoreSearchResult } from "./types";
 /**
  * Provides semantic search capabilities across different versions of library documentation.
  */
-export class VectorStoreService {
+export class DocumentManagementService {
   private readonly store: DocumentStore;
+  private readonly documentRetriever: DocumentRetrieverService;
+  private readonly splitter: DocumentSplitter;
 
   constructor() {
     const connectionString = process.env.POSTGRES_CONNECTION || "";
@@ -20,6 +23,18 @@ export class VectorStoreService {
       throw new ConnectionError("POSTGRES_CONNECTION environment variable is required");
     }
     this.store = new DocumentStore(connectionString);
+    this.documentRetriever = new DocumentRetrieverService(this.store);
+
+    const minChunkSize = 500;
+    const maxChunkSize = 1500;
+    const semanticSplitter = new SemanticMarkdownSplitter(maxChunkSize);
+    const greedySplitter = new GreedySplitter(
+      semanticSplitter,
+      minChunkSize,
+      maxChunkSize,
+    );
+
+    this.splitter = greedySplitter;
   }
 
   async initialize(): Promise<void> {
@@ -135,16 +150,12 @@ export class VectorStoreService {
 
     logger.info(`📚 Adding document: ${document.metadata.title}`);
 
-    const splitter = new SemanticMarkdownSplitter({
-      maxChunkSize: 1500,
-    });
-
     if (!document.pageContent.trim()) {
       throw new Error("Document content cannot be empty");
     }
 
     // Split document into semantic chunks
-    const chunks = await splitter.splitText(document.pageContent);
+    const chunks = await this.splitter.splitText(document.pageContent);
 
     // Convert semantic chunks to documents
     const splitDocs = chunks.map((chunk: ContentChunk) => ({
@@ -171,20 +182,7 @@ export class VectorStoreService {
     query: string,
     limit = 5,
   ): Promise<StoreSearchResult[]> {
-    const results = await this.store.search(library, version, query, limit);
-
-    return results.map((doc) => ({
-      content: doc.pageContent,
-      score: doc.metadata.score ?? 0,
-      metadata: {
-        url: doc.metadata.url as string,
-        title: doc.metadata.title as string,
-        library: doc.metadata.library as string,
-        version: doc.metadata.version as string,
-        level: doc.metadata.level as number,
-        path: doc.metadata.path as string[],
-      },
-    }));
+    return this.documentRetriever.search(library, version, query, limit);
   }
 
   async listLibraries(): Promise<

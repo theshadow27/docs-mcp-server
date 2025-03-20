@@ -3,7 +3,7 @@ import "dotenv/config";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { VectorStoreService } from "../store/VectorStoreService";
+import { DocumentManagementService } from "../store/DocumentManagementService";
 import {
   FindVersionTool,
   ListLibrariesTool,
@@ -14,16 +14,16 @@ import {
 import { createError, createResponse } from "./utils";
 
 export async function startServer() {
-  const storeService = new VectorStoreService();
+  const docService = new DocumentManagementService();
 
   try {
-    await storeService.initialize();
+    await docService.initialize();
 
     const tools = {
-      listLibraries: new ListLibrariesTool(storeService),
-      findVersion: new FindVersionTool(storeService),
-      scrape: new ScrapeTool(storeService),
-      search: new SearchTool(storeService),
+      listLibraries: new ListLibrariesTool(docService),
+      findVersion: new FindVersionTool(docService),
+      scrape: new ScrapeTool(docService),
+      search: new SearchTool(docService),
     };
 
     const server = new McpServer(
@@ -123,7 +123,7 @@ export async function startServer() {
           const formattedResults = result.results.map(
             (r, i) => `
 ------------------------------------------------------------
-Result ${i + 1}: ${r.metadata.url}
+Result ${i + 1}: ${r.url}
 
 ${r.content}\n`,
           );
@@ -277,12 +277,12 @@ ${formattedResults.join("")}`,
 
     // Handle cleanup
     process.on("SIGINT", async () => {
-      await storeService.shutdown();
+      await docService.shutdown();
       await server.close();
       process.exit(0);
     });
   } catch (error) {
-    await storeService.shutdown();
+    await docService.shutdown();
     console.error("Error:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }

@@ -10,7 +10,7 @@ import type { ContentChunk, DocumentSplitter, SectionContentType } from "./types
  * - Ensuring chunks are large enough to capture meaningful relationships
  * - Preventing chunks from becoming too large for effective embedding
  */
-export class GreedyMarkdownSplitter implements DocumentSplitter {
+export class GreedySplitter implements DocumentSplitter {
   private baseSplitter: DocumentSplitter;
   private minChunkSize: number;
   private maxChunkSize: number;
@@ -57,11 +57,7 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
           continue;
         }
         currentChunk.content += `\n${nextChunk.content}`;
-        currentChunk.section = this.mergeSectionInfo(
-          currentChunk,
-          nextChunk,
-          concatenatedChunks,
-        );
+        currentChunk.section = this.mergeSectionInfo(currentChunk, nextChunk);
         currentChunk.types = this.mergeTypes(currentChunk.types, nextChunk.types);
       } else {
         currentChunk = this.cloneChunk(nextChunk);
@@ -76,7 +72,6 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
   }
 
   private cloneChunk(chunk: ContentChunk): ContentChunk {
-    console.log("CLONE ======>", chunk);
     return {
       types: [...chunk.types],
       content: chunk.content,
@@ -128,7 +123,6 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
   private mergeSectionInfo(
     currentChunk: ContentChunk,
     nextChunk: ContentChunk,
-    previousMerges: ContentChunk[] = [],
   ): ContentChunk["section"] {
     // Always use the lowest level
     const level = Math.min(currentChunk.section.level, nextChunk.section.level);
@@ -162,14 +156,6 @@ export class GreedyMarkdownSplitter implements DocumentSplitter {
       currentChunk.section.path,
       nextChunk.section.path,
     );
-
-    // If no common path, use root
-    if (commonPath.length === 0) {
-      return {
-        path: [],
-        level,
-      };
-    }
 
     return {
       path: commonPath,
