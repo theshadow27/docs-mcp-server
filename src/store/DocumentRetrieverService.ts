@@ -51,7 +51,9 @@ export class DocumentRetrieverService {
         id,
         SIBLING_LIMIT,
       );
-      content += `${precedingSiblings.map((d) => d.pageContent).join("\n\n")}\n\n`;
+      if (precedingSiblings.length > 0) {
+        content += `${precedingSiblings.map((d) => d.pageContent).join("\n\n")}\n\n`;
+      }
 
       // Initial Result
       content += `${doc.pageContent}`;
@@ -63,7 +65,9 @@ export class DocumentRetrieverService {
         id,
         CHILD_LIMIT,
       );
-      content += `\n\n${childChunks.map((d) => d.pageContent).join("\n\n")}`;
+      if (childChunks.length > 0) {
+        content += `\n\n${childChunks.map((d) => d.pageContent).join("\n\n")}`;
+      }
 
       // Subsequent Siblings
       const subsequentSiblings = await this.documentStore.findSubsequentSiblingChunks(
@@ -72,7 +76,9 @@ export class DocumentRetrieverService {
         id,
         SIBLING_LIMIT,
       );
-      content += `\n\n${subsequentSiblings.map((d) => d.pageContent).join("\n\n")}`;
+      if (subsequentSiblings.length > 0) {
+        content += `\n\n${subsequentSiblings.map((d) => d.pageContent).join("\n\n")}`;
+      }
 
       results.push({
         url: doc.metadata.url,

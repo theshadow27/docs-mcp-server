@@ -101,11 +101,12 @@ describe("DocumentRetrieverService", () => {
     );
 
     expect(results).toEqual([
-      { content: "Parent content", url: "url" },
-      { content: "Preceding sibling 1", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Child 1 content", url: "url" },
-      { content: "Subsequent sibling 1", url: "url" },
+      {
+        content:
+          "Parent content\n\nPreceding sibling 1\n\nInitial content\n\nChild 1 content\n\nSubsequent sibling 1",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -148,10 +149,12 @@ describe("DocumentRetrieverService", () => {
     const results = await retrieverService.search(library, version, query);
 
     expect(results).toEqual([
-      { content: "Preceding sibling 1", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Child 1 content", url: "url" },
-      { content: "Subsequent sibling 1", url: "url" },
+      {
+        content:
+          "Preceding sibling 1\n\nInitial content\n\nChild 1 content\n\nSubsequent sibling 1",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -192,10 +195,12 @@ describe("DocumentRetrieverService", () => {
     const results = await retrieverService.search(library, version, query);
 
     expect(results).toEqual([
-      { content: "Parent content", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Child 1 content", url: "url" },
-      { content: "Subsequent sibling 1", url: "url" },
+      {
+        content:
+          "Parent content\n\nInitial content\n\nChild 1 content\n\nSubsequent sibling 1",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -238,10 +243,12 @@ describe("DocumentRetrieverService", () => {
     const results = await retrieverService.search(library, version, query);
 
     expect(results).toEqual([
-      { content: "Parent content", url: "url" },
-      { content: "Preceding sibling 1", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Subsequent sibling 1", url: "url" },
+      {
+        content:
+          "Parent content\n\nPreceding sibling 1\n\nInitial content\n\nSubsequent sibling 1",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -282,10 +289,12 @@ describe("DocumentRetrieverService", () => {
     const results = await retrieverService.search(library, version, query);
 
     expect(results).toEqual([
-      { content: "Parent content", url: "url" },
-      { content: "Preceding sibling 1", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Child 1 content", url: "url" },
+      {
+        content:
+          "Parent content\n\nPreceding sibling 1\n\nInitial content\n\nChild 1 content",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -316,8 +325,16 @@ describe("DocumentRetrieverService", () => {
     const results = await retrieverService.search(library, version, query);
 
     expect(results).toEqual([
-      { content: "Initial content 1", url: "url" },
-      { content: "Initial content 2", url: "url" },
+      {
+        content: "Initial content 1",
+        url: "url",
+        score: undefined,
+      },
+      {
+        content: "Initial content 2",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 
@@ -372,11 +389,12 @@ describe("DocumentRetrieverService", () => {
       limit,
     ); // Verify limit is passed to findByContent
     expect(results).toEqual([
-      { content: "Parent content", url: "url" },
-      { content: "Preceding sibling 1", url: "url" },
-      { content: "Initial content", url: "url" },
-      { content: "Child 1 content", url: "url" },
-      { content: "Subsequent sibling 1", url: "url" },
+      {
+        content:
+          "Parent content\n\nPreceding sibling 1\n\nInitial content\n\nChild 1 content\n\nSubsequent sibling 1",
+        url: "url",
+        score: undefined,
+      },
     ]);
   });
 });
