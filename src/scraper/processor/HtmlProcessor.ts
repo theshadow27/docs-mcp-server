@@ -1,5 +1,5 @@
 import createDOMPurify, { type WindowLike } from "dompurify";
-import { type HTMLElement, Window } from "happy-dom";
+import { JSDOM } from "jsdom";
 import TurndownService from "turndown";
 import { ScraperError } from "../../utils/errors";
 import type { RawContent } from "../fetcher/types";
@@ -129,6 +129,7 @@ export class HtmlProcessor implements ContentProcessor {
         return `\n\n${cleanedContent}\n\n`;
       },
     });
+
     this.options = options || {};
   }
 
@@ -153,8 +154,7 @@ export class HtmlProcessor implements ContentProcessor {
     const titleMatch = htmlContent.match(/<title>([^<]+)<\/title>/i);
     const title = titleMatch?.[1] || "Untitled";
 
-    const window = new Window();
-    window.location.href = content.source;
+    const window = new JSDOM(content.content, { url: content.source }).window;
 
     const purify = createDOMPurify(window as unknown as WindowLike);
     const purifiedContent = purify.sanitize(htmlContent, {
@@ -165,22 +165,6 @@ export class HtmlProcessor implements ContentProcessor {
     // Note that we extract links before removing elements, so
     // we don't miss links in the navigation or footer
     const linkElements = purifiedContent.querySelectorAll("a[href]");
-
-    const selectorsToRemove = [
-      ...(this.options.excludeSelectors || []),
-      ...this.selectorsToRemove,
-    ];
-
-    // Remove unwanted elements using selectorsToRemove
-    for (const selector of selectorsToRemove) {
-      const elements = purifiedContent.querySelectorAll(selector);
-      for (const el of elements) {
-        el.remove();
-      }
-    }
-
-    // Convert back to string
-    const cleanedContent = purifiedContent.innerHTML;
 
     // Filter extracted links if requested
     let links: string[] = [];
@@ -197,6 +181,22 @@ export class HtmlProcessor implements ContentProcessor {
         })
         .filter((url): url is string => url !== null);
     }
+
+    // Remove unwanted elements using selectorsToRemove
+    const selectorsToRemove = [
+      ...(this.options.excludeSelectors || []),
+      ...this.selectorsToRemove,
+    ];
+
+    for (const selector of selectorsToRemove) {
+      const elements = purifiedContent.querySelectorAll(selector);
+      for (const el of elements) {
+        el.remove();
+      }
+    }
+
+    // Convert back to string
+    const cleanedContent = purifiedContent.innerHTML;
 
     const markdown = this.turndownService.turndown(cleanedContent || "").trim();
     if (!markdown) {

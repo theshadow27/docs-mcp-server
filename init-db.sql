@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS documents (
     sort_order BIGSERIAL
 );
 
--- Create indexes for improved search performance
-CREATE INDEX IF NOT EXISTS idx_documents_library ON documents(library);
-CREATE INDEX IF NOT EXISTS idx_documents_version ON documents(version);
+-- Create case-insensitive indexes for improved search performance
+CREATE INDEX IF NOT EXISTS idx_documents_library_lower ON documents(LOWER(library));
+CREATE INDEX IF NOT EXISTS idx_documents_version_lower ON documents(LOWER(version));
 CREATE INDEX IF NOT EXISTS idx_documents_content_search ON documents USING GIN(content_search);
 CREATE INDEX IF NOT EXISTS idx_documents_url_sort ON documents(url, library, version, sort_order);
 
@@ -49,7 +49,7 @@ BEGIN
     END IF;
     
     INSERT INTO documents (library, version, url, content, metadata, embedding, content_search)
-    VALUES (p_library, p_version, p_url, p_content, p_metadata, p_embedding, to_tsvector('english', 
+    VALUES (LOWER(p_library), LOWER(p_version), p_url, p_content, p_metadata, p_embedding, to_tsvector('english', 
         '<title>' || coalesce(p_metadata->>'title', '') || '</title>' ||
         '<url>' || coalesce(p_metadata->>'url', '') || '</url>' ||
         '<path>' || coalesce((SELECT string_agg(elem, ' / ') FROM jsonb_array_elements_text(p_metadata->'path') AS elem), '') || '</path>' ||
@@ -80,8 +80,8 @@ BEGIN
     
     WITH deleted AS (
         DELETE FROM documents
-        WHERE library = p_library
-        AND version = p_version
+        WHERE LOWER(library) = LOWER(p_library)
+        AND LOWER(version) = LOWER(p_version)
         RETURNING 1
     )
     SELECT COUNT(*) INTO v_count FROM deleted;

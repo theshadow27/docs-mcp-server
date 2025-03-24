@@ -3,6 +3,7 @@ import type { ScraperProgress } from "../scraper/types";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import type { ProgressResponse } from "../types";
 import { logger } from "../utils/logger";
+import * as semver from "semver";
 
 export interface ScrapeToolOptions {
   library: string;
@@ -39,10 +40,19 @@ export class ScrapeTool {
     await this.docService.initialize();
 
     // Remove any existing documents for this library/version
-    await this.docService.removeAllDocuments(library, version);
-    logger.info(`💾 Using clean store for ${library}@${version}`);
+    const normalizedVersion = semver.valid(semver.coerce(version));
+    if (!normalizedVersion) {
+      throw new Error(`Invalid version: ${version}`);
+    }
 
-    const pipeline = new DocumentProcessingPipeline(this.docService, library, version);
+    await this.docService.removeAllDocuments(library, normalizedVersion);
+    logger.info(`💾 Using clean store for ${library}@${normalizedVersion}`);
+
+    const pipeline = new DocumentProcessingPipeline(
+      this.docService,
+      library,
+      normalizedVersion,
+    );
     let pagesScraped = 0;
 
     const reportProgress = (text: string) => {
@@ -73,7 +83,7 @@ export class ScrapeTool {
     await pipeline.process({
       url: url,
       library: library,
-      version: version,
+      version: normalizedVersion,
       subpagesOnly: true,
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,

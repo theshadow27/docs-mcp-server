@@ -67,7 +67,7 @@ export class DocumentStore {
     try {
       const result = await this.pool.query(
         "SELECT DISTINCT version FROM documents WHERE library = $1",
-        [library],
+        [library.toLowerCase()],
       );
       return result.rows.map((row) => row.version);
     } catch (error) {
@@ -85,7 +85,7 @@ export class DocumentStore {
     try {
       const result = await this.pool.query(
         "SELECT EXISTS(SELECT 1 FROM documents WHERE library = $1 AND version = $2)",
-        [library, version],
+        [library.toLowerCase(), version.toLowerCase()],
       );
       return result.rows[0].exists;
     } catch (error) {
@@ -157,8 +157,8 @@ export class DocumentStore {
         }
 
         await this.pool.query("SELECT add_document($1, $2, $3, $4, $5, $6)", [
-          library,
-          version,
+          library.toLowerCase(),
+          version.toLowerCase(),
           url,
           doc.pageContent,
           doc.metadata,
@@ -184,7 +184,7 @@ export class DocumentStore {
     try {
       const result = await this.pool.query<{ delete_documents: number }>(
         "SELECT delete_documents($1, $2)",
-        [library, version],
+        [library.toLowerCase(), version.toLowerCase()],
       );
       return result.rows[0].delete_documents;
     } catch (error) {
@@ -298,7 +298,15 @@ JOIN documents d ON cr.id = d.id
 WHERE d.library = $1 AND d.version = $2
 ORDER BY cr.rrf_score DESC
 LIMIT $5`,
-        [library, version, query, vectorStr, limit, keywordWeight, embeddingWeight],
+        [
+          library.toLowerCase(),
+          version.toLowerCase(),
+          query,
+          vectorStr,
+          limit,
+          keywordWeight,
+          embeddingWeight,
+        ],
       );
 
       return result.rows.map((row) => ({
@@ -356,7 +364,7 @@ LIMIT $5`,
         AND jsonb_array_length(d.metadata->'path') = p.path_length + 1  -- Exactly one level deeper
         ORDER BY d.sort_order, d.id  -- Use sort_order column directly
         LIMIT $4`,
-        [library, version, id, limit],
+        [library.toLowerCase(), version.toLowerCase(), id, limit],
       );
 
       return result.rows.map((row) => ({
@@ -404,7 +412,7 @@ LIMIT $5`,
         AND d.sort_order < r.sort_order
         ORDER BY d.sort_order DESC  -- Reverse order to get immediate predecessors
         LIMIT $4`,
-        [library, version, id, limit],
+        [library.toLowerCase(), version.toLowerCase(), id, limit],
       );
 
       return result.rows.reverse().map((row) => ({
@@ -452,7 +460,7 @@ LIMIT $5`,
         AND d.sort_order > r.sort_order
         ORDER BY d.sort_order  -- Forward order for subsequent siblings
         LIMIT $4`,
-        [library, version, id, limit],
+        [library.toLowerCase(), version.toLowerCase(), id, limit],
       );
       return result.rows.map((row) => ({
         id: row.id,
@@ -490,7 +498,7 @@ LIMIT $5`,
         WHERE d.library = $1 AND d.version = $2
         AND d.url = r.url
         AND d.metadata->'path' = (r.path::jsonb - (jsonb_array_length(r.path) - 1))`,
-        [library, version, id],
+        [library.toLowerCase(), version.toLowerCase(), id],
       );
       if (result.rows.length === 0) {
         return null;

@@ -1,4 +1,4 @@
-import { type Document as HappyDocument, Window } from "happy-dom";
+import { JSDOM } from "jsdom";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
@@ -106,7 +106,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
    * Step 1: Split document into sections based on H1-H6 headings,
    * as well as code blocks and tables.
    */
-  private async splitIntoSections(dom: HappyDocument): Promise<DocumentSection[]> {
+  private async splitIntoSections(dom: Document): Promise<DocumentSection[]> {
     const body = dom.querySelector("body");
     if (!body) {
       throw new Error("Invalid HTML structure: no body element found");
@@ -123,7 +123,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
       if (headingMatch) {
         // Create new section for H1-H6 heading
         const level = Number.parseInt(headingMatch[1], 10);
-        const title = fullTrim(element.textContent);
+        const title = fullTrim(element.textContent || "");
 
         // Pop sections from stack until we find the parent level
         while (stack.length > 1 && stack[stack.length - 1].level >= level) {
@@ -331,11 +331,10 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
   }
 
   /**
-   * Parse HTML using happy-dom
+   * Parse HTML
    */
-  private async parseHtml(html: string): Promise<HappyDocument> {
-    const window = new Window();
-    window.document.write(html);
+  private async parseHtml(html: string): Promise<Document> {
+    const { window } = new JSDOM(html);
     return window.document;
   }
 }
