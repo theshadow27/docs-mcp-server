@@ -340,20 +340,34 @@ ${codeLines}
     }
   });
 
-  it("should throw MinimumChunkSizeError when table cannot be split further", async () => {
+  it("should handle tables that cannot be split semantically by using character-based splitting", async () => {
     const splitter = new SemanticMarkdownSplitter(20);
     const markdown = `
 | Header1 | Header2 |
 |---------|---------|
 | Cell1   | Cell2   |`;
 
-    await expect(splitter.splitText(markdown)).rejects.toThrow(MinimumChunkSizeError);
+    // Should not throw an error anymore
+    const result = await splitter.splitText(markdown);
+
+    // Verify we got chunks back
+    expect(result.length).toBeGreaterThan(0);
+
+    // Each chunk should be under the max size
+    expect(result.every((chunk) => chunk.content.length <= 20)).toBe(true);
   });
 
-  it("should throw MinimumChunkSizeError when code block cannot be split further", async () => {
+  it("should handle code blocks that cannot be split semantically by using character-based splitting", async () => {
     const splitter = new SemanticMarkdownSplitter(20);
     const markdown = "```javascript\nconst x = 1;\n```";
 
-    await expect(splitter.splitText(markdown)).rejects.toThrow(MinimumChunkSizeError);
+    // Should not throw an error anymore
+    const result = await splitter.splitText(markdown);
+
+    // Verify we got chunks back
+    expect(result.length).toBeGreaterThan(0);
+
+    // Each chunk should be under the max size
+    expect(result.every((chunk) => chunk.content.length <= 20)).toBe(true);
   });
 });

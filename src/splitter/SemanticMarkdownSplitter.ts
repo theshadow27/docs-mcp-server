@@ -1,4 +1,5 @@
 import { type Document as HappyDocument, Window } from "happy-dom";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 import remarkParse from "remark-parse";
@@ -46,8 +47,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
       codeBlockStyle: "fenced",
       emDelimiter: "_",
       strongDelimiter: "**",
-      linkStyle: "referenced",
-      linkReferenceStyle: "full",
+      linkStyle: "inlined",
     });
 
     // Add table rule to preserve markdown table format
@@ -235,15 +235,51 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
             }
           }
         } catch (err) {
-          // Re-throw MinimumChunkSizeError, wrap other errors
+          // If it's a MinimumChunkSizeError, use RecursiveCharacterTextSplitter directly
           if (err instanceof MinimumChunkSizeError) {
-            throw err;
+            console.warn(
+              `⚠ Cannot split ${content.type} chunk normally, using RecursiveCharacterTextSplitter: ${err.message}`,
+            );
+
+            // Create a RecursiveCharacterTextSplitter with aggressive settings to ensure splitting
+            const splitter = new RecursiveCharacterTextSplitter({
+              chunkSize: this.maxChunkSize,
+              chunkOverlap: Math.min(20, Math.floor(this.maxChunkSize * 0.1)),
+              // Use more aggressive separators including empty string as last resort
+              separators: [
+                "\n\n",
+                "\n",
+                " ",
+                "\t",
+                ".",
+                ",",
+                ";",
+                ":",
+                "-",
+                "(",
+                ")",
+                "[",
+                "]",
+                "{",
+                "}",
+                "",
+              ],
+            });
+
+            const chunks = await splitter.splitText(content.text);
+            if (chunks.length === 0) {
+              // If still no chunks, use the most extreme approach: just truncate
+              splitContent = [content.text.substring(0, this.maxChunkSize)];
+            } else {
+              splitContent = chunks;
+            }
+          } else {
+            // Convert other error message to string, handling non-Error objects
+            const errMessage = err instanceof Error ? err.message : String(err);
+            throw new ContentSplitterError(
+              `Failed to split ${content.type} content: ${errMessage}`,
+            );
           }
-          // Convert error message to string, handling non-Error objects
-          const errMessage = err instanceof Error ? err.message : String(err);
-          throw new ContentSplitterError(
-            `Failed to split ${content.type} content: ${errMessage}`,
-          );
         }
 
         // Create chunks from split content

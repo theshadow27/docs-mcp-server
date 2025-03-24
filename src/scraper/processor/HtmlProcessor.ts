@@ -12,8 +12,6 @@ export interface HtmlProcessOptions {
   excludeSelectors?: string[];
   /** Whether to extract links from content */
   extractLinks?: boolean;
-  /** Whether to sanitize HTML content */
-  sanitize?: boolean;
 }
 
 /**
@@ -92,8 +90,7 @@ export class HtmlProcessor implements ContentProcessor {
       codeBlockStyle: "fenced",
       emDelimiter: "_",
       strongDelimiter: "**",
-      linkStyle: "referenced",
-      linkReferenceStyle: "full",
+      linkStyle: "inlined",
     });
 
     // Preserve code blocks and syntax
@@ -156,7 +153,6 @@ export class HtmlProcessor implements ContentProcessor {
     const titleMatch = htmlContent.match(/<title>([^<]+)<\/title>/i);
     const title = titleMatch?.[1] || "Untitled";
 
-    // Sanitize HTML content
     const window = new Window();
     window.location.href = content.source;
 
@@ -176,12 +172,10 @@ export class HtmlProcessor implements ContentProcessor {
     ];
 
     // Remove unwanted elements using selectorsToRemove
-    if (purifiedContent instanceof window.HTMLElement) {
-      for (const selector of selectorsToRemove) {
-        const elements = purifiedContent.querySelectorAll(selector);
-        for (const el of elements) {
-          el.remove();
-        }
+    for (const selector of selectorsToRemove) {
+      const elements = purifiedContent.querySelectorAll(selector);
+      for (const el of elements) {
+        el.remove();
       }
     }
 

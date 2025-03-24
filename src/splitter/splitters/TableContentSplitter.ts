@@ -26,22 +26,18 @@ export class TableContentSplitter implements ContentSplitter {
       return [content];
     }
 
-    // Check if a single row with headers exceeds maxChunkSize
-    if (
-      parsedTable.rows.length > 0 &&
-      this.wrap(parsedTable.rows[0], parsedTable.headers).length >
-        this.options.maxChunkSize
-    ) {
-      const rowSize = this.wrap(parsedTable.rows[0], parsedTable.headers).length;
-      throw new MinimumChunkSizeError(rowSize, this.options.maxChunkSize);
-    }
-
     const { headers, rows } = parsedTable;
 
     const chunks: string[] = [];
     let currentRows: string[] = [];
 
     for (const row of rows) {
+      // Check if a single row with headers exceeds maxChunkSize
+      const singleRowSize = this.wrap(row, headers).length;
+      if (singleRowSize > this.options.maxChunkSize) {
+        throw new MinimumChunkSizeError(singleRowSize, this.options.maxChunkSize);
+      }
+
       const newChunkContent = this.wrap([...currentRows, row].join("\n"), headers);
       const newChunkSize = newChunkContent.length;
       if (newChunkSize > this.options.maxChunkSize && currentRows.length > 0) {

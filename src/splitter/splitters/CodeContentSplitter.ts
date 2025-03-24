@@ -15,18 +15,16 @@ export class CodeContentSplitter implements ContentSplitter {
     const strippedContent = content.replace(/^```(\w*)\n/, "").replace(/```\s*$/, "");
 
     const lines = strippedContent.split("\n");
-    if (lines.length > 0) {
-      // Check if a single line with code block markers exceeds maxChunkSize
-      const singleLineSize = this.wrap(lines[0], language).length;
-      if (singleLineSize > this.options.maxChunkSize) {
-        throw new MinimumChunkSizeError(singleLineSize, this.options.maxChunkSize);
-      }
-    }
-
     const chunks: string[] = [];
     let currentChunkLines: string[] = [];
 
     for (const line of lines) {
+      // Check if a single line with code block markers exceeds maxChunkSize
+      const singleLineSize = this.wrap(line, language).length;
+      if (singleLineSize > this.options.maxChunkSize) {
+        throw new MinimumChunkSizeError(singleLineSize, this.options.maxChunkSize);
+      }
+
       currentChunkLines.push(line);
       const newChunkContent = this.wrap(currentChunkLines.join("\n"), language);
       const newChunkSize = newChunkContent.length;
