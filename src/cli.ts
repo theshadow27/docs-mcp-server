@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 import "dotenv/config";
-import os from "node:os";
-import path from "node:path";
 import { Command } from "commander";
 import { DocumentManagementService } from "./store/DocumentManagementService";
 import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";

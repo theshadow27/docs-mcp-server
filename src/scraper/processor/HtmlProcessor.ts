@@ -158,6 +158,8 @@ export class HtmlProcessor implements ContentProcessor {
 
     // Sanitize HTML content
     const window = new Window();
+    window.location.href = content.source;
+
     const purify = createDOMPurify(window as unknown as WindowLike);
     const purifiedContent = purify.sanitize(htmlContent, {
       WHOLE_DOCUMENT: true,

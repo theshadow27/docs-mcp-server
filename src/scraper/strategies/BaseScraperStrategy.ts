@@ -6,7 +6,7 @@ import { type ContentProcessor, HtmlProcessor, MarkdownProcessor } from "../proc
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
 
 export type QueueItem = {
-  value: string;
+  url: string;
   depth: number;
 };
 
@@ -65,61 +65,58 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
           if (result.document) {
             this.pageCount++;
             logger.info(
-              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.value}`,
+              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.url}`,
             );
-            try {
-              await progressCallback({
-                pagesScraped: this.pageCount,
-                maxPages: options.maxPages,
-                currentUrl: item.value,
-                depth: item.depth,
-                maxDepth: options.maxDepth,
-                document: result.document,
-              });
-            } catch (error) {
-              if (options.ignoreErrors) {
-                logger.error(`Error in progress callback for ${item.value}: ${error}`);
-              } else {
-                throw error;
-              }
-            }
+            await progressCallback({
+              pagesScraped: this.pageCount,
+              maxPages: options.maxPages,
+              currentUrl: item.url,
+              depth: item.depth,
+              maxDepth: options.maxDepth,
+              document: result.document,
+            });
           }
 
           const nextItems = result.links || [];
           return nextItems
             .map((value) => {
               try {
-                // For URLs, normalize and check if visited
                 const targetUrl = new URL(value, baseUrl);
-                const normalizedValue = normalizeUrl(
-                  targetUrl.href,
-                  this.options.urlNormalizerOptions,
-                );
-
-                if (!this.visited.has(normalizedValue)) {
-                  this.visited.add(normalizedValue);
-                  return {
-                    value: targetUrl.href,
-                    depth: item.depth + 1,
-                  };
-                }
+                return {
+                  url: targetUrl.href,
+                  depth: item.depth + 1,
+                } satisfies QueueItem;
               } catch (error) {
                 // Invalid URL or path
                 logger.warn(`❌ Invalid URL: ${value}`);
               }
               return null;
             })
-            .filter((item): item is QueueItem => item !== null);
+            .filter((item) => item !== null);
         } catch (error) {
           if (options.ignoreErrors) {
-            logger.error(`❌ Failed to process ${item.value}: ${error}`);
+            logger.error(`❌ Failed to process ${item.url}: ${error}`);
             return [];
           }
           throw error;
         }
       }),
     );
-    return results.flat();
+
+    // After all concurrent processing is done, deduplicate the results
+    const allLinks = results.flat();
+    const uniqueLinks: QueueItem[] = [];
+
+    // Now perform deduplication once, after all parallel processing is complete
+    for (const item of allLinks) {
+      const normalizedUrl = normalizeUrl(item.url, this.options.urlNormalizerOptions);
+      if (!this.visited.has(normalizedUrl)) {
+        this.visited.add(normalizedUrl);
+        uniqueLinks.push(item);
+      }
+    }
+
+    return uniqueLinks;
   }
 
   async scrape(
@@ -130,7 +127,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     this.pageCount = 0;
 
     const baseUrl = new URL(options.url);
-    const queue = [{ value: options.url, depth: 0 }];
+    const queue = [{ url: options.url, depth: 0 } satisfies QueueItem];
 
     // Track values we've seen (either queued or visited)
     this.visited.add(normalizeUrl(options.url, this.options.urlNormalizerOptions));

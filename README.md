@@ -2,21 +2,6 @@
 
 A MCP server for fetching and searching 3rd party package documentation
 
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
-
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
-
-### Version Handling
-
-This server supports partial version matching, selecting the best available version based on these rules:
-
-- If no version is specified, the latest indexed version is used.
-- If a full version (e.g., `1.2.3`) is specified, that exact version is used, if available.
-- If a partial version (e.g., `1.2`) is specified, the latest matching version (e.g., `1.2.5`) is used.
-- If the specified version (full or partial) is not found, the server will attempt to find the closest preceding version.
-
 ## CLI Usage
 
 The `docs-mcp` CLI provides commands for managing documentation. To see available commands and options:
@@ -29,6 +14,15 @@ docs-mcp --help
 docs-mcp scrape --help
 docs-mcp search --help
 ```
+
+### Version Handling
+
+This server supports partial version matching, selecting the best available version based on these rules:
+
+- If no version is specified, the latest indexed version is used.
+- If a full version (e.g., `1.2.3`) is specified, that exact version is used, if available.
+- If a partial version (e.g., `1.2`) is specified, the latest matching version (e.g., `1.2.5`) is used.
+- If the specified version (full or partial) is not found, the server will attempt to find the closest preceding version.
 
 ## Development
 

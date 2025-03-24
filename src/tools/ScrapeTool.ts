@@ -43,7 +43,7 @@ export class ScrapeTool {
     logger.info(`💾 Using clean store for ${library}@${version}`);
 
     const pipeline = new DocumentProcessingPipeline(this.docService, library, version);
-    let currentPage = 0;
+    let pagesScraped = 0;
 
     const reportProgress = (text: string) => {
       if (onProgress) {
@@ -55,11 +55,11 @@ export class ScrapeTool {
 
     pipeline.setCallbacks({
       onProgress: async (progress: ScraperProgress) => {
-        if (progress.pagesScraped > currentPage) {
-          currentPage = progress.pagesScraped;
-          reportProgress(
-            `🌐 Indexed page ${currentPage}/${progress.maxPages}: ${progress.currentUrl}`,
-          );
+        reportProgress(
+          `🌐 Indexed page ${progress.pagesScraped}/${progress.maxPages}: ${progress.currentUrl}`,
+        );
+        if (progress.pagesScraped > pagesScraped) {
+          pagesScraped = progress.pagesScraped;
         }
       },
       onError: async (error, doc) => {
@@ -83,7 +83,7 @@ export class ScrapeTool {
 
     // Return final statistics
     return {
-      pagesScraped: currentPage,
+      pagesScraped,
     };
   }
 }

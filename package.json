@@ -9,9 +9,9 @@
   },
   "scripts": {
     "build": "tsup",
-    "cli": "node dist/cli.js",
-    "dev:cli": "npm run build && node dist/cli.js",
-    "server": "node --watch dist/server.js",
+    "cli": "node --enable-source-maps dist/cli.js",
+    "dev:cli": "npm run build && node --enable-source-maps dist/cli.js",
+    "server": "node --enable-source-maps --watch dist/server.js",
     "dev:server": "run-p \"build -- --watch\" \"server\"",
     "test": "vitest",
     "lint": "biome check .",

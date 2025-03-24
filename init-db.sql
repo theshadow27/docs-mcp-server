@@ -49,7 +49,12 @@ BEGIN
     END IF;
     
     INSERT INTO documents (library, version, url, content, metadata, embedding, content_search)
-    VALUES (p_library, p_version, p_url, p_content, p_metadata, p_embedding, to_tsvector('english', p_content))
+    VALUES (p_library, p_version, p_url, p_content, p_metadata, p_embedding, to_tsvector('english', 
+        '<title>' || coalesce(p_metadata->>'title', '') || '</title>' ||
+        '<url>' || coalesce(p_metadata->>'url', '') || '</url>' ||
+        '<path>' || coalesce((SELECT string_agg(elem, ' / ') FROM jsonb_array_elements_text(p_metadata->'path') AS elem), '') || '</path>' ||
+        p_content
+    ))
     RETURNING id, sort_order INTO v_result;
     
     RETURN v_result;

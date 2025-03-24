@@ -17,7 +17,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
     item: QueueItem,
     options: ScraperOptions,
   ): Promise<{ document?: Document; links?: string[] }> {
-    const filePath = item.value.replace(/^file:\/\//, "");
+    const filePath = item.url.replace(/^file:\/\//, "");
     const stats = await fs.stat(filePath);
 
     // If this is a directory, return contained files and subdirectories as new paths
@@ -31,7 +31,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
     // Process the file
     logger.info(`📄 Processing file ${this.pageCount}/${options.maxPages}: ${filePath}`);
 
-    const rawContent = await this.fileFetcher.fetch(item.value);
+    const rawContent = await this.fileFetcher.fetch(item.url);
     const processor = this.getProcessor(rawContent.mimeType);
     const result = await processor.process(rawContent);
 
@@ -39,7 +39,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
       document: {
         content: result.content,
         metadata: {
-          url: item.value,
+          url: item.url,
           title: result.title,
           library: options.library,
           version: options.version,

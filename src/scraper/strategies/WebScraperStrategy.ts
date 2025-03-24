@@ -42,7 +42,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     item: QueueItem,
     options: ScraperOptions,
   ): Promise<{ document?: Document; links?: string[] }> {
-    const { value: url } = item;
+    const { url } = item;
 
     try {
       const rawContent = await this.httpFetcher.fetch(url);

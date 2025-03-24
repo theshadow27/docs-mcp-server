@@ -2,6 +2,7 @@ import type { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import pg from "pg";
 import { ConnectionError, StoreError } from "./errors";
+import { DocumentMetadata } from "../types";
 
 /**
  * Manages document storage and retrieval using pgvector for vector similarity search.
@@ -139,7 +140,10 @@ export class DocumentStore {
   ): Promise<void> {
     try {
       // Generate embeddings in batch
-      const texts = documents.map((doc) => doc.pageContent);
+      const texts = documents.map((doc) => {
+        const header = `<title>${doc.metadata.title}</title>\n<url>${doc.metadata.url}</url>\n<path>${doc.metadata.path.join(" / ")}</path>\n`;
+        return `${header}${doc.pageContent}`;
+      });
       const embeddings = await this.embeddings.embedDocuments(texts);
 
       // Add documents using SQL function
