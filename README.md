@@ -38,9 +38,7 @@ Build the server:
 npm run build
 ```
 
-### Docker Compose
-
-The project includes a Docker Compose setup with PostgreSQL (with pgvector extension) and pgAdmin for development:
+### Environment Setup
 
 1. Create a `.env` file based on `.env.example`:
 
@@ -48,32 +46,13 @@ The project includes a Docker Compose setup with PostgreSQL (with pgvector exten
 cp .env.example .env
 ```
 
-2. Update the environment variables in `.env`:
+2. Update your OpenAI API key in `.env`:
 
-- `POSTGRES_PASSWORD`: Choose a secure password for PostgreSQL
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `PGADMIN_EMAIL`: Email for pgAdmin login (default: admin@example.com)
-- `PGADMIN_PASSWORD`: Password for pgAdmin login (default: admin)
-
-3. Start the services:
-
-```bash
-docker compose up -d
+```
+OPENAI_API_KEY=your-api-key-here
 ```
 
-4. Access pgAdmin:
-
-- Open http://localhost:5050 in your browser
-- Login with PGADMIN_EMAIL and PGADMIN_PASSWORD
-- Add a new server in pgAdmin:
-  - Name: docs-mcp
-  - Host: postgres
-  - Port: 5432
-  - Database: docs_mcp
-  - Username: mcp_user
-  - Password: (use POSTGRES_PASSWORD from .env)
-
-5. Access MCP server:
+3. Start the MCP server:
 
 The MCP server provides two endpoints:
 
@@ -94,8 +73,7 @@ To use with Claude Desktop, add the server config:
       "command": "node",
       "args": ["/path/to/docs-mcp-server/dist/server.js"],
       "env": {
-        "OPENAI_API_KEY": "sk-proj-...",
-        "POSTGRES_CONNECTION": "postgresql://mcp_user:docs_mcp@localhost:5432/docs_mcp"
+        "OPENAI_API_KEY": "sk-proj-..."
       },
       "disabled": false,
       "autoApprove": []

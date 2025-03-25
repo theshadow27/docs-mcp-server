@@ -1,9 +1,9 @@
+import * as semver from "semver";
 import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
 import type { ScraperProgress } from "../scraper/types";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import type { ProgressResponse } from "../types";
 import { logger } from "../utils/logger";
-import * as semver from "semver";
 
 export interface ScrapeToolOptions {
   library: string;

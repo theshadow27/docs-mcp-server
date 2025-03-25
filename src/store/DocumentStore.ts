@@ -1,25 +1,175 @@
 import type { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import pg from "pg";
+import Database, { type Database as DatabaseType } from "better-sqlite3";
+import * as sqliteVec from "sqlite-vec";
+import type { DocumentMetadata } from "../types";
 import { ConnectionError, StoreError } from "./errors";
-import { DocumentMetadata } from "../types";
+import { createTablesSQL } from "./schema";
+import { type DbDocument, type DbQueryResult, mapDbDocumentToDocument } from "./types";
+
+interface RawSearchResult extends DbDocument {
+  vec_score?: number;
+  fts_score?: number;
+}
+
+interface RankedResult extends RawSearchResult {
+  vec_rank?: number;
+  fts_rank?: number;
+  rrf_score: number;
+}
 
 /**
- * Manages document storage and retrieval using pgvector for vector similarity search.
- * Provides an abstraction layer over PostgreSQL with vector extensions to store and
- * query document embeddings along with their metadata. Supports versioned storage
- * of documents for different libraries, enabling version-specific document retrieval
- * and searches.
+ * Manages document storage and retrieval using SQLite with vector and full-text search capabilities.
+ * Provides direct access to SQLite with prepared statements to store and query document
+ * embeddings along with their metadata. Supports versioned storage of documents for different
+ * libraries, enabling version-specific document retrieval and searches.
  */
 export class DocumentStore {
-  private readonly pool: pg.Pool;
-  private embeddings: OpenAIEmbeddings;
+  private readonly db: DatabaseType;
+  private embeddings!: OpenAIEmbeddings;
+  private statements!: {
+    getById: Database.Statement;
+    insertDocument: Database.Statement;
+    insertEmbedding: Database.Statement;
+    deleteDocuments: Database.Statement;
+    queryVersions: Database.Statement;
+    checkExists: Database.Statement;
+    queryLibraryVersions: Database.Statement;
+    getChildChunks: Database.Statement;
+    getPrecedingSiblings: Database.Statement;
+    getSubsequentSiblings: Database.Statement;
+    getParentChunk: Database.Statement;
+  };
 
-  constructor(connectionString: string) {
-    if (!connectionString) {
-      throw new StoreError("Missing required environment variable: POSTGRES_CONNECTION");
+  /**
+   * Calculates Reciprocal Rank Fusion score for a result
+   */
+  private calculateRRF(vecRank?: number, ftsRank?: number, k = 60): number {
+    let rrf = 0;
+    if (vecRank !== undefined) {
+      rrf += 1 / (k + vecRank);
     }
-    this.pool = new pg.Pool(this.parseConnectionString(connectionString));
+    if (ftsRank !== undefined) {
+      rrf += 1 / (k + ftsRank);
+    }
+    return rrf;
+  }
+
+  /**
+   * Assigns ranks to search results based on their scores
+   */
+  private assignRanks(results: RawSearchResult[]): RankedResult[] {
+    // Create maps to store ranks
+    const vecRanks = new Map<number, number>();
+    const ftsRanks = new Map<number, number>();
+
+    // Sort by vector scores and assign ranks
+    results
+      .filter((r) => r.vec_score !== undefined)
+      .sort((a, b) => (a.vec_score ?? 0) - (b.vec_score ?? 0))
+      .forEach((result, index) => {
+        vecRanks.set(Number(result.id), index + 1);
+      });
+
+    // Sort by BM25 scores and assign ranks
+    results
+      .filter((r) => r.fts_score !== undefined)
+      .sort((a, b) => (a.fts_score ?? 0) - (b.fts_score ?? 0))
+      .forEach((result, index) => {
+        ftsRanks.set(Number(result.id), index + 1);
+      });
+
+    // Combine results with ranks and calculate RRF
+    return results.map((result) => ({
+      ...result,
+      vec_rank: vecRanks.get(Number(result.id)),
+      fts_rank: ftsRanks.get(Number(result.id)),
+      rrf_score: this.calculateRRF(
+        vecRanks.get(Number(result.id)),
+        ftsRanks.get(Number(result.id)),
+      ),
+    }));
+  }
+
+  constructor(dbPath: string) {
+    if (!dbPath) {
+      throw new StoreError("Missing required database path");
+    }
+
+    // Only establish database connection in constructor
+    this.db = new Database(dbPath);
+  }
+
+  /**
+   * Sets up prepared statements for database queries
+   */
+  private prepareStatements(): void {
+    const statements = {
+      getById: this.db.prepare("SELECT * FROM documents WHERE id = ?"),
+      insertDocument: this.db.prepare(
+        "INSERT INTO documents (library, version, url, content, metadata, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+      ),
+      insertEmbedding: this.db.prepare<[number, string]>(
+        "INSERT INTO documents_vec (rowid, library, version, embedding) VALUES (?, ?, ?, ?)",
+      ),
+      deleteDocuments: this.db.prepare(
+        "DELETE FROM documents WHERE library = ? AND version = ?",
+      ),
+      queryVersions: this.db.prepare(
+        "SELECT DISTINCT version FROM documents WHERE library = ? ORDER BY version",
+      ),
+      checkExists: this.db.prepare(
+        "SELECT id FROM documents WHERE library = ? AND version = ? LIMIT 1",
+      ),
+      queryLibraryVersions: this.db.prepare(
+        "SELECT DISTINCT library, version FROM documents ORDER BY library, version",
+      ),
+      getChildChunks: this.db.prepare(`
+        SELECT * FROM documents 
+        WHERE library = ? 
+        AND version = ? 
+        AND url = ?
+        AND json_array_length(json_extract(metadata, '$.path')) = ?
+        AND json_extract(metadata, '$.path') LIKE ? || '%'
+        ORDER BY sort_order
+        LIMIT ?
+      `),
+      getPrecedingSiblings: this.db.prepare(`
+        SELECT * FROM documents 
+        WHERE library = ? 
+        AND version = ? 
+        AND url = ?
+        AND sort_order < (SELECT sort_order FROM documents WHERE id = ?)
+        AND json_extract(metadata, '$.path') = ?
+        ORDER BY sort_order DESC
+        LIMIT ?
+      `),
+      getSubsequentSiblings: this.db.prepare(`
+        SELECT * FROM documents 
+        WHERE library = ? 
+        AND version = ? 
+        AND url = ?
+        AND sort_order > (SELECT sort_order FROM documents WHERE id = ?)
+        AND json_extract(metadata, '$.path') = ?
+        ORDER BY sort_order
+        LIMIT ?
+      `),
+      getParentChunk: this.db.prepare(`
+        SELECT * FROM documents 
+        WHERE library = ? 
+        AND version = ? 
+        AND url = ?
+        AND json_extract(metadata, '$.path') = ?
+        LIMIT 1
+      `),
+    };
+    this.statements = statements;
+  }
+
+  /**
+   * Initializes embeddings client
+   */
+  private initializeEmbeddings(): void {
     this.embeddings = new OpenAIEmbeddings({
       modelName: "text-embedding-3-small",
       stripNewLines: true,
@@ -27,29 +177,24 @@ export class DocumentStore {
     });
   }
 
-  private parseConnectionString(connectionString: string): pg.PoolConfig {
-    const url = new URL(connectionString);
-    return {
-      type: "postgres",
-      host: url.hostname,
-      port: Number.parseInt(url.port) || 5432,
-      user: url.username,
-      password: url.password,
-      database: url.pathname.slice(1),
-    } as pg.PoolConfig;
-  }
-
   /**
    * Initializes database connection and ensures readiness
    */
   async initialize(): Promise<void> {
     try {
-      await this.pool.query("SELECT 1");
+      // 1. Load extensions
+      sqliteVec.load(this.db);
+
+      // 2. Create schema
+      this.db.exec(createTablesSQL);
+
+      // 3. Initialize prepared statements
+      this.prepareStatements();
+
+      // 4. Initialize embeddings client
+      this.initializeEmbeddings();
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to initialize database connection",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to initialize database connection", error);
     }
   }
 
@@ -57,7 +202,7 @@ export class DocumentStore {
    * Gracefully closes database connections
    */
   async shutdown(): Promise<void> {
-    await this.pool.end();
+    this.db.close();
   }
 
   /**
@@ -65,16 +210,12 @@ export class DocumentStore {
    */
   async queryUniqueVersions(library: string): Promise<string[]> {
     try {
-      const result = await this.pool.query(
-        "SELECT DISTINCT version FROM documents WHERE library = $1",
-        [library.toLowerCase()],
-      );
-      return result.rows.map((row) => row.version);
+      const rows = this.statements.queryVersions.all(library.toLowerCase()) as Array<
+        Pick<DbDocument, "version">
+      >;
+      return rows.map((row) => row.version);
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to query versions",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to query versions", error);
     }
   }
 
@@ -83,16 +224,13 @@ export class DocumentStore {
    */
   async checkDocumentExists(library: string, version: string): Promise<boolean> {
     try {
-      const result = await this.pool.query(
-        "SELECT EXISTS(SELECT 1 FROM documents WHERE library = $1 AND version = $2)",
-        [library.toLowerCase(), version.toLowerCase()],
+      const result = this.statements.checkExists.get(
+        library.toLowerCase(),
+        version.toLowerCase(),
       );
-      return result.rows[0].exists;
+      return result !== undefined;
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to check document existence",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to check document existence", error);
     }
   }
 
@@ -100,32 +238,20 @@ export class DocumentStore {
    * Retrieves a mapping of all libraries to their available versions
    */
   async queryLibraryVersions(): Promise<Map<string, Set<string>>> {
-    interface QueryResult {
-      library: string;
-      version: string;
-    }
     try {
-      const result = await this.pool.query<QueryResult>(
-        "SELECT DISTINCT library, version FROM documents",
-      );
+      const rows = this.statements.queryLibraryVersions.all();
       const libraryMap = new Map<string, Set<string>>();
-
-      for (const row of result.rows) {
+      for (const row of rows as { library: string; version: string }[]) {
         const library = row.library;
         const version = row.version;
-
         if (!libraryMap.has(library)) {
           libraryMap.set(library, new Set());
         }
         libraryMap.get(library)?.add(version);
       }
-
       return libraryMap;
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to query library versions",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to query library versions", error);
     }
   }
 
@@ -146,52 +272,55 @@ export class DocumentStore {
       });
       const embeddings = await this.embeddings.embedDocuments(texts);
 
-      // Add documents using SQL function
-      for (let i = 0; i < documents.length; i++) {
-        const doc = documents[i];
-        // Convert embedding array to PostgreSQL vector format
-        const vectorStr = `[${embeddings[i].join(",")}]`;
-        const url = doc.metadata.url as string;
-        if (!url || typeof url !== "string" || !url.trim()) {
-          throw new StoreError("Document metadata must include a valid URL");
-        }
+      // Insert documents in a transaction
+      const transaction = this.db.transaction((docs: typeof documents) => {
+        for (let i = 0; i < docs.length; i++) {
+          const doc = docs[i];
+          const url = doc.metadata.url as string;
+          if (!url || typeof url !== "string" || !url.trim()) {
+            throw new StoreError("Document metadata must include a valid URL");
+          }
 
-        await this.pool.query("SELECT add_document($1, $2, $3, $4, $5, $6)", [
-          library.toLowerCase(),
-          version.toLowerCase(),
-          url,
-          doc.pageContent,
-          doc.metadata,
-          vectorStr,
-        ]);
-      }
+          // Insert into main documents table
+          const result = this.statements.insertDocument.run(
+            library.toLowerCase(),
+            version.toLowerCase(),
+            url,
+            doc.pageContent,
+            JSON.stringify(doc.metadata),
+            i,
+          );
+          const rowId = result.lastInsertRowid;
+
+          // Insert into vector table
+          this.statements.insertEmbedding.run(
+            BigInt(rowId),
+            library.toLowerCase(),
+            version.toLowerCase(),
+            JSON.stringify(embeddings[i]),
+          );
+        }
+      });
+
+      transaction(documents);
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to add documents to store",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to add documents to store", error);
     }
   }
 
-  /**
-   * Removes documents matching specified library and version
-   */
   /**
    * Removes documents matching specified library and version
    * @returns Number of documents deleted
    */
   async deleteDocuments(library: string, version: string): Promise<number> {
     try {
-      const result = await this.pool.query<{ delete_documents: number }>(
-        "SELECT delete_documents($1, $2)",
-        [library.toLowerCase(), version.toLowerCase()],
+      const result = this.statements.deleteDocuments.run(
+        library.toLowerCase(),
+        version.toLowerCase(),
       );
-      return result.rows[0].delete_documents;
+      return result.changes;
     } catch (error) {
-      throw new ConnectionError(
-        "Failed to delete documents",
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError("Failed to delete documents", error);
     }
   }
 
@@ -202,31 +331,20 @@ export class DocumentStore {
    */
   async getById(id: string): Promise<Document | null> {
     try {
-      const result = await this.pool.query("SELECT * FROM documents WHERE id = $1", [id]);
-      if (result.rows.length === 0) {
+      const row = this.statements.getById.get(id) as DbQueryResult<DbDocument>;
+      if (!row) {
         return null;
       }
-      const row = result.rows[0];
-      return {
-        id: row.id,
-        pageContent: row.content,
-        metadata: row.metadata,
-      };
+
+      return mapDbDocumentToDocument(row);
     } catch (error) {
-      throw new ConnectionError(
-        `Failed to get document by ID ${id}`,
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError(`Failed to get document by ID ${id}`, error);
     }
   }
 
   /**
-   * Finds documents matching a text query.
-   * @param library The library name.
-   * @param version The library version.
-   * @param query The text query.
-   * @param limit The maximum number of documents to return.
-   * @returns An array of matching documents.
+   * Finds documents matching a text query using hybrid search.
+   * Combines vector similarity search with full-text search using Reciprocal Rank Fusion.
    */
   async findByContent(
     library: string,
@@ -235,111 +353,82 @@ export class DocumentStore {
     limit: number,
   ): Promise<Document[]> {
     try {
-      // Generate query embedding for vector search.
       const embedding = await this.embeddings.embedQuery(query);
-      const vectorStr = `[${embedding.join(",")}]`;
-      const keywordWeight = 0.7;
-      const embeddingWeight = 1 - keywordWeight;
 
-      const result = await this.pool.query(
-        `WITH 
--- Keyword search results with ranking
-keyword_results AS (
-  SELECT 
-    id,
-    ts_rank_cd(content_search, websearch_to_tsquery('english', $3)) AS keyword_score,
-    ROW_NUMBER() OVER (
-      ORDER BY ts_rank_cd(content_search, websearch_to_tsquery('english', $3)) DESC
-    ) AS keyword_rank
-  FROM documents
-  WHERE library = $1 AND version = $2 AND content_search @@ websearch_to_tsquery('english', $3)
-  LIMIT 50
-),
+      const stmt = this.db.prepare(`
+        WITH vec_scores AS (
+          SELECT
+            rowid as id,
+            distance as vec_score
+          FROM documents_vec
+          WHERE library = ?
+            AND version = ?
+            AND embedding MATCH ?
+          ORDER BY vec_score
+          LIMIT ?
+        ),
+        fts_scores AS (
+          SELECT
+            f.rowid as id,
+            bm25(documents_fts, 10.0, 1.0, 5.0, 1.0) as fts_score
+          FROM documents_fts f
+          JOIN documents d ON f.rowid = d.rowid
+          WHERE d.library = ?
+            AND d.version = ?
+            AND documents_fts MATCH ?
+          ORDER BY fts_score
+          LIMIT ?
+        )
+        SELECT
+          d.id,
+          d.content,
+          d.metadata,
+          COALESCE(1 / (1 + v.vec_score), 0) as vec_score,
+          COALESCE(1 / (1 + f.fts_score), 0) as fts_score
+        FROM documents d
+        LEFT JOIN vec_scores v ON d.id = v.id
+        LEFT JOIN fts_scores f ON d.id = f.id
+        WHERE v.id IS NOT NULL OR f.id IS NOT NULL
+      `);
 
--- Embedding search results with ranking
-embedding_results AS (
-  SELECT 
-    id,
-    1 - (embedding <=> $4::vector) AS embedding_score,
-    ROW_NUMBER() OVER (
-      ORDER BY 1 - (embedding <=> $4::vector) DESC
-    ) AS embedding_rank
-  FROM documents
-  WHERE library = $1 AND version = $2
-  LIMIT 50
-),
+      const rawResults = stmt.all(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        JSON.stringify(embedding),
+        limit,
+        library.toLowerCase(),
+        version.toLowerCase(),
+        query,
+        limit,
+      ) as RawSearchResult[];
 
--- Combine results using RRF formula
-combined_results AS (
-  SELECT 
-    COALESCE(k.id, e.id) AS id,
-    COALESCE(k.keyword_score, 0) AS keyword_score,
-    COALESCE(e.embedding_score, 0) AS embedding_score,
-    COALESCE(k.keyword_rank, 1000) AS keyword_rank,
-    COALESCE(e.embedding_rank, 1000) AS embedding_rank,
-    -- RRF formula: sum of 1/(rank + k) where k is a constant (commonly 60)
-    -- With weighting factor for query type
-    $6 * (1.0 / (COALESCE(k.keyword_rank, 1000) + 60)) +
-    $7 * (1.0 / (COALESCE(e.embedding_rank, 1000) + 60)) AS rrf_score
-  FROM keyword_results k
-  FULL OUTER JOIN embedding_results e ON k.id = e.id
-)
+      // Apply RRF ranking
+      const rankedResults = this.assignRanks(rawResults);
 
--- Get final ranked results
-SELECT 
-  d.*,
-  cr.keyword_score,
-  cr.embedding_score,
-  cr.keyword_rank,
-  cr.embedding_rank,
-  cr.rrf_score
-FROM combined_results cr
-JOIN documents d ON cr.id = d.id
-WHERE d.library = $1 AND d.version = $2
-ORDER BY cr.rrf_score DESC
-LIMIT $5`,
-        [
-          library.toLowerCase(),
-          version.toLowerCase(),
-          query,
-          vectorStr,
-          limit,
-          keywordWeight,
-          embeddingWeight,
-        ],
-      );
+      // Sort by RRF score and take top results
+      const topResults = rankedResults
+        .sort((a, b) => b.rrf_score - a.rrf_score)
+        .slice(0, limit);
 
-      return result.rows.map((row) => ({
-        id: row.id,
-        pageContent: row.content,
+      return topResults.map((row) => ({
+        ...mapDbDocumentToDocument(row),
         metadata: {
-          ...row.metadata,
+          ...JSON.parse(row.metadata),
           score: row.rrf_score,
+          vec_rank: row.vec_rank,
+          fts_rank: row.fts_rank,
         },
       }));
     } catch (error) {
       throw new ConnectionError(
         `Failed to find documents by content with query "${query}"`,
-        error instanceof Error ? error : undefined,
+        error,
       );
     }
   }
 
   /**
-   * Finds child chunks of a given document.
-   *
-   * Retrieves documents that are direct children of the input document in the content
-   * hierarchy. A document is considered a child if it:
-   * 1. Contains the parent's complete path (using @> operator)
-   * 2. Has exactly one more path segment than the parent
-   *
-   * Results are ordered by their position in the document using the sort_order column.
-   *
-   * @param library The library name
-   * @param version The library version
-   * @param id The ID of the parent document
-   * @param limit The maximum number of child chunks to return
-   * @returns An array of child chunks in document order
+   * Finds child chunks of a given document based on path hierarchy.
    */
   async findChildChunks(
     library: string,
@@ -348,49 +437,31 @@ LIMIT $5`,
     limit: number,
   ): Promise<Document[]> {
     try {
-      const result = await this.pool.query(
-        `WITH parent_doc AS (
-          SELECT 
-            url, 
-            metadata->'path' as path,
-            jsonb_array_length(metadata->'path') as path_length
-          FROM documents
-          WHERE id = $3
-        )
-        SELECT d.* FROM documents d, parent_doc p
-        WHERE d.library = $1 AND d.version = $2
-        AND d.url = p.url
-        AND d.metadata->'path' @> p.path  -- Child path contains parent path
-        AND jsonb_array_length(d.metadata->'path') = p.path_length + 1  -- Exactly one level deeper
-        ORDER BY d.sort_order, d.id  -- Use sort_order column directly
-        LIMIT $4`,
-        [library.toLowerCase(), version.toLowerCase(), id, limit],
-      );
+      const parent = await this.getById(id);
+      if (!parent) {
+        return [];
+      }
 
-      return result.rows.map((row) => ({
-        id: row.id,
-        pageContent: row.content,
-        metadata: row.metadata,
-      }));
+      const parentPath = (parent.metadata as DocumentMetadata).path ?? [];
+      const parentUrl = (parent.metadata as DocumentMetadata).url;
+
+      const result = this.statements.getChildChunks.all(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        parentUrl,
+        parentPath.length + 1,
+        JSON.stringify(parentPath),
+        limit,
+      ) as Array<DbDocument>;
+
+      return result.map((row) => mapDbDocumentToDocument(row));
     } catch (error) {
-      throw new ConnectionError(
-        `Failed to find child chunks for ID ${id}`,
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError(`Failed to find child chunks for ID ${id}`, error);
     }
   }
 
   /**
    * Finds preceding sibling chunks of a given document.
-   *
-   * Retrieves documents that have exactly the same path as the input document but come
-   * before it based on sort order. These are true siblings at the same hierarchy level
-   * and section.
-   * @param library  The library name
-   * @param version  The library version
-   * @param id       The ID of the reference document
-   * @param limit    The maximum number of preceding sibling chunks to return
-   * @returns        An array of preceding sibling chunks, ordered from most recent to oldest
    */
   async findPrecedingSiblingChunks(
     library: string,
@@ -399,46 +470,33 @@ LIMIT $5`,
     limit: number,
   ): Promise<Document[]> {
     try {
-      const result = await this.pool.query(
-        `WITH ref_doc AS (
-          SELECT url, metadata->'path' as path, sort_order 
-          FROM documents 
-          WHERE id = $3
-        )
-        SELECT d.* FROM documents d, ref_doc r
-        WHERE d.library = $1 AND d.version = $2
-        AND d.url = r.url
-        AND d.metadata->'path' = r.path  -- Exact path match
-        AND d.sort_order < r.sort_order
-        ORDER BY d.sort_order DESC  -- Reverse order to get immediate predecessors
-        LIMIT $4`,
-        [library.toLowerCase(), version.toLowerCase(), id, limit],
-      );
+      const reference = await this.getById(id);
+      if (!reference) {
+        return [];
+      }
 
-      return result.rows.reverse().map((row) => ({
-        id: row.id,
-        pageContent: row.content,
-        metadata: row.metadata,
-      }));
+      const refMetadata = reference.metadata as DocumentMetadata;
+
+      const result = this.statements.getPrecedingSiblings.all(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        refMetadata.url,
+        id,
+        JSON.stringify(refMetadata.path),
+        limit,
+      ) as Array<DbDocument>;
+
+      return result.reverse().map((row) => mapDbDocumentToDocument(row));
     } catch (error) {
       throw new ConnectionError(
         `Failed to find preceding sibling chunks for ID ${id}`,
-        error instanceof Error ? error : undefined,
+        error,
       );
     }
   }
 
   /**
    * Finds subsequent sibling chunks of a given document.
-   *
-   * Retrieves documents that have exactly the same path as the input document but come
-   * after it based on sort order. These are true siblings at the same hierarchy level
-   * and section.
-   * @param library  The library name
-   * @param version  The library version
-   * @param id       The ID of the reference document
-   * @param limit    The maximum number of subsequent sibling chunks to return
-   * @returns        An array of subsequent sibling chunks, ordered from earliest to latest
    */
   async findSubsequentSiblingChunks(
     library: string,
@@ -447,42 +505,33 @@ LIMIT $5`,
     limit: number,
   ): Promise<Document[]> {
     try {
-      const result = await this.pool.query(
-        `WITH ref_doc AS (
-          SELECT url, metadata->'path' as path, sort_order 
-          FROM documents 
-          WHERE id = $3
-        )
-        SELECT d.* FROM documents d, ref_doc r
-        WHERE d.library = $1 AND d.version = $2
-        AND d.url = r.url
-        AND d.metadata->'path' = r.path  -- Exact path match
-        AND d.sort_order > r.sort_order
-        ORDER BY d.sort_order  -- Forward order for subsequent siblings
-        LIMIT $4`,
-        [library.toLowerCase(), version.toLowerCase(), id, limit],
-      );
-      return result.rows.map((row) => ({
-        id: row.id,
-        pageContent: row.content,
-        metadata: row.metadata,
-      }));
+      const reference = await this.getById(id);
+      if (!reference) {
+        return [];
+      }
+
+      const refMetadata = reference.metadata;
+
+      const result = this.statements.getSubsequentSiblings.all(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        refMetadata.url,
+        id,
+        JSON.stringify(refMetadata.path),
+        limit,
+      ) as Array<DbDocument>;
+
+      return result.map((row) => mapDbDocumentToDocument(row));
     } catch (error) {
       throw new ConnectionError(
         `Failed to find subsequent sibling chunks for ID ${id}`,
-        error instanceof Error ? error : undefined,
+        error,
       );
     }
   }
 
   /**
    * Finds the parent chunk of a given document.
-   *
-   * Retrieves the document whose path is the immediate parent of the input document's path.
-   * @param library  The library name.
-   * @param version  The library version.
-   * @param id       The ID of the child document.
-   * @returns        The parent chunk, or null if not found.
    */
   async findParentChunk(
     library: string,
@@ -490,30 +539,33 @@ LIMIT $5`,
     id: string,
   ): Promise<Document | null> {
     try {
-      const result = await this.pool.query(
-        `WITH ref_doc AS (
-          SELECT url, metadata->'path' as path FROM documents WHERE id = $3
-        )
-        SELECT d.* FROM documents d, ref_doc r
-        WHERE d.library = $1 AND d.version = $2
-        AND d.url = r.url
-        AND d.metadata->'path' = (r.path::jsonb - (jsonb_array_length(r.path) - 1))`,
-        [library.toLowerCase(), version.toLowerCase(), id],
-      );
-      if (result.rows.length === 0) {
+      const child = await this.getById(id);
+      if (!child) {
         return null;
       }
-      const row = result.rows[0];
-      return {
-        id: row.id,
-        pageContent: row.content,
-        metadata: row.metadata,
-      };
+
+      const childMetadata = child.metadata as DocumentMetadata;
+      const path = childMetadata.path ?? [];
+      const parentPath = path.slice(0, -1);
+
+      if (parentPath.length === 0) {
+        return null;
+      }
+
+      const result = this.statements.getParentChunk.get(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        childMetadata.url,
+        JSON.stringify(parentPath),
+      ) as DbQueryResult<DbDocument>;
+
+      if (!result) {
+        return null;
+      }
+
+      return mapDbDocumentToDocument(result);
     } catch (error) {
-      throw new ConnectionError(
-        `Failed to find parent chunk for ID ${id}`,
-        error instanceof Error ? error : undefined,
-      );
+      throw new ConnectionError(`Failed to find parent chunk for ID ${id}`, error);
     }
   }
 }

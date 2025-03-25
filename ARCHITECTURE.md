@@ -87,7 +87,7 @@ The tools interact with the `DocumentManagementService` for managing and retriev
 
 ### Document Storage Design
 
-Documents are stored with URLs and sequential ordering to maintain source context:
+The project uses SQLite for document storage, providing a lightweight and efficient database solution that requires no separate server setup. Documents are stored with URLs and sequential ordering to maintain source context:
 
 ```mermaid
 graph LR

@@ -1,12 +1,15 @@
 class StoreError extends Error {
   constructor(
     message: string,
-    public readonly cause?: Error,
+    public readonly cause?: unknown,
   ) {
-    super(message);
+    super(cause ? `${message} caused by ${cause}` : message);
     this.name = this.constructor.name;
-    if (cause?.stack) {
-      this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
+
+    const causeError =
+      cause instanceof Error ? cause : cause ? new Error(String(cause)) : undefined;
+    if (causeError?.stack) {
+      this.stack = causeError.stack;
     }
   }
 }

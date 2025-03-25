@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import type { Document } from "@langchain/core/documents";
 import semver from "semver";
 import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
@@ -6,7 +8,7 @@ import { VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
-import { ConnectionError, StoreError } from "./errors";
+import { StoreError } from "./errors";
 import type { LibraryVersion, StoreSearchResult } from "./types";
 
 /**
@@ -18,11 +20,10 @@ export class DocumentManagementService {
   private readonly splitter: DocumentSplitter;
 
   constructor() {
-    const connectionString = process.env.POSTGRES_CONNECTION || "";
-    if (!connectionString) {
-      throw new ConnectionError("POSTGRES_CONNECTION environment variable is required");
-    }
-    this.store = new DocumentStore(connectionString);
+    const dbPath = path.join(process.cwd(), ".store", "documents.db");
+    mkdirSync(path.dirname(dbPath), { recursive: true });
+
+    this.store = new DocumentStore(dbPath);
     this.documentRetriever = new DocumentRetrieverService(this.store);
 
     const minChunkSize = 500;
