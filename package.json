@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsup",
     "cli": "node --enable-source-maps dist/cli.js",
+    "start": "node --enable-source-maps dist/server.js",
     "dev:cli": "npm run build && node --enable-source-maps dist/cli.js",
     "server": "node --enable-source-maps --watch dist/server.js",
     "dev:server": "run-p \"build -- --watch\" \"server\"",
