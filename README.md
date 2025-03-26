@@ -1,8 +1,90 @@
 # docs-mcp-server MCP Server
 
+A MCP server for fetching and searching 3rd party package documentation.
+
 This project provides a Model Context Protocol (MCP) server designed to scrape, process, index, and search documentation for various software libraries and packages. It fetches content from specified URLs, splits it into meaningful chunks using semantic splitting techniques, generates vector embeddings using OpenAI, and stores the data in an SQLite database. The server utilizes `sqlite-vec` for efficient vector similarity search and FTS5 for full-text search capabilities, combining them for hybrid search results. It supports versioning, allowing documentation for different library versions (including unversioned content) to be stored and queried distinctly. The server exposes MCP tools for scraping (`scrape_docs`), searching (`search_docs`), listing indexed libraries (`list_libraries`), and finding appropriate versions (`find_version`). A companion CLI (`docs-mcp`) is also included for local management and interaction.
 
-A MCP server for fetching and searching 3rd party package documentation
+## Building the Project
+
+Before you can use the server (e.g., by integrating it with Claude Desktop as described in the "Installation" section), you need to clone the repository and build the project from source.
+
+1.  **Clone the repository:**
+    If you haven't already, clone the project to your local machine:
+
+    ```bash
+    git clone <repository-url> # Replace <repository-url> with the actual URL
+    cd docs-mcp-server
+    ```
+
+2.  **Install dependencies:**
+    Navigate into the project directory and install the required Node.js packages:
+
+    ```bash
+    npm install
+    ```
+
+3.  **Build the server:**
+    Compile the TypeScript source code into JavaScript. The output will be placed in the `dist/` directory. This step is necessary to generate the `dist/server.js` file referenced in the installation instructions.
+
+    ```bash
+    npm run build
+    ```
+
+After completing these steps and setting up your `.env` file (see "Environment Setup" under Development), you can proceed with the "Installation" or "Running with Docker" instructions.
+
+## Installation
+
+To use with Claude Desktop, add the server config:
+
+- On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "docs-mcp-server": {
+      "command": "node",
+      "args": ["/path/to/docs-mcp-server/dist/server.js"],
+      "env": {
+        "OPENAI_API_KEY": "sk-proj-..."
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+## Running with Docker
+
+Alternatively, you can build and run the server using Docker. This provides an isolated environment and exposes the server via HTTP endpoints.
+
+1.  **Build the Docker image:**
+
+    ```bash
+    docker build -t docs-mcp-server .
+    ```
+
+2.  **Run the Docker container:**
+
+    Make sure your `.env` file is present in the project root directory, as it contains the necessary `OPENAI_API_KEY`. The container will read variables from this file at runtime using the `--env-file` flag. (See "Environment Setup" under Development for details on the `.env` file).
+
+    ```bash
+    docker run -p 8000:8000 --env-file .env --name docs-mcp-server-container docs-mcp-server
+    ```
+
+    - `-p 8000:8000`: Maps port 8000 on your host to port 8000 in the container.
+    - `--env-file .env`: Loads environment variables from your local `.env` file at runtime. This is the recommended way to handle secrets.
+    - `--name docs-mcp-server-container`: Assigns a name to the container for easier management.
+
+3.  **Available Endpoints:**
+
+    Once the container is running, the MCP server is accessible via:
+
+    - **SSE Endpoint:** `http://localhost:8000/sse` (for Server-Sent Events communication)
+    - **POST Messages:** `http://localhost:8000/message` (for sending individual messages)
+
+This method is useful if you prefer not to run the server directly via Node.js or integrate it with Claude Desktop using the standard installation method.
 
 ## CLI Usage
 
@@ -128,7 +210,15 @@ docs-mcp list-libraries
 - **Searching/Finding:** Accepts specific versions, partials, or ranges (`X.Y.Z`, `X.Y`, `X`, `X.x`). Falls back to the latest older version if the target doesn't match. Omitting the version targets the latest available. Explicitly searching `--version ""` targets unversioned documents.
 - **Unversioned Docs:** Libraries can have documentation stored without a specific version (by omitting `--version` during scrape). These can be searched explicitly using `--version ""`. The `find-version` command will also report if unversioned docs exist alongside any semver matches.
 
+## Development
+
+For details on the project's architecture and design principles, please see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+_Notably, the vast majority of this project's code was generated by the AI assistant Cline, leveraging the capabilities of this very MCP server._
+
 ### Environment Setup
+
+**Note:** This `.env` file setup is primarily needed when running the server manually (e.g., `node dist/server.js`) or during local development/testing using the CLI (`docs-mcp`). When configuring the server for Claude Desktop (see "Installation"), the `OPENAI_API_KEY` is typically set directly in the `claude_desktop_config.json` file, and this `.env` file is not used by the Claude integration.
 
 1. Create a `.env` file based on `.env.example`:
 
@@ -141,94 +231,6 @@ cp .env.example .env
 ```
 OPENAI_API_KEY=your-api-key-here
 ```
-
-## Building the Project
-
-Before you can use the server (e.g., by integrating it with Claude Desktop as described in the "Installation" section), you need to clone the repository and build the project from source.
-
-1.  **Clone the repository:**
-    If you haven't already, clone the project to your local machine:
-
-    ```bash
-    git clone <repository-url> # Replace <repository-url> with the actual URL
-    cd docs-mcp-server
-    ```
-
-2.  **Install dependencies:**
-    Navigate into the project directory and install the required Node.js packages:
-
-    ```bash
-    npm install
-    ```
-
-3.  **Build the server:**
-    Compile the TypeScript source code into JavaScript. The output will be placed in the `dist/` directory. This step is necessary to generate the `dist/server.js` file referenced in the installation instructions.
-
-    ```bash
-    npm run build
-    ```
-
-After completing these steps and setting up your `.env` file (see "Environment Setup"), you can proceed with the "Installation" or "Running with Docker" instructions.
-
-## Installation
-
-To use with Claude Desktop, add the server config:
-
-- On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "docs-mcp-server": {
-      "command": "node",
-      "args": ["/path/to/docs-mcp-server/dist/server.js"],
-      "env": {
-        "OPENAI_API_KEY": "sk-proj-..."
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
-
-## Running with Docker
-
-Alternatively, you can build and run the server using Docker. This provides an isolated environment and exposes the server via HTTP endpoints.
-
-1.  **Build the Docker image:**
-
-    ```bash
-    docker build -t docs-mcp-server .
-    ```
-
-2.  **Run the Docker container:**
-
-    Make sure your `.env` file is present in the project root directory, as it contains the necessary `OPENAI_API_KEY`. The container will read variables from this file at runtime using the `--env-file` flag.
-
-    ```bash
-    docker run -p 8000:8000 --env-file .env --name docs-mcp-server-container docs-mcp-server
-    ```
-
-    - `-p 8000:8000`: Maps port 8000 on your host to port 8000 in the container.
-    - `--env-file .env`: Loads environment variables from your local `.env` file at runtime. This is the recommended way to handle secrets.
-    - `--name docs-mcp-server-container`: Assigns a name to the container for easier management.
-
-3.  **Available Endpoints:**
-
-    Once the container is running, the MCP server is accessible via:
-
-    - **SSE Endpoint:** `http://localhost:8000/sse` (for Server-Sent Events communication)
-    - **POST Messages:** `http://localhost:8000/message` (for sending individual messages)
-
-This method is useful if you prefer not to run the server directly via Node.js or integrate it with Claude Desktop using the standard installation method.
-
-## Development
-
-For details on the project's architecture and design principles, please see [ARCHITECTURE.md](ARCHITECTURE.md).
-
-_Notably, the vast majority of this project's code was generated by the AI assistant Cline, leveraging the capabilities of this very MCP server._
 
 ### Debugging
 
