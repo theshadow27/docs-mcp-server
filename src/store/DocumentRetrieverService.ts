@@ -16,18 +16,23 @@ export class DocumentRetrieverService {
    * @param library The library name.
    * @param version The library version.
    * @param query The search query.
+   * @param version The library version (optional, defaults to searching documents without a version).
+   * @param query The search query.
    * @param limit The optional limit for the initial search results.
    * @returns An array of strings representing the aggregated content of the retrieved chunks.
    */
   async search(
     library: string,
-    version: string,
+    version: string | null | undefined,
     query: string,
     limit?: number,
   ): Promise<StoreSearchResult[]> {
+    // Normalize version: null/undefined becomes empty string, then lowercase
+    const normalizedVersion = (version ?? "").toLowerCase();
+
     const initialResults = await this.documentStore.findByContent(
       library,
-      version,
+      normalizedVersion,
       query,
       limit ?? 10,
     );
@@ -39,7 +44,11 @@ export class DocumentRetrieverService {
       let content = "";
 
       // Parent
-      const parent = await this.documentStore.findParentChunk(library, version, id);
+      const parent = await this.documentStore.findParentChunk(
+        library,
+        normalizedVersion,
+        id,
+      );
       if (parent) {
         content += `${parent.pageContent}\n\n`;
       }
@@ -47,7 +56,7 @@ export class DocumentRetrieverService {
       // Preceding Siblings
       const precedingSiblings = await this.documentStore.findPrecedingSiblingChunks(
         library,
-        version,
+        normalizedVersion,
         id,
         SIBLING_LIMIT,
       );
@@ -61,7 +70,7 @@ export class DocumentRetrieverService {
       // Child Chunks
       const childChunks = await this.documentStore.findChildChunks(
         library,
-        version,
+        normalizedVersion,
         id,
         CHILD_LIMIT,
       );
@@ -72,7 +81,7 @@ export class DocumentRetrieverService {
       // Subsequent Siblings
       const subsequentSiblings = await this.documentStore.findSubsequentSiblingChunks(
         library,
-        version,
+        normalizedVersion,
         id,
         SIBLING_LIMIT,
       );

@@ -1,13 +1,10 @@
-import { randomUUID } from "node:crypto";
-import type { Database } from "better-sqlite3";
-
 // Main table and index creation SQL
 export const createTablesSQL = `
   -- Documents table
   CREATE TABLE IF NOT EXISTS documents(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     library TEXT NOT NULL,
-    version TEXT NOT NULL,
+    version TEXT NOT NULL DEFAULT '',
     url TEXT NOT NULL,
     content TEXT,
     metadata JSON,

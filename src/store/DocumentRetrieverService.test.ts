@@ -397,4 +397,45 @@ describe("DocumentRetrieverService", () => {
       },
     ]);
   });
+
+  // Test for optional version handling
+  describe("Optional Version Handling", () => {
+    const library = "opt-lib";
+    const query = "optional query";
+    const limit = 7;
+
+    it("search should normalize null/undefined/empty version to empty string for store calls", async () => {
+      // Mock store methods to prevent errors and allow checking calls
+      const findByContentSpy = vi
+        .spyOn(mockDocumentStore, "findByContent")
+        .mockResolvedValue([]); // Return empty to simplify test
+      const findParentChunkSpy = vi.spyOn(mockDocumentStore, "findParentChunk");
+      const findPrecedingSiblingsSpy = vi.spyOn(
+        mockDocumentStore,
+        "findPrecedingSiblingChunks",
+      );
+      const findChildChunksSpy = vi.spyOn(mockDocumentStore, "findChildChunks");
+      const findSubsequentSiblingsSpy = vi.spyOn(
+        mockDocumentStore,
+        "findSubsequentSiblingChunks",
+      );
+
+      // Test with null version
+      await retrieverService.search(library, null, query, limit);
+      expect(findByContentSpy).toHaveBeenCalledWith(library, "", query, limit);
+      // We don't need to check other methods if findByContent returns empty,
+      // but if it returned results, we'd check those calls too, e.g.:
+      // expect(findParentChunkSpy).toHaveBeenCalledWith(library, "", expect.any(String));
+
+      // Test with undefined version
+      await retrieverService.search(library, undefined, query, limit);
+      expect(findByContentSpy).toHaveBeenCalledWith(library, "", query, limit);
+
+      // Test with empty string version
+      await retrieverService.search(library, "", query, limit);
+      expect(findByContentSpy).toHaveBeenCalledWith(library, "", query, limit);
+
+      // Restore mocks if necessary, though clearAllMocks in beforeEach handles it
+    });
+  });
 });

@@ -7,7 +7,7 @@ import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {
   library: string;
-  version: string;
+  version?: string | null; // Make version optional
   url: string;
   onProgress?: (response: ProgressResponse) => void;
   options?: {
@@ -39,19 +39,50 @@ export class ScrapeTool {
     // Initialize the store
     await this.docService.initialize();
 
-    // Remove any existing documents for this library/version
-    const normalizedVersion = semver.valid(semver.coerce(version));
-    if (!normalizedVersion) {
-      throw new Error(`Invalid version: ${version}`);
+    let internalVersion: string;
+    const partialVersionRegex = /^\d+(\.\d+)?$/; // Matches '1' or '1.2'
+
+    if (version === null || version === undefined) {
+      // Case 1: Version omitted -> Use empty string
+      internalVersion = "";
+    } else {
+      const validFullVersion = semver.valid(version);
+      if (validFullVersion) {
+        // Case 2: Valid full semver (e.g., '1.2.3', '1.2.3-beta.1') -> Use it directly
+        internalVersion = validFullVersion;
+      } else if (partialVersionRegex.test(version)) {
+        // Case 3: Potentially partial version ('1', '1.2')
+        const coercedVersion = semver.coerce(version);
+        if (coercedVersion) {
+          // Coercion successful -> Use coerced 'X.Y.Z'
+          internalVersion = coercedVersion.version;
+        } else {
+          // Should not happen if regex matches, but handle defensively
+          throw new Error(
+            `Invalid version format for scraping: '${version}'. Use 'X.Y.Z', 'X.Y.Z-prerelease', 'X.Y', 'X', or omit.`,
+          );
+        }
+      } else {
+        // Case 4: Invalid format (e.g., '1.x', 'latest', 'foo') -> Reject
+        throw new Error(
+          `Invalid version format for scraping: '${version}'. Use 'X.Y.Z', 'X.Y.Z-prerelease', 'X.Y', 'X', or omit.`,
+        );
+      }
     }
 
-    await this.docService.removeAllDocuments(library, normalizedVersion);
-    logger.info(`💾 Using clean store for ${library}@${normalizedVersion}`);
+    // Ensure internalVersion is lowercase for consistency (though semver output is usually normalized)
+    internalVersion = internalVersion.toLowerCase();
+
+    // Remove any existing documents for this library/version (using the validated/normalized internal version)
+    await this.docService.removeAllDocuments(library, internalVersion);
+    logger.info(
+      `💾 Using clean store for ${library}@${internalVersion || "[no version]"}`,
+    );
 
     const pipeline = new DocumentProcessingPipeline(
       this.docService,
       library,
-      normalizedVersion,
+      internalVersion, // Pass the normalized internal version
     );
     let pagesScraped = 0;
 
@@ -83,7 +114,7 @@ export class ScrapeTool {
     await pipeline.process({
       url: url,
       library: library,
-      version: normalizedVersion,
+      version: internalVersion, // Pass the normalized internal version to the pipeline process
       subpagesOnly: true,
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,

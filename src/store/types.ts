@@ -44,3 +44,12 @@ export interface LibraryVersion {
   version: string;
   indexed: boolean;
 }
+
+/**
+ * Result type for findBestVersion, indicating the best semver match
+ * and whether unversioned documents exist.
+ */
+export interface FindVersionResult {
+  bestMatch: string | null;
+  hasUnversioned: boolean;
+}

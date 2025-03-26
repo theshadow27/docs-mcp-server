@@ -150,6 +150,16 @@ describe("DocumentManagementService", () => {
     expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, version);
   });
 
+  it("should handle removing documents with null/undefined/empty version", async () => {
+    const library = "test-lib";
+    await docService.removeAllDocuments(library, null);
+    expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, "");
+    await docService.removeAllDocuments(library, undefined);
+    expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, "");
+    await docService.removeAllDocuments(library, "");
+    expect(mockStore.deleteDocuments).toHaveBeenCalledWith(library, "");
+  });
+
   describe("listVersions", () => {
     it("should return an empty array if the library has no documents", async () => {
       mockStore.queryUniqueVersions.mockResolvedValue([]);
@@ -169,75 +179,139 @@ describe("DocumentManagementService", () => {
       ]);
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
     });
+
+    it("should filter out empty string and non-semver versions", async () => {
+      const library = "test-lib";
+      mockStore.queryUniqueVersions.mockResolvedValue([
+        "1.0.0",
+        "",
+        "invalid-version",
+        "2.0.0-beta", // Valid semver, should be included
+        "2.0.0",
+      ]);
+
+      const versions = await docService.listVersions(library);
+      expect(versions).toEqual([
+        { version: "1.0.0", indexed: true },
+        { version: "2.0.0-beta", indexed: true },
+        { version: "2.0.0", indexed: true },
+      ]);
+      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
+    });
   });
 
   describe("findBestVersion", () => {
-    it("should find the best version using listVersions", async () => {
-      const library = "test-lib";
+    const library = "test-lib";
+
+    beforeEach(() => {
+      // Reset mocks for checkDocumentExists for each test
+      mockStore.checkDocumentExists.mockResolvedValue(false);
+    });
+
+    it("should return best match and hasUnversioned=false when only semver exists", async () => {
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "2.0.0"]);
+      mockStore.checkDocumentExists.mockResolvedValue(false); // No unversioned
 
-      const bestVersion = await docService.findBestVersion(library, "1.5.0");
-      expect(bestVersion).toBe("1.1.0");
+      const result = await docService.findBestVersion(library, "1.5.0");
+      expect(result).toEqual({ bestMatch: "1.1.0", hasUnversioned: false });
       expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(library, "");
     });
 
-    it("should fall back to lower version if requested version is higher", async () => {
-      const library = "test-lib";
-      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "1.1.1"]);
+    it("should return latest match and hasUnversioned=false for 'latest'", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "2.0.0", "3.0.0"]);
+      mockStore.checkDocumentExists.mockResolvedValue(false);
 
-      expect(await docService.findBestVersion(library, "1.5.0")).toBe("1.1.1");
-      expect(await docService.findBestVersion(library, "2.0.0")).toBe("1.1.1");
-      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
+      const latestResult = await docService.findBestVersion(library, "latest");
+      expect(latestResult).toEqual({ bestMatch: "3.0.0", hasUnversioned: false });
+
+      const defaultResult = await docService.findBestVersion(library); // No target version
+      expect(defaultResult).toEqual({ bestMatch: "3.0.0", hasUnversioned: false });
     });
 
-    it("should throw VersionNotFoundError for invalid version strings", async () => {
-      const library = "test-lib";
+    it("should return best match and hasUnversioned=true when both exist", async () => {
       mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0"]);
-      const validVersions = [
-        { version: "1.0.0", indexed: true },
-        { version: "1.1.0", indexed: true },
-      ];
+      mockStore.checkDocumentExists.mockResolvedValue(true); // Unversioned exists
 
-      await expect(docService.findBestVersion(library, "invalid")).rejects.toThrow(
+      const result = await docService.findBestVersion(library, "1.0.x");
+      expect(result).toEqual({ bestMatch: "1.0.0", hasUnversioned: true });
+    });
+
+    it("should return latest match and hasUnversioned=true when both exist (latest)", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "2.0.0"]);
+      mockStore.checkDocumentExists.mockResolvedValue(true);
+
+      const result = await docService.findBestVersion(library);
+      expect(result).toEqual({ bestMatch: "2.0.0", hasUnversioned: true });
+    });
+
+    it("should return null bestMatch and hasUnversioned=true when only unversioned exists", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue([""]); // listVersions filters this out
+      mockStore.checkDocumentExists.mockResolvedValue(true); // Unversioned exists
+
+      const result = await docService.findBestVersion(library);
+      expect(result).toEqual({ bestMatch: null, hasUnversioned: true });
+
+      const resultSpecific = await docService.findBestVersion(library, "1.0.0");
+      expect(resultSpecific).toEqual({ bestMatch: null, hasUnversioned: true });
+    });
+
+    it("should return fallback match and hasUnversioned=true when target is higher but unversioned exists", async () => {
+      // Renamed test for clarity
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0"]);
+      mockStore.checkDocumentExists.mockResolvedValue(true); // Unversioned exists
+
+      const result = await docService.findBestVersion(library, "3.0.0"); // Target higher than available
+      // Expect fallback to latest available (1.1.0) because a version was requested
+      expect(result).toEqual({ bestMatch: "1.1.0", hasUnversioned: true }); // Corrected expectation
+    });
+
+    it("should return fallback match and hasUnversioned=false when target is higher and only semver exists", async () => {
+      // New test for specific corner case
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0"]);
+      mockStore.checkDocumentExists.mockResolvedValue(false); // No unversioned
+
+      const result = await docService.findBestVersion(library, "3.0.0"); // Target higher than available
+      // Expect fallback to latest available (1.1.0)
+      expect(result).toEqual({ bestMatch: "1.1.0", hasUnversioned: false });
+    });
+
+    it("should throw VersionNotFoundError when no versions (semver or unversioned) exist", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue([]); // No semver
+      mockStore.checkDocumentExists.mockResolvedValue(false); // No unversioned
+
+      await expect(docService.findBestVersion(library, "1.0.0")).rejects.toThrow(
         VersionNotFoundError,
       );
-      await expect(docService.findBestVersion(library, "1.x.2")).rejects.toThrow(
-        VersionNotFoundError,
-      );
-      await expect(docService.findBestVersion(library, "1.2.3-alpha")).rejects.toThrow(
+      await expect(docService.findBestVersion(library)).rejects.toThrow(
         VersionNotFoundError,
       );
 
-      const error = await docService.findBestVersion(library, "invalid").catch((e) => e);
+      // Check error details
+      const error = await docService.findBestVersion(library).catch((e) => e);
       expect(error).toBeInstanceOf(VersionNotFoundError);
       expect(error.library).toBe(library);
-      expect(error.requestedVersion).toBe("invalid");
-      expect(error.availableVersions).toEqual(validVersions);
-
-      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library);
+      expect(error.requestedVersion).toBe(""); // Default requested version is empty
+      expect(error.availableVersions).toEqual([]); // No valid semver versions found
     });
 
-    it("should throw VersionNotFoundError when no versions exist", async () => {
-      const library = "test-lib";
-      mockStore.queryUniqueVersions.mockResolvedValue([]);
+    it("should not throw for invalid target version format if unversioned exists", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0"]); // Has semver
+      mockStore.checkDocumentExists.mockResolvedValue(true); // Has unversioned
 
-      const promise = docService.findBestVersion(library, "1.0.0");
-      await expect(promise).rejects.toThrow(VersionNotFoundError);
-
-      const error = await promise.catch((e) => e);
-      expect(error.availableVersions).toEqual([]);
+      // Invalid format, but unversioned exists, so should return null match
+      const result = await docService.findBestVersion(library, "invalid-format");
+      expect(result).toEqual({ bestMatch: null, hasUnversioned: true });
     });
 
-    it("should handle 'latest' the same as no version specified", async () => {
-      const library = "test-lib";
-      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "2.0.0", "3.0.0"]);
+    it("should throw VersionNotFoundError for invalid target version format if only semver exists", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0"]); // Has semver
+      mockStore.checkDocumentExists.mockResolvedValue(false); // No unversioned
 
-      const latestVersion = await docService.findBestVersion(library, "latest");
-      const defaultVersion = await docService.findBestVersion(library);
-
-      expect(latestVersion).toBe("3.0.0");
-      expect(defaultVersion).toBe("3.0.0");
-      expect(mockStore.queryUniqueVersions).toHaveBeenCalledTimes(2);
+      // Invalid format, no unversioned fallback -> throw
+      await expect(docService.findBestVersion(library, "invalid-format")).rejects.toThrow(
+        VersionNotFoundError,
+      );
     });
   });
 
@@ -269,6 +343,73 @@ describe("DocumentManagementService", () => {
       mockStore.queryLibraryVersions.mockResolvedValue(new Map());
       const result = await docService.listLibraries();
       expect(result).toEqual([]);
+    });
+
+    it("should filter out empty string versions from the list", async () => {
+      const mockLibraryMap = new Map([
+        ["lib1", new Set(["1.0.0", ""])], // Has empty version
+        ["lib2", new Set(["2.0.0"])],
+        ["lib3", new Set([""])], // Only has empty version
+      ]);
+      mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
+
+      const result = await docService.listLibraries();
+      expect(result).toEqual([
+        {
+          library: "lib1",
+          versions: [{ version: "1.0.0", indexed: true }], // Empty version filtered out
+        },
+        {
+          library: "lib2",
+          versions: [{ version: "2.0.0", indexed: true }],
+        },
+        {
+          library: "lib3",
+          versions: [], // Empty version filtered out, resulting in empty array
+        },
+      ]);
+    });
+  });
+
+  // Tests for handling optional version parameter (null/undefined/"")
+  describe("Optional Version Handling", () => {
+    const library = "opt-lib";
+    const doc = new Document({
+      pageContent: "Optional version test",
+      metadata: { url: "http://opt.com" },
+    });
+    const query = "optional";
+
+    it("exists should normalize version to empty string", async () => {
+      await docService.exists(library, null);
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(library, "");
+      await docService.exists(library, undefined);
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(library, "");
+      await docService.exists(library, "");
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(library, "");
+    });
+
+    it("addDocument should normalize version to empty string", async () => {
+      await docService.addDocument(library, null, doc);
+      expect(mockStore.addDocuments).toHaveBeenCalledWith(library, "", expect.any(Array));
+      await docService.addDocument(library, undefined, doc);
+      expect(mockStore.addDocuments).toHaveBeenCalledWith(library, "", expect.any(Array));
+      await docService.addDocument(library, "", doc);
+      expect(mockStore.addDocuments).toHaveBeenCalledWith(library, "", expect.any(Array));
+    });
+
+    it("searchStore should normalize version to empty string", async () => {
+      // Call without explicit limit, should use default limit of 5
+      await docService.searchStore(library, null, query);
+      expect(mockRetriever.search).toHaveBeenCalledWith(library, "", query, 5); // Expect default limit 5
+
+      // Call with explicit limit
+      await docService.searchStore(library, undefined, query, 7);
+      expect(mockRetriever.search).toHaveBeenCalledWith(library, "", query, 7);
+
+      // Call with another explicit limit
+      await docService.searchStore(library, "", query, 10);
+      expect(mockRetriever.search).toHaveBeenCalledWith(library, "", query, 10);
     });
   });
 });

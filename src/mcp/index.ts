@@ -47,7 +47,7 @@ export async function startServer() {
       {
         url: z.string().url().describe("URL of the documentation to scrape"),
         library: z.string().describe("Name of the library"),
-        version: z.string().describe("Version of the library"),
+        version: z.string().optional().describe("Version of the library"),
         maxPages: z
           .number()
           .optional()
