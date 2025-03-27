@@ -16,7 +16,10 @@ export class LocalFileStrategy extends BaseScraperStrategy {
   protected async processItem(
     item: QueueItem,
     options: ScraperOptions,
+    _progressCallback?: ProgressCallback<ScraperProgress>, // Add unused param to match base
+    _signal?: AbortSignal, // Add unused signal to match base
   ): Promise<{ document?: Document; links?: string[] }> {
+    // Note: Cancellation signal is not actively checked here as file operations are typically fast.
     const filePath = item.url.replace(/^file:\/\//, "");
     const stats = await fs.stat(filePath);
 
@@ -51,7 +54,9 @@ export class LocalFileStrategy extends BaseScraperStrategy {
   async scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal,
   ): Promise<void> {
-    await super.scrape(options, progressCallback);
+    // Pass signal down to base class scrape method
+    await super.scrape(options, progressCallback, signal); // Pass the received signal
   }
 }

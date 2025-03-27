@@ -2,8 +2,14 @@ import { URL } from "node:url";
 import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import { type UrlNormalizerOptions, normalizeUrl } from "../../utils/url";
+import { CancellationError } from "../../pipeline/errors"; // Import CancellationError
 import { type ContentProcessor, HtmlProcessor, MarkdownProcessor } from "../processor";
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
+
+// Define defaults for optional options
+const DEFAULT_MAX_PAGES = 100;
+const DEFAULT_MAX_DEPTH = 3;
+const DEFAULT_CONCURRENCY = 3;
 
 export type QueueItem = {
   url: string;
@@ -35,6 +41,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     item: QueueItem,
     options: ScraperOptions,
     progressCallback?: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal, // Add signal
   ): Promise<{
     document?: Document;
     links?: string[];
@@ -52,27 +59,38 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     baseUrl: URL,
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal, // Add signal
   ): Promise<QueueItem[]> {
     const results = await Promise.all(
       batch.map(async (item) => {
-        if (item.depth > options.maxDepth) {
+        // Check signal before processing each item in the batch
+        if (signal?.aborted) {
+          throw new CancellationError("Scraping cancelled during batch processing");
+        }
+        // Resolve default for maxDepth check
+        const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
+        if (item.depth > maxDepth) {
           return [];
         }
 
         try {
-          const result = await this.processItem(item, options);
+          // Pass signal to processItem
+          const result = await this.processItem(item, options, undefined, signal);
 
           if (result.document) {
             this.pageCount++;
+            // Resolve defaults for logging and progress callback
+            const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES;
+            // maxDepth already resolved above
             logger.info(
-              `🌐 Scraping page ${this.pageCount}/${options.maxPages} (depth ${item.depth}/${options.maxDepth}): ${item.url}`,
+              `🌐 Scraping page ${this.pageCount}/${maxPages} (depth ${item.depth}/${maxDepth}): ${item.url}`,
             );
             await progressCallback({
               pagesScraped: this.pageCount,
-              maxPages: options.maxPages,
+              maxPages: maxPages,
               currentUrl: item.url,
               depth: item.depth,
-              maxDepth: options.maxDepth,
+              maxDepth: maxDepth,
               document: result.document,
             });
           }
@@ -122,6 +140,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
   async scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal, // Add signal
   ): Promise<void> {
     this.visited.clear();
     this.pageCount = 0;
@@ -132,20 +151,38 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
     // Track values we've seen (either queued or visited)
     this.visited.add(normalizeUrl(options.url, this.options.urlNormalizerOptions));
 
-    while (queue.length > 0 && this.pageCount < options.maxPages) {
-      const remainingPages = options.maxPages - this.pageCount;
+    // Resolve optional values to defaults using temporary variables
+    const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES;
+    const maxConcurrency = options.maxConcurrency ?? DEFAULT_CONCURRENCY;
+
+    while (queue.length > 0 && this.pageCount < maxPages) {
+      // Use variable
+      // Check for cancellation at the start of each loop iteration
+      if (signal?.aborted) {
+        logger.info("Scraping cancelled by signal.");
+        throw new CancellationError("Scraping cancelled by signal");
+      }
+
+      const remainingPages = maxPages - this.pageCount; // Use variable
       if (remainingPages <= 0) {
         break;
       }
 
       const batchSize = Math.min(
-        options.maxConcurrency ?? 3,
+        maxConcurrency, // Use variable
         remainingPages,
         queue.length,
       );
 
       const batch = queue.splice(0, batchSize);
-      const newUrls = await this.processBatch(batch, baseUrl, options, progressCallback);
+      // Pass signal to processBatch
+      const newUrls = await this.processBatch(
+        batch,
+        baseUrl,
+        options,
+        progressCallback,
+        signal,
+      );
 
       queue.push(...newUrls);
     }

@@ -25,6 +25,8 @@ export interface FetchOptions {
   headers?: Record<string, string>;
   /** Timeout in milliseconds */
   timeout?: number;
+  /** AbortSignal for cancellation */
+  signal?: AbortSignal;
 }
 
 /**

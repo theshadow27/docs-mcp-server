@@ -1,8 +1,8 @@
-import type { Document } from "../../types";
+import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import type { UrlNormalizerOptions } from "../../utils/url";
 import { HttpFetcher } from "../fetcher";
-import type { ScraperOptions } from "../types";
+import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
 
 export interface WebScraperStrategyOptions {
@@ -41,12 +41,16 @@ export class WebScraperStrategy extends BaseScraperStrategy {
   protected async processItem(
     item: QueueItem,
     options: ScraperOptions,
+    _progressCallback?: ProgressCallback<ScraperProgress>, // Base class passes it, but not used here
+    signal?: AbortSignal, // Add signal
   ): Promise<{ document?: Document; links?: string[] }> {
     const { url } = item;
 
     try {
-      const rawContent = await this.httpFetcher.fetch(url);
+      // Pass signal to fetcher within an options object
+      const rawContent = await this.httpFetcher.fetch(url, { signal });
       const processor = this.getProcessor(rawContent.mimeType);
+      // TODO: Consider passing signal to processor if processing is long
       const result = await processor.process(rawContent);
 
       // Filter out links

@@ -28,6 +28,7 @@ export class HttpFetcher implements ContentFetcher {
           responseType: "arraybuffer", // For handling both text and binary
           headers: options?.headers,
           timeout: options?.timeout,
+          signal: options?.signal, // Pass signal to axios
         });
 
         return {

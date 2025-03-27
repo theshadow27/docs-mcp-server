@@ -1,4 +1,4 @@
-class PipelineError extends Error {
+export class PipelineError extends Error {
   constructor(
     message: string,
     public readonly cause?: Error,
@@ -11,7 +11,7 @@ class PipelineError extends Error {
   }
 }
 
-class DocumentProcessingError extends PipelineError {
+export class DocumentProcessingError extends PipelineError {
   constructor(
     message: string,
     public readonly documentId: string,
@@ -21,6 +21,13 @@ class DocumentProcessingError extends PipelineError {
   }
 }
 
-class PipelineStateError extends PipelineError {}
+export class PipelineStateError extends PipelineError {}
 
-export { PipelineError, DocumentProcessingError, PipelineStateError };
+/**
+ * Error indicating that an operation was cancelled.
+ */
+export class CancellationError extends PipelineError {
+  constructor(message = "Operation cancelled") {
+    super(message);
+  }
+}

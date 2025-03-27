@@ -4,15 +4,21 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { DocumentManagementService } from "../store/DocumentManagementService";
+import { PipelineManager } from "../pipeline/PipelineManager"; // Import PipelineManager
+import { PipelineJobStatus } from "../pipeline/types"; // Import PipelineJobStatus
 import {
+  CancelJobTool, // Import new tool
   FindVersionTool,
+  GetJobStatusTool, // Import new tool
+  ListJobsTool, // Import new tool
   ListLibrariesTool,
-  ScrapeTool,
+  ScrapeTool, // Keep existing tools
   SearchTool,
   VersionNotFoundError,
-} from "../tools";
+} from "../tools"; // Ensure this path is correct
 import { createError, createResponse } from "./utils";
 import { logger } from "../utils/logger";
+import { PipelineStateError } from "../pipeline/errors"; // Import error type
 
 export async function startServer() {
   const docService = new DocumentManagementService();
@@ -20,11 +26,24 @@ export async function startServer() {
   try {
     await docService.initialize();
 
+    // Instantiate PipelineManager
+    // TODO: Check if concurrency needs to be configurable
+    const pipelineManager = new PipelineManager(docService);
+    // Start the pipeline manager to process jobs
+    await pipelineManager.start(); // Assuming start is async and needed
+
+    // Instantiate tools, passing dependencies
     const tools = {
       listLibraries: new ListLibrariesTool(docService),
       findVersion: new FindVersionTool(docService),
-      scrape: new ScrapeTool(docService),
+      // TODO: Update ScrapeTool constructor if needed to accept PipelineManager
+      // ScrapeTool currently uses docService.getPipelineManager() which doesn't exist.
+      // Pass both docService and pipelineManager to ScrapeTool constructor
+      scrape: new ScrapeTool(docService, pipelineManager),
       search: new SearchTool(docService),
+      listJobs: new ListJobsTool(pipelineManager), // Instantiate new tool
+      getJobStatus: new GetJobStatusTool(pipelineManager), // Instantiate new tool
+      cancelJob: new CancelJobTool(pipelineManager), // Instantiate new tool
     };
 
     const server = new McpServer(
@@ -41,7 +60,9 @@ export async function startServer() {
       },
     );
 
-    // Scrape docs tool
+    // --- Existing Tool Definitions ---
+
+    // Scrape docs tool (Keep as is for now, but likely needs ScrapeTool refactor)
     server.tool(
       "scrape_docs",
       "Scrape and index documentation from a URL",
@@ -61,12 +82,17 @@ export async function startServer() {
           .default(true)
           .describe("Only scrape pages under the initial URL path"),
       },
+      // Remove context as it's not used without progress reporting
       async ({ url, library, version, maxPages, maxDepth, subpagesOnly }) => {
         try {
+          // Execute scrape tool without waiting and without progress callback
+          // NOTE: This might fail if ScrapeTool relies on docService.getPipelineManager()
           const result = await tools.scrape.execute({
             url,
             library,
             version,
+            waitForCompletion: false, // Don't wait for completion
+            // onProgress: undefined, // Explicitly undefined or omitted
             options: {
               maxPages,
               maxDepth,
@@ -74,10 +100,17 @@ export async function startServer() {
             },
           });
 
+          // Check the type of result
+          if ("jobId" in result) {
+            // If we got a jobId back, report that
+            return createResponse(`🚀 Scraping job started with ID: ${result.jobId}.`);
+          }
+          // This case shouldn't happen if waitForCompletion is false, but handle defensively
           return createResponse(
-            `Successfully scraped ${result.pagesScraped} pages from ${url} for ${library} v${version}.`,
+            `Scraping finished immediately (unexpectedly) with ${result.pagesScraped} pages.`,
           );
         } catch (error) {
+          // Handle errors during job *enqueueing* or initial setup
           return createError(
             `Failed to scrape documentation: ${
               error instanceof Error ? error.message : String(error)
@@ -87,7 +120,7 @@ export async function startServer() {
       },
     );
 
-    // Search docs tool
+    // Search docs tool (Keep as is)
     server.tool(
       "search_docs",
       "Search indexed documentation. Examples:\n" +
@@ -154,7 +187,7 @@ ${formattedResults.join("")}`,
       },
     );
 
-    // List libraries tool
+    // List libraries tool (Keep as is)
     server.tool("list_libraries", "List all indexed libraries", {}, async () => {
       try {
         const result = await tools.listLibraries.execute();
@@ -171,7 +204,7 @@ ${formattedResults.join("")}`,
       }
     });
 
-    // Find version tool
+    // Find version tool (Keep as is)
     server.tool(
       "find_version",
       "Find best matching version for a library",
@@ -199,6 +232,94 @@ ${formattedResults.join("")}`,
         } catch (error) {
           return createError(
             `Failed to find version: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      },
+    );
+
+    // List jobs tool
+    server.tool(
+      "list_jobs",
+      "List pipeline jobs, optionally filtering by status.",
+      {
+        status: z
+          .nativeEnum(PipelineJobStatus)
+          .optional()
+          .describe("Optional status to filter jobs by."),
+      },
+      async ({ status }) => {
+        try {
+          const result = await tools.listJobs.execute({ status });
+          // Format the job list for display
+          const formattedJobs = result.jobs
+            .map(
+              (job) =>
+                `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt.toISOString()}${job.startedAt ? `\n  Started: ${job.startedAt.toISOString()}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt.toISOString()}` : ""}${job.error ? `\n  Error: ${job.error.message}` : ""}`,
+            )
+            .join("\n\n");
+          return createResponse(
+            result.jobs.length > 0
+              ? `Current Jobs:\n\n${formattedJobs}`
+              : "No jobs found matching criteria.",
+          );
+        } catch (error) {
+          return createError(
+            `Failed to list jobs: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      },
+    );
+
+    // Get job status tool
+    server.tool(
+      "get_job_status",
+      "Get the status and details of a specific pipeline job.",
+      {
+        jobId: z.string().uuid().describe("The ID of the job to query."),
+      },
+      async ({ jobId }) => {
+        try {
+          const result = await tools.getJobStatus.execute({ jobId });
+          if (!result.job) {
+            return createError(`Job with ID ${jobId} not found.`);
+          }
+          const job = result.job;
+          const formattedJob = `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt.toISOString()}${job.startedAt ? `\n  Started: ${job.startedAt.toISOString()}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt.toISOString()}` : ""}${job.error ? `\n  Error: ${job.error.message}` : ""}`;
+          return createResponse(`Job Status:\n\n${formattedJob}`);
+        } catch (error) {
+          return createError(
+            `Failed to get job status for ${jobId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      },
+    );
+
+    // Cancel job tool
+    server.tool(
+      "cancel_job",
+      "Attempt to cancel a queued or running pipeline job.",
+      {
+        jobId: z.string().uuid().describe("The ID of the job to cancel."),
+      },
+      async ({ jobId }) => {
+        try {
+          const result = await tools.cancelJob.execute({ jobId });
+          // Use the message and success status from the tool's result
+          if (result.success) {
+            return createResponse(result.message);
+          }
+          // If not successful according to the tool, treat it as an error in MCP
+          return createError(result.message);
+        } catch (error) {
+          // Catch any unexpected errors during the tool execution itself
+          return createError(
+            `Failed to cancel job ${jobId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
@@ -279,12 +400,13 @@ ${formattedResults.join("")}`,
 
     // Handle cleanup
     process.on("SIGINT", async () => {
+      await pipelineManager.stop(); // Stop the pipeline manager
       await docService.shutdown();
       await server.close();
       process.exit(0);
     });
   } catch (error) {
-    await docService.shutdown();
+    await docService.shutdown(); // Ensure docService shutdown on error too
     logger.error(`❌ Fatal Error: ${error}`);
     process.exit(1);
   }

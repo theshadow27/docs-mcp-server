@@ -51,9 +51,13 @@ describe("WebScraperStrategy", () => {
       source: "https://example.com",
     });
 
+    // Call scrape without signal
     await strategy.scrape(options, progressCallback);
 
-    expect(HttpFetcher.prototype.fetch).toHaveBeenCalledWith("https://example.com");
+    // Expect fetch to be called with url and options object containing undefined signal
+    expect(HttpFetcher.prototype.fetch).toHaveBeenCalledWith("https://example.com", {
+      signal: undefined,
+    });
   });
 
   it("should respect the maxConcurrency option", async () => {
@@ -147,13 +151,31 @@ describe("WebScraperStrategy", () => {
     // Should fetch: root + page1 + page3 + relative
     // Should fetch: root + page1 + page3 + relative (4 total)
     expect(fetchSpy).toHaveBeenCalledTimes(4);
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page1");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page3/");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/relative");
-    expect(fetchSpy).not.toHaveBeenCalledWith("https://example.com/other/page2");
-    expect(fetchSpy).not.toHaveBeenCalledWith("https://anothersite.com/");
-    expect(fetchSpy).not.toHaveBeenCalledWith("https://example.com/other/relative");
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page1", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page3/", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/relative", {
+      signal: undefined,
+    });
+    // Check calls that should NOT have happened (no need to check signal here)
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://example.com/other/page2",
+      expect.anything(),
+    );
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://anothersite.com/",
+      expect.anything(),
+    );
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://example.com/other/relative",
+      expect.anything(),
+    );
     expect(processSpy).toHaveBeenCalledTimes(4); // Processor called for each fetched page
   });
 
@@ -211,12 +233,26 @@ describe("WebScraperStrategy", () => {
 
     // Should fetch: root + page1 + page2 + relative_sub + relative_other (5 total)
     expect(fetchSpy).toHaveBeenCalledTimes(5);
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page1");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/page2"); // Included now
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/relative");
-    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/relative"); // Included now
-    expect(fetchSpy).not.toHaveBeenCalledWith("https://anothersite.com/"); // Link removed from mock
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page1", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/page2", {
+      signal: undefined,
+    }); // Included now
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/relative", {
+      signal: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/relative", {
+      signal: undefined,
+    }); // Included now
+    // Check calls that should NOT have happened
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://anothersite.com/",
+      expect.anything(),
+    );
     expect(processSpy).toHaveBeenCalledTimes(5); // Processor called for each fetched page
   });
 });

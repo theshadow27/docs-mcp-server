@@ -24,8 +24,9 @@ export class NpmScraperStrategy implements ScraperStrategy {
   async scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal,
   ): Promise<void> {
-    // Use default strategy with our configuration
-    await this.defaultStrategy.scrape(options, progressCallback);
+    // Use default strategy with our configuration, passing the signal
+    await this.defaultStrategy.scrape(options, progressCallback, signal);
   }
 }

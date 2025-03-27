@@ -1,131 +1,158 @@
 import * as semver from "semver";
-import { DocumentProcessingPipeline } from "../pipeline/DocumentProcessingPipeline";
-import type { ScraperProgress } from "../scraper/types";
+import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
-import type { ProgressResponse } from "../types";
+import type { ProgressResponse } from "../types"; // Keep for options interface, though onProgress is removed from internal logic
 import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {
   library: string;
   version?: string | null; // Make version optional
   url: string;
-  onProgress?: (response: ProgressResponse) => void;
+  /** @deprecated Progress reporting should be handled via job status polling or external callbacks. */
+  onProgress?: (response: ProgressResponse) => void; // Keep for interface compatibility, but mark deprecated
   options?: {
     maxPages?: number;
     maxDepth?: number;
     subpagesOnly?: boolean;
-    maxConcurrency?: number;
+    maxConcurrency?: number; // Note: Concurrency is now set when PipelineManager is created
     ignoreErrors?: boolean;
   };
+  /** If false, returns jobId immediately without waiting. Defaults to true. */
+  waitForCompletion?: boolean;
 }
 
 export interface ScrapeResult {
+  /** Indicates the number of pages scraped if waitForCompletion was true and the job succeeded. May be 0 or inaccurate if job failed or waitForCompletion was false. */
   pagesScraped: number;
 }
 
+/** Return type for ScrapeTool.execute */
+export type ScrapeExecuteResult = ScrapeResult | { jobId: string };
+
 /**
- * Tool for scraping and indexing documentation from a URL.
- * Handles initialization of document processing pipeline and progress reporting.
+ * Tool for enqueuing documentation scraping jobs via the PipelineManager.
  */
 export class ScrapeTool {
   private docService: DocumentManagementService;
+  private manager: PipelineManager; // Add manager property
 
-  constructor(docService: DocumentManagementService) {
+  constructor(docService: DocumentManagementService, manager: PipelineManager) {
+    // Add manager to constructor
     this.docService = docService;
+    this.manager = manager; // Store manager instance
   }
 
-  async execute(options: ScrapeToolOptions): Promise<ScrapeResult> {
-    const { library, version, url, onProgress, options: scraperOptions } = options;
+  async execute(options: ScrapeToolOptions): Promise<ScrapeExecuteResult> {
+    const {
+      library,
+      version,
+      url,
+      // onProgress is no longer used internally
+      options: scraperOptions,
+      waitForCompletion = true,
+    } = options;
 
-    // Initialize the store
-    await this.docService.initialize();
+    // Store initialization and manager start should happen externally
 
     let internalVersion: string;
     const partialVersionRegex = /^\d+(\.\d+)?$/; // Matches '1' or '1.2'
 
     if (version === null || version === undefined) {
-      // Case 1: Version omitted -> Use empty string
       internalVersion = "";
     } else {
       const validFullVersion = semver.valid(version);
       if (validFullVersion) {
-        // Case 2: Valid full semver (e.g., '1.2.3', '1.2.3-beta.1') -> Use it directly
         internalVersion = validFullVersion;
       } else if (partialVersionRegex.test(version)) {
-        // Case 3: Potentially partial version ('1', '1.2')
         const coercedVersion = semver.coerce(version);
         if (coercedVersion) {
-          // Coercion successful -> Use coerced 'X.Y.Z'
           internalVersion = coercedVersion.version;
         } else {
-          // Should not happen if regex matches, but handle defensively
           throw new Error(
             `Invalid version format for scraping: '${version}'. Use 'X.Y.Z', 'X.Y.Z-prerelease', 'X.Y', 'X', or omit.`,
           );
         }
       } else {
-        // Case 4: Invalid format (e.g., '1.x', 'latest', 'foo') -> Reject
         throw new Error(
           `Invalid version format for scraping: '${version}'. Use 'X.Y.Z', 'X.Y.Z-prerelease', 'X.Y', 'X', or omit.`,
         );
       }
     }
 
-    // Ensure internalVersion is lowercase for consistency (though semver output is usually normalized)
     internalVersion = internalVersion.toLowerCase();
 
-    // Remove any existing documents for this library/version (using the validated/normalized internal version)
+    // Remove any existing documents for this library/version
     await this.docService.removeAllDocuments(library, internalVersion);
     logger.info(
-      `💾 Using clean store for ${library}@${internalVersion || "[no version]"}`,
+      `💾 Cleared store for ${library}@${internalVersion || "[no version]"} before scraping.`,
     );
 
-    const pipeline = new DocumentProcessingPipeline(
-      this.docService,
-      library,
-      internalVersion, // Pass the normalized internal version
-    );
-    let pagesScraped = 0;
+    // Use the injected manager instance
+    const manager = this.manager;
 
-    const reportProgress = (text: string) => {
-      if (onProgress) {
-        onProgress({
-          content: [{ type: "text", text }],
-        });
-      }
-    };
+    // Remove internal progress tracking and callbacks
+    // let pagesScraped = 0;
+    // let lastReportedPages = 0;
+    // const reportProgress = ...
+    // manager.setCallbacks(...)
 
-    pipeline.setCallbacks({
-      onProgress: async (progress: ScraperProgress) => {
-        reportProgress(
-          `🌐 Indexed page ${progress.pagesScraped}/${progress.maxPages}: ${progress.currentUrl}`,
-        );
-        if (progress.pagesScraped > pagesScraped) {
-          pagesScraped = progress.pagesScraped;
-        }
-      },
-      onError: async (error, doc) => {
-        reportProgress(
-          `❌ Error processing ${doc?.metadata.title ?? "document"}: ${error.message}`,
-        );
-      },
-    });
-
-    // Start processing with config
-    await pipeline.process({
+    // Enqueue the job using the injected manager
+    const jobId = await manager.enqueueJob(library, internalVersion, {
       url: url,
       library: library,
-      version: internalVersion, // Pass the normalized internal version to the pipeline process
-      subpagesOnly: scraperOptions?.subpagesOnly ?? true, // Use passed value or default
+      version: internalVersion,
+      subpagesOnly: scraperOptions?.subpagesOnly ?? true,
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,
-      maxConcurrency: scraperOptions?.maxConcurrency ?? 3,
+      // maxConcurrency is handled by the manager itself now
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
     });
 
-    // Return final statistics
-    return {
-      pagesScraped,
-    };
+    logger.info(`🚀 Job ${jobId} enqueued for scraping.`);
+    // Report enqueueing via onProgress if provided (for backward compatibility, though deprecated)
+    options.onProgress?.({
+      content: [{ type: "text", text: `🚀 Job ${jobId} enqueued for scraping.` }],
+    });
+
+    // Conditionally wait for completion
+    if (waitForCompletion) {
+      try {
+        await manager.waitForJobCompletion(jobId);
+        // Fetch final job state to get status and potentially final page count
+        const finalJob = await manager.getJob(jobId);
+        const finalPagesScraped = finalJob?.progress?.pagesScraped ?? 0; // Get count from final job state
+        logger.info(
+          `Job ${jobId} finished with status ${finalJob?.status}. Pages scraped: ${finalPagesScraped}`,
+        );
+        // Report completion via onProgress if provided
+        options.onProgress?.({
+          content: [
+            {
+              type: "text",
+              text: `✅ Job ${jobId} completed. Pages scraped: ${finalPagesScraped}`,
+            },
+          ],
+        });
+        return {
+          pagesScraped: finalPagesScraped,
+        };
+      } catch (error) {
+        logger.error(`Job ${jobId} failed or was cancelled: ${error}`);
+        // Report failure via onProgress if provided
+        options.onProgress?.({
+          content: [
+            {
+              type: "text",
+              text: `❌ Job ${jobId} failed or cancelled: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+        });
+        throw error; // Re-throw so the caller knows it failed
+      }
+      // No finally block needed to stop manager, as it's managed externally
+    }
+
+    // If not waiting, return the job ID immediately
+    return { jobId };
   }
 }
