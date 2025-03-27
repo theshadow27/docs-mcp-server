@@ -12,6 +12,7 @@ import {
   VersionNotFoundError,
 } from "../tools";
 import { createError, createResponse } from "./utils";
+import { logger } from "../utils/logger";
 
 export async function startServer() {
   const docService = new DocumentManagementService();
@@ -274,7 +275,7 @@ ${formattedResults.join("")}`,
     // Start server
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Documentation MCP server running on stdio");
+    logger.info("Documentation MCP server running on stdio");
 
     // Handle cleanup
     process.on("SIGINT", async () => {
@@ -284,7 +285,7 @@ ${formattedResults.join("")}`,
     });
   } catch (error) {
     await docService.shutdown();
-    console.error("Error:", error instanceof Error ? error.message : String(error));
+    logger.error(`❌ Fatal Error: ${error}`);
     process.exit(1);
   }
 }
