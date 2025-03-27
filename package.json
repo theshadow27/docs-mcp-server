@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@langchain/community": "^0.3.34",
-    "@langchain/openai": "^0.4.4",
+    "@langchain/openai": "^0.5.0",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "@types/node-fetch": "^2.6.12",
     "axios": "^1.8.3",
