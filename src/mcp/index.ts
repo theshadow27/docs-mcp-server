@@ -60,7 +60,7 @@ export async function startServer() {
           .default(true)
           .describe("Only scrape pages under the initial URL path"),
       },
-      async ({ url, library, version, maxPages, maxDepth }) => {
+      async ({ url, library, version, maxPages, maxDepth, subpagesOnly }) => {
         try {
           const result = await tools.scrape.execute({
             url,
@@ -69,6 +69,7 @@ export async function startServer() {
             options: {
               maxPages,
               maxDepth,
+              subpagesOnly,
             },
           });
 

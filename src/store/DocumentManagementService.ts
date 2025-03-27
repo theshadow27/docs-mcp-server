@@ -107,12 +107,12 @@ export class DocumentManagementService {
     ); // listVersions already filters for semver
 
     if (validSemverVersions.length === 0) {
-      logger.warn(`⚠️ No valid semver versions found for ${library}`);
       if (hasUnversioned) {
         logger.info(`ℹ️ Unversioned documents exist for ${library}`);
         return { bestMatch: null, hasUnversioned: true };
       }
       // Throw error only if NO versions (semver or unversioned) exist
+      logger.warn(`⚠️ No valid versions found for ${library}`);
       throw new VersionNotFoundError(library, targetVersion ?? "", []);
     }
 

@@ -1,8 +1,8 @@
-import type { Document, ProgressCallback } from "../../types";
+import type { Document } from "../../types";
 import { logger } from "../../utils/logger";
 import type { UrlNormalizerOptions } from "../../utils/url";
 import { HttpFetcher } from "../fetcher";
-import type { ScraperOptions, ScraperProgress } from "../types";
+import type { ScraperOptions } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
 
 export interface WebScraperStrategyOptions {
@@ -54,6 +54,11 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       const links = result.links.filter((link) => {
         try {
           const targetUrl = new URL(link, baseUrl);
+          // Always ensure the target is on the same origin
+          if (targetUrl.origin !== baseUrl.origin) {
+            return false;
+          }
+          // Apply subpagesOnly and custom filter logic
           return (
             (!options.subpagesOnly || this.isSubpage(baseUrl, targetUrl)) &&
             (!this.shouldFollowLinkFn || this.shouldFollowLinkFn(baseUrl, targetUrl))

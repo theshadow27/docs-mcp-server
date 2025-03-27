@@ -13,6 +13,7 @@ export interface ScrapeToolOptions {
   options?: {
     maxPages?: number;
     maxDepth?: number;
+    subpagesOnly?: boolean;
     maxConcurrency?: number;
     ignoreErrors?: boolean;
   };
@@ -115,7 +116,7 @@ export class ScrapeTool {
       url: url,
       library: library,
       version: internalVersion, // Pass the normalized internal version to the pipeline process
-      subpagesOnly: true,
+      subpagesOnly: scraperOptions?.subpagesOnly ?? true, // Use passed value or default
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,
       maxConcurrency: scraperOptions?.maxConcurrency ?? 3,

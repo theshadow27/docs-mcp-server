@@ -22,7 +22,7 @@ describe("ScrapeTool", () => {
   // Mock implementation for pipeline callbacks
   let pipelineCallbacks: {
     onProgress?: (progress: ScraperProgress) => Promise<void>;
-    onError?: (error: Error, doc?: any) => Promise<void>;
+    onError?: (error: Error, doc?: unknown) => Promise<void>;
   } = {};
 
   beforeEach(() => {
@@ -94,14 +94,14 @@ describe("ScrapeTool", () => {
     async (invalidVersion) => {
       const options = getBaseOptions(invalidVersion);
 
-       await expect(scrapeTool.execute(options)).rejects.toThrow(
-         /Invalid version format for scraping/,
-       );
-       // Initialize IS called before the version check throws
-+      expect(mockDocService.initialize).toHaveBeenCalledOnce();
-       expect(mockDocService.removeAllDocuments).not.toHaveBeenCalled();
-       expect(mockPipelineInstance.process).not.toHaveBeenCalled();
-     },
+      await expect(scrapeTool.execute(options)).rejects.toThrow(
+        /Invalid version format for scraping/,
+      );
+      // Initialize IS called before the version check throws
+      +expect(mockDocService.initialize).toHaveBeenCalledOnce();
+      expect(mockDocService.removeAllDocuments).not.toHaveBeenCalled();
+      expect(mockPipelineInstance.process).not.toHaveBeenCalled();
+    },
   );
 
   // --- Pipeline Execution Tests ---
@@ -134,8 +134,20 @@ describe("ScrapeTool", () => {
     // Simulate progress callback updating pagesScraped
     (mockPipelineInstance.process as Mock).mockImplementation(async () => {
       if (pipelineCallbacks.onProgress) {
-        await pipelineCallbacks.onProgress({ pagesScraped: 10, maxPages: 100, currentUrl: "url1", depth: 1, maxDepth: 3 });
-        await pipelineCallbacks.onProgress({ pagesScraped: 25, maxPages: 100, currentUrl: "url2", depth: 2, maxDepth: 3 });
+        await pipelineCallbacks.onProgress({
+          pagesScraped: 10,
+          maxPages: 100,
+          currentUrl: "url1",
+          depth: 1,
+          maxDepth: 3,
+        });
+        await pipelineCallbacks.onProgress({
+          pagesScraped: 25,
+          maxPages: 100,
+          currentUrl: "url2",
+          depth: 2,
+          maxDepth: 3,
+        });
       }
     });
 
@@ -159,7 +171,13 @@ describe("ScrapeTool", () => {
     (mockPipelineInstance.process as Mock).mockImplementation(async () => {
       // Simulate pipeline calling its progress callback
       if (pipelineCallbacks.onProgress) {
-        await pipelineCallbacks.onProgress({ pagesScraped: 5, maxPages: 10, currentUrl: "http://page.com", depth: 1, maxDepth: 2 });
+        await pipelineCallbacks.onProgress({
+          pagesScraped: 5,
+          maxPages: 10,
+          currentUrl: "http://page.com",
+          depth: 1,
+          maxDepth: 2,
+        });
       }
     });
 
@@ -172,7 +190,7 @@ describe("ScrapeTool", () => {
   });
 
   it("should call onProgress callback when pipeline reports an error", async () => {
-     const options = getBaseOptions("1.0.0", mockOnProgress);
+    const options = getBaseOptions("1.0.0", mockOnProgress);
     const docError = new Error("Failed to parse");
     (mockPipelineInstance.process as Mock).mockImplementation(async () => {
       // Simulate pipeline calling its error callback
@@ -184,18 +202,29 @@ describe("ScrapeTool", () => {
     await scrapeTool.execute(options);
 
     expect(mockOnProgress).toHaveBeenCalledOnce();
-     expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [{ type: "text", text: expect.stringContaining("Error processing Bad Doc: Failed to parse") }],
+    expect(mockOnProgress).toHaveBeenCalledWith({
+      content: [
+        {
+          type: "text",
+          text: expect.stringContaining("Error processing Bad Doc: Failed to parse"),
+        },
+      ],
     });
   });
 
-   it("should not fail if onProgress is not provided", async () => {
+  it("should not fail if onProgress is not provided", async () => {
     const options = getBaseOptions("1.0.0"); // No onProgress callback
-     (mockPipelineInstance.process as Mock).mockImplementation(async () => {
+    (mockPipelineInstance.process as Mock).mockImplementation(async () => {
       if (pipelineCallbacks.onProgress) {
-        await pipelineCallbacks.onProgress({ pagesScraped: 1, maxPages: 10, currentUrl: "url", depth: 0, maxDepth: 1 });
+        await pipelineCallbacks.onProgress({
+          pagesScraped: 1,
+          maxPages: 10,
+          currentUrl: "url",
+          depth: 0,
+          maxDepth: 1,
+        });
       }
-       if (pipelineCallbacks.onError) {
+      if (pipelineCallbacks.onError) {
         await pipelineCallbacks.onError(new Error("Test Error"));
       }
     });
@@ -203,5 +232,4 @@ describe("ScrapeTool", () => {
     // Expect no error to be thrown during execution when callbacks fire internally
     await expect(scrapeTool.execute(options)).resolves.toBeDefined();
   });
-
 });
