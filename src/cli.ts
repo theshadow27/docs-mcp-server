@@ -1,21 +1,29 @@
 #!/usr/bin/env node
 import "dotenv/config";
 import { Command } from "commander";
+import { PipelineManager } from "./pipeline/PipelineManager"; // Import PipelineManager
 import { DocumentManagementService } from "./store/DocumentManagementService";
 import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
 async function main() {
-  const docService = new DocumentManagementService();
+  let docService: DocumentManagementService | undefined;
+  let pipelineManager: PipelineManager | undefined;
 
   try {
+    docService = new DocumentManagementService();
     await docService.initialize();
+
+    // Instantiate PipelineManager for CLI use
+    pipelineManager = new PipelineManager(docService); // Assign inside try
+    // Start the manager for the CLI session
+    await pipelineManager.start();
 
     const tools = {
       listLibraries: new ListLibrariesTool(docService),
       findVersion: new FindVersionTool(docService),
-      scrape: new ScrapeTool(docService),
+      scrape: new ScrapeTool(docService, pipelineManager), // Pass manager
       search: new SearchTool(docService),
     };
 
@@ -23,7 +31,8 @@ async function main() {
 
     // Handle cleanup on SIGINT
     process.on("SIGINT", async () => {
-      await docService.shutdown();
+      if (pipelineManager) await pipelineManager.stop(); // Check before stopping
+      if (docService) await docService.shutdown(); // Check before stopping
       process.exit(0);
     });
 
@@ -52,8 +61,15 @@ async function main() {
             maxConcurrency: Number.parseInt(options.maxConcurrency),
             ignoreErrors: options.ignoreErrors,
           },
+          // CLI always waits for completion (default behavior)
         });
-        console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
+        // Type guard to satisfy TypeScript
+        if ("pagesScraped" in result) {
+          console.log(`✅ Successfully scraped ${result.pagesScraped} pages`);
+        } else {
+          // This branch should not be hit by the CLI
+          console.log(`🚀 Scraping job started with ID: ${result.jobId}`);
+        }
       });
 
     program
@@ -102,13 +118,15 @@ async function main() {
         "-v, --version <string>", // Add optional version flag
         "Target version to match (optional, supports ranges)",
       )
-      .action(async (library, options) => { // Update action parameters
+      .action(async (library, options) => {
+        // Update action parameters
         const versionInfo = await tools.findVersion.execute({
           library,
           targetVersion: options.version, // Get version from options
         });
         // findVersion.execute now returns a string, handle potential error messages within it
-        if (!versionInfo) { // Should not happen with current tool logic, but good practice
+        if (!versionInfo) {
+          // Should not happen with current tool logic, but good practice
           throw new Error("Failed to get version information");
         }
         console.log(versionInfo); // Log the descriptive string from the tool
@@ -117,11 +135,13 @@ async function main() {
     await program.parseAsync();
   } catch (error) {
     console.error("Error:", error instanceof Error ? error.message : String(error));
-    await docService.shutdown();
+    if (pipelineManager) await pipelineManager.stop(); // Check before stopping
+    if (docService) await docService.shutdown();
     process.exit(1);
   }
 
   // Clean shutdown after successful execution
+  if (pipelineManager) await pipelineManager.stop(); // Check before stopping
   await docService.shutdown();
   process.exit(0);
 }

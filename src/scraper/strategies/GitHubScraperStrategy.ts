@@ -60,6 +60,7 @@ export class GitHubScraperStrategy implements ScraperStrategy {
   async scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal,
   ): Promise<void> {
     // Validate it's a GitHub URL
     const url = new URL(options.url);
@@ -67,6 +68,7 @@ export class GitHubScraperStrategy implements ScraperStrategy {
       throw new Error("URL must be a GitHub URL");
     }
 
-    await this.defaultStrategy.scrape(options, progressCallback);
+    // Pass signal down to the delegated strategy
+    await this.defaultStrategy.scrape(options, progressCallback, signal);
   }
 }

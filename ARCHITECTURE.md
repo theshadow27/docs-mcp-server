@@ -9,7 +9,7 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 
 ### Core File Naming and Code Quality Conventions
 
-- Files containing classes use PascalCase (e.g., `DocumentProcessingPipeline.ts`, `DocumentManagementService.ts`)
+- Files containing classes use PascalCase (e.g., `PipelineManager.ts`, `PipelineWorker.ts`, `DocumentManagementService.ts`)
 - Other files use kebab-case or regular camelCase (e.g., `index.ts`, `scraper-service.ts`)
 - Avoid typecasting where possible. Never use `any` type but prefer `unknown` or `never`.
 
@@ -18,8 +18,11 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 ```
 src/
 ├── cli.ts                           # CLI interface implementation
-├── index.ts                         # MCP server interface
-├── pipeline/                        # Document processing pipeline
+├── server.ts                        # MCP server entry point (uses mcp/index.ts)
+├── mcp/                             # MCP server implementation details
+├── pipeline/                        # Asynchronous job processing pipeline
+│   ├── PipelineManager.ts           # Manages job queue, concurrency, state
+│   └── PipelineWorker.ts            # Executes a single pipeline job
 ├── scraper/                         # Web scraping implementation
 │   ├── strategies/                  # Scraping strategies for different sources
 │   │   ├── WebScraperStrategy.ts    # Handles HTTP/HTTPS content
@@ -81,9 +84,70 @@ Current tools include:
 - Documentation scraping functionality
 - Search capabilities with context-aware results
 - Library version management
+- Documentation scraping functionality (now asynchronous via PipelineManager)
+- Job management (listing, status checking, cancellation)
+- Search capabilities with context-aware results
+- Library version management
 - Document management operations
 
-The tools interact with the `DocumentManagementService` for managing and retrieving documents. This ensures a consistent interface for all tools and simplifies the integration with the document storage system.
+The tools interact with the `DocumentManagementService` for managing and retrieving documents, and the `PipelineManager` for handling long-running jobs like scraping. This ensures a consistent interface for all tools and simplifies the integration with the document storage system and job queue.
+
+## Pipeline Architecture
+
+The document processing pipeline is designed as an asynchronous, queue-based system managed by the `PipelineManager`.
+
+- **`PipelineManager`**:
+  - Manages a queue of processing jobs (currently just scraping).
+  - Controls job concurrency based on configuration (defaulting to 3).
+  - Tracks the state (`QUEUED`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED`) and progress of each job.
+  - Provides methods (exposed via tools) to enqueue new jobs (`enqueueJob`), get job status (`getJob`, `getJobs`), wait for completion (`waitForJobCompletion`), and request cancellation (`cancelJob`).
+  - `enqueueJob` is non-blocking and returns a unique `jobId` immediately.
+- **`PipelineWorker`**:
+  - Executes a single job dequeued by the `PipelineManager`.
+  - Contains the logic for orchestrating scraping (using `ScraperService`) and storing results (using `DocumentManagementService`) for that specific job.
+  - Respects cancellation signals passed down from the `PipelineManager`.
+- **Cancellation**: Uses the standard `AbortController` and `AbortSignal` pattern to propagate cancellation requests from the manager down through the worker and scraper layers.
+
+```mermaid
+graph TD
+    subgraph Client Interface
+        UI[User Request e.g., scrape]
+    end
+
+    subgraph PipelineManager
+        direction LR
+        Q[Job Queue: Job1, Job2, ...]
+        WM[Worker Pool Manager]
+        Jobs[Job Status Map<JobID, PipelineJob>]
+    end
+
+    subgraph PipelineWorker
+        direction TB
+        PW[Worker executing JobX]
+        Scrape[ScraperService.scrape]
+        StoreProc[Store Document Logic]
+    end
+
+    UI -- enqueueJob --> PM[PipelineManager]
+    PM -- Returns JobID --> UI
+    PM -- Adds Job --> Q
+    PM -- Updates Job State --> Jobs
+
+    WM -- Has capacity? --> Q
+    Q -- Dequeues Job --> WM
+    WM -- Assigns Job --> PW
+
+    PW --> Scrape
+    Scrape -- Progress Callback --> PW
+    PW --> StoreProc
+    StoreProc --> DB[(DocumentStore)]
+    PW -- Updates Status/Progress --> Jobs[Job Status Map]
+
+    ClientWait[Client.waitForJobCompletion] -->|Checks Status/Promise| Jobs
+    ClientCancel[Client.cancelJob] --> PM
+    PM -- Calls AbortController.abort() --> Signal([AbortSignal for JobID])
+    Signal -- Passed to --> PW
+```
 
 ### Document Storage Design
 
@@ -122,16 +186,18 @@ This separation of concerns improves the modularity, maintainability, and testab
 - Implements MCP protocol for AI interaction
 - Wraps tool functions in MCP tool definitions
 - Formats results as MCP responses
-- Provides progress feedback through MCP protocol
+- Provides progress feedback through MCP protocol (Note: Currently reports job start via message, detailed progress TBD)
 
 ### Progress Reporting
 
-The project uses a unified progress reporting system with typed callbacks for all long-running operations. This design:
+The project uses a unified progress reporting system via callbacks managed by the `PipelineManager`. This design:
 
-- Provides real-time feedback across multiple levels (page, document, storage)
-- Ensures consistent progress tracking across components
-- Supports different output formats for CLI and MCP interfaces
-- Enables parallel processing with individual progress tracking through configurable batch-based concurrency
+- Provides job-level status updates (`onJobStatusChange`).
+- Provides detailed progress updates during job execution (`onJobProgress`), including page scraping details.
+- Reports errors encountered during document processing within a job (`onJobError`).
+- Ensures consistent progress tracking across components via `PipelineManagerCallbacks`.
+- Supports different handling of progress/status for CLI (waits for completion) and MCP (returns `jobId` immediately).
+- Concurrency is managed by the `PipelineManager`, not just batching within strategies.
 
 ### Logging Strategy
 

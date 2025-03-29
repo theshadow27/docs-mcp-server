@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { VersionNotFoundError, ToolError } from "./errors";
-import type { LibraryVersion } from "./ListLibrariesTool"; // Assuming LibraryVersion is defined here or imported
+import { describe, expect, it } from "vitest";
+import type { LibraryVersion } from "./ListLibrariesTool";
+import { ToolError, VersionNotFoundError } from "./errors";
 
 describe("Tool Errors", () => {
   describe("ToolError", () => {
@@ -26,13 +26,19 @@ describe("Tool Errors", () => {
     const emptyAvailable: LibraryVersion[] = [];
 
     it("should create an instance with correct properties", () => {
-      const error = new VersionNotFoundError(library, requestedVersion, availableVersions);
+      const error = new VersionNotFoundError(
+        library,
+        requestedVersion,
+        availableVersions,
+      );
 
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(ToolError); // Inherits from ToolError
       expect(error).toBeInstanceOf(VersionNotFoundError);
       expect(error.name).toBe("VersionNotFoundError");
-      expect(error.message).toContain(`Version ${requestedVersion} not found for ${library}`);
+      expect(error.message).toContain(
+        `Version ${requestedVersion} not found for ${library}`,
+      );
       expect(error.message).toContain("Available versions:");
       expect(error.library).toBe(library);
       expect(error.requestedVersion).toBe(requestedVersion);
@@ -42,19 +48,27 @@ describe("Tool Errors", () => {
     });
 
     it("should correctly identify the latest semver version using getLatestVersion", () => {
-      const error = new VersionNotFoundError(library, requestedVersion, availableVersions);
+      const error = new VersionNotFoundError(
+        library,
+        requestedVersion,
+        availableVersions,
+      );
       const latest = error.getLatestVersion();
       // Expect 2.0.0, as it's the highest stable version according to semver rules
       expect(latest).toEqual({ version: "2.0.0", indexed: false });
     });
 
-     it("should handle pre-release versions correctly in getLatestVersion", () => {
-       const versionsWithPrerelease: LibraryVersion[] = [
-         { version: "1.0.0", indexed: true },
-         { version: "1.1.0-alpha.1", indexed: true },
-         { version: "1.1.0", indexed: false },
-       ];
-      const error = new VersionNotFoundError(library, requestedVersion, versionsWithPrerelease);
+    it("should handle pre-release versions correctly in getLatestVersion", () => {
+      const versionsWithPrerelease: LibraryVersion[] = [
+        { version: "1.0.0", indexed: true },
+        { version: "1.1.0-alpha.1", indexed: true },
+        { version: "1.1.0", indexed: false },
+      ];
+      const error = new VersionNotFoundError(
+        library,
+        requestedVersion,
+        versionsWithPrerelease,
+      );
       const latest = error.getLatestVersion();
       expect(latest).toEqual({ version: "1.1.0", indexed: false }); // Stable 1.1.0 is > 1.1.0-alpha.1
     });
@@ -65,11 +79,11 @@ describe("Tool Errors", () => {
       expect(latest).toBeUndefined();
     });
 
-     it("should handle only pre-release versions in getLatestVersion", () => {
-       const onlyPrerelease: LibraryVersion[] = [
-         { version: "1.0.0-rc.1", indexed: true },
-         { version: "1.0.0-beta.2", indexed: false },
-       ];
+    it("should handle only pre-release versions in getLatestVersion", () => {
+      const onlyPrerelease: LibraryVersion[] = [
+        { version: "1.0.0-rc.1", indexed: true },
+        { version: "1.0.0-beta.2", indexed: false },
+      ];
       const error = new VersionNotFoundError(library, requestedVersion, onlyPrerelease);
       const latest = error.getLatestVersion();
       // rc.1 > beta.2

@@ -21,6 +21,7 @@ export class ScraperService {
   async scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal, // Add optional signal parameter
   ): Promise<void> {
     // Find strategy for this URL
     const strategy = this.registry.getStrategy(options.url);
@@ -28,6 +29,7 @@ export class ScraperService {
       throw new ScraperError(`No scraper strategy found for URL: ${options.url}`, false);
     }
 
-    await strategy.scrape(options, progressCallback);
+    // Pass the signal down to the strategy
+    await strategy.scrape(options, progressCallback, signal);
   }
 }

@@ -28,10 +28,16 @@ describe("ScraperService", () => {
     const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
+    // Call scrape without a signal (it's optional)
     await service.scrape(options, progressCallback);
 
     expect(mockRegistry.getStrategy).toHaveBeenCalledWith(options.url);
-    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, progressCallback);
+    // Expect scrape to be called with undefined for the signal
+    expect(mockStrategy.scrape).toHaveBeenCalledWith(
+      options,
+      progressCallback,
+      undefined,
+    );
   });
 
   it("should pass progress callback to strategy", async () => {
@@ -46,9 +52,15 @@ describe("ScraperService", () => {
     const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
+    // Call scrape without a signal
     await service.scrape(options, progressCallback);
 
-    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, progressCallback);
+    // Expect scrape to be called with undefined for the signal
+    expect(mockStrategy.scrape).toHaveBeenCalledWith(
+      options,
+      progressCallback,
+      undefined,
+    );
   });
 
   it("should handle file:// URLs", async () => {
@@ -63,10 +75,16 @@ describe("ScraperService", () => {
     const progressCallback: ProgressCallback<ScraperProgress> = vi.fn();
 
     mockRegistry.getStrategy.mockReturnValue(mockStrategy);
+    // Call scrape without a signal
     await service.scrape(options, progressCallback);
 
     expect(mockRegistry.getStrategy).toHaveBeenCalledWith(options.url);
-    expect(mockStrategy.scrape).toHaveBeenCalledWith(options, progressCallback);
+    // Expect scrape to be called with undefined for the signal
+    expect(mockStrategy.scrape).toHaveBeenCalledWith(
+      options,
+      progressCallback,
+      undefined,
+    );
   });
 
   it("should throw error if no strategy found", async () => {

@@ -9,6 +9,7 @@ export interface ScraperStrategy {
   scrape(
     options: ScraperOptions,
     progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal, // Add optional signal
   ): Promise<void>;
 }
 
@@ -19,8 +20,8 @@ export interface ScraperOptions {
   url: string;
   library: string;
   version: string;
-  maxPages: number;
-  maxDepth: number;
+  maxPages?: number;
+  maxDepth?: number;
   subpagesOnly?: boolean;
   maxConcurrency?: number;
   ignoreErrors?: boolean;

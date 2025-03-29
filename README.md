@@ -2,7 +2,21 @@
 
 A MCP server for fetching and searching 3rd party package documentation.
 
-This project provides a Model Context Protocol (MCP) server designed to scrape, process, index, and search documentation for various software libraries and packages. It fetches content from specified URLs, splits it into meaningful chunks using semantic splitting techniques, generates vector embeddings using OpenAI, and stores the data in an SQLite database. The server utilizes `sqlite-vec` for efficient vector similarity search and FTS5 for full-text search capabilities, combining them for hybrid search results. It supports versioning, allowing documentation for different library versions (including unversioned content) to be stored and queried distinctly. The server exposes MCP tools for scraping (`scrape_docs`), searching (`search_docs`), listing indexed libraries (`list_libraries`), and finding appropriate versions (`find_version`). A companion CLI (`docs-mcp`) is also included for local management and interaction.
+This project provides a Model Context Protocol (MCP) server designed to scrape, process, index, and search documentation for various software libraries and packages. It fetches content from specified URLs, splits it into meaningful chunks using semantic splitting techniques, generates vector embeddings using OpenAI, and stores the data in an SQLite database. The server utilizes `sqlite-vec` for efficient vector similarity search and FTS5 for full-text search capabilities, combining them for hybrid search results. It supports versioning, allowing documentation for different library versions (including unversioned content) to be stored and queried distinctly.
+
+The scraping process is managed by an asynchronous job queue (`PipelineManager`), allowing multiple scrape jobs to run concurrently.
+
+The server exposes MCP tools for:
+
+- Starting a scraping job (`scrape_docs`): Returns a `jobId` immediately.
+- Checking job status (`get_job_status`): Retrieves the current status and progress of a specific job.
+- Listing active/completed jobs (`list_jobs`): Shows recent and ongoing jobs.
+- Cancelling a job (`cancel_job`): Attempts to stop a running or queued job.
+- Searching documentation (`search_docs`).
+- Listing indexed libraries (`list_libraries`).
+- Finding appropriate versions (`find_version`).
+
+A companion CLI (`docs-mcp`) is also included for local management and interaction (note: the CLI `scrape` command waits for completion).
 
 ## Building the Project
 

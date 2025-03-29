@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
-import { ListLibrariesTool } from "./ListLibrariesTool";
 import { logger } from "../utils/logger"; // Assuming logger might be used internally, mock it just in case
+import { ListLibrariesTool } from "./ListLibrariesTool";
 
 // Mock dependencies
 vi.mock("../store/DocumentManagementService");
@@ -71,15 +71,15 @@ describe("ListLibrariesTool", () => {
     // Check structure more generally
     expect(result.libraries).toBeInstanceOf(Array);
     expect(result.libraries.length).toBe(3);
-    result.libraries.forEach((lib) => {
+    for (const lib of result.libraries) {
       expect(lib).toHaveProperty("name");
       expect(lib).toHaveProperty("versions");
       expect(lib.versions).toBeInstanceOf(Array);
-      lib.versions.forEach((v) => {
+      for (const v of lib.versions) {
         expect(v).toHaveProperty("version");
         expect(v).toHaveProperty("indexed");
-      });
-    });
+      }
+    }
   });
 
   it("should return an empty list when no libraries are in the store", async () => {
@@ -95,8 +95,6 @@ describe("ListLibrariesTool", () => {
     const error = new Error("Failed to access store");
     (mockDocService.listLibraries as Mock).mockRejectedValue(error);
 
-    await expect(listLibrariesTool.execute()).rejects.toThrow(
-      "Failed to access store",
-    );
+    await expect(listLibrariesTool.execute()).rejects.toThrow("Failed to access store");
   });
 });
