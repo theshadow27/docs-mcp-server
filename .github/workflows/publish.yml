@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+
+jobs:
+  release:
+    name: Release to npm and GitHub
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push commits/tags back to the repo
+      issues: write # Needed to comment on issues/PRs
+      pull-requests: write # Needed to comment on issues/PRs
+      # id-token: write # Needed for OIDC trusted publishing (if not using NPM_TOKEN)
+    steps:
+      - name: Checkout code
+        # Need fetch-depth: 0 for semantic-release to analyze all relevant commits
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=20.0.0' # Match engines requirement in package.json
+          registry-url: 'https://registry.npmjs.org' # Specify npm registry
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run semantic-release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Provided by Actions automatically
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # Use a secret stored in GitHub repository settings
