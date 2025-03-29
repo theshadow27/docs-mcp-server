@@ -106,12 +106,22 @@ describe("ListJobsTool", () => {
   it("should return the list of jobs received from the manager", async () => {
     const result = await listJobsTool.execute({});
 
-    // Check if the returned jobs match the mock data structure
-    // The tool currently returns sanitized jobs, let's check the IDs for simplicity
-    expect(result.jobs.map((job) => job.id)).toEqual(mockJobs.map((job) => job.id));
     expect(result.jobs.length).toBe(mockJobs.length);
-    // Optionally, check if sensitive fields are removed if sanitization is implemented
-    // expect(result.jobs[0].resolveCompletion).toBeUndefined();
+    expect(result.jobs.map((job) => job.id)).toEqual(mockJobs.map((job) => job.id));
+
+    // Check properties of the first simplified JobInfo object
+    if (result.jobs.length > 0 && mockJobs.length > 0) {
+      const firstResultJob = result.jobs[0];
+      const firstMockJob = mockJobs[0];
+      expect(firstResultJob.id).toBe(firstMockJob.id);
+      expect(firstResultJob.library).toBe(firstMockJob.library);
+      expect(firstResultJob.version).toBe(firstMockJob.version);
+      expect(firstResultJob.status).toBe(firstMockJob.status);
+      expect(firstResultJob.createdAt).toBe(firstMockJob.createdAt.toISOString());
+      expect(firstResultJob.startedAt).toBeNull(); // Based on first mockJob
+      expect(firstResultJob.finishedAt).toBeNull(); // Based on first mockJob
+      expect(firstResultJob.error).toBeNull(); // Based on first mockJob
+    }
   });
 
   it("should return a filtered list if manager returns filtered jobs", async () => {

@@ -9,7 +9,7 @@ import { DocumentManagementService } from "../store/DocumentManagementService";
 import {
   CancelJobTool,
   FindVersionTool,
-  GetJobStatusTool,
+  GetJobInfoTool,
   ListJobsTool,
   ListLibrariesTool,
   ScrapeTool,
@@ -45,9 +45,9 @@ export async function startServer() {
       // Pass both docService and pipelineManager to ScrapeTool constructor
       scrape: new ScrapeTool(docService, pipelineManager),
       search: new SearchTool(docService),
-      listJobs: new ListJobsTool(pipelineManager), // Instantiate new tool
-      getJobStatus: new GetJobStatusTool(pipelineManager), // Instantiate new tool
-      cancelJob: new CancelJobTool(pipelineManager), // Instantiate new tool
+      listJobs: new ListJobsTool(pipelineManager),
+      getJobInfo: new GetJobInfoTool(pipelineManager),
+      cancelJob: new CancelJobTool(pipelineManager),
     };
 
     const server = new McpServer(
@@ -280,25 +280,25 @@ ${formattedResults.join("")}`,
       },
     );
 
-    // Get job status tool
+    // Get job info tool
     server.tool(
-      "get_job_status",
-      "Get the status and details of a specific pipeline job.",
+      "get_job_info",
+      "Get the simplified info for a specific pipeline job.",
       {
         jobId: z.string().uuid().describe("The ID of the job to query."),
       },
       async ({ jobId }) => {
         try {
-          const result = await tools.getJobStatus.execute({ jobId });
+          const result = await tools.getJobInfo.execute({ jobId });
           if (!result.job) {
             return createError(`Job with ID ${jobId} not found.`);
           }
           const job = result.job;
           const formattedJob = `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt}${job.startedAt ? `\n  Started: ${job.startedAt}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt}` : ""}${job.error ? `\n  Error: ${job.error}` : ""}`;
-          return createResponse(`Job Status:\n\n${formattedJob}`);
+          return createResponse(`Job Info:\n\n${formattedJob}`);
         } catch (error) {
           return createError(
-            `Failed to get job status for ${jobId}: ${
+            `Failed to get job info for ${jobId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
@@ -462,8 +462,8 @@ ${formattedResults.join("")}`,
           return { contents: [] }; // Return empty content for invalid ID format
         }
 
-        // Fetch the simplified job status using GetJobStatusTool
-        const result = await tools.getJobStatus.execute({ jobId });
+        // Fetch the simplified job info using GetJobInfoTool
+        const result = await tools.getJobInfo.execute({ jobId });
 
         // result.job is either the simplified job object or null
         if (!result.job) {
