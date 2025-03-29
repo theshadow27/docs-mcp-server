@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PipelineManager } from "../pipeline/PipelineManager";
-import { PipelineJobStatus, type PipelineJob } from "../pipeline/types";
+import { type PipelineJob, PipelineJobStatus } from "../pipeline/types";
 import type { ScraperOptions } from "../scraper/types";
 import { GetJobStatusTool } from "./GetJobStatusTool";
 

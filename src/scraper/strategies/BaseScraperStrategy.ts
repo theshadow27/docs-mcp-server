@@ -1,8 +1,8 @@
 import { URL } from "node:url";
+import { CancellationError } from "../../pipeline/errors";
 import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import { type UrlNormalizerOptions, normalizeUrl } from "../../utils/url";
-import { CancellationError } from "../../pipeline/errors"; // Import CancellationError
 import { type ContentProcessor, HtmlProcessor, MarkdownProcessor } from "../processor";
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
 

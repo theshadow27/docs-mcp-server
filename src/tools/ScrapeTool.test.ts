@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import type { DocumentManagementService } from "../store/DocumentManagementService";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import { PipelineManager } from "../pipeline/PipelineManager"; // Import new manager
 import type { PipelineJob, PipelineManagerCallbacks } from "../pipeline/types"; // Import manager types
 import { PipelineJobStatus } from "../pipeline/types";
-import { ScrapeTool, type ScrapeToolOptions } from "./ScrapeTool";
-import { logger } from "../utils/logger";
-import type { ProgressResponse } from "../types";
 import type { ScraperProgress } from "../scraper/types";
+import type { DocumentManagementService } from "../store/DocumentManagementService";
+import type { ProgressResponse } from "../types";
 import type { Document } from "../types"; // Import local Document type
+import { logger } from "../utils/logger";
+import { ScrapeTool, type ScrapeToolOptions } from "./ScrapeTool";
 
 // Mock dependencies
 vi.mock("../store/DocumentManagementService");

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentManagementService } from "../store";
+import type { StoreSearchResult } from "../store/types";
+import { logger } from "../utils/logger";
 import { SearchTool, type SearchToolOptions } from "./SearchTool";
 import { VersionNotFoundError } from "./errors";
-import { logger } from "../utils/logger";
-import type { StoreSearchResult } from "../store/types";
 
 // Mock dependencies
 vi.mock("../store");
@@ -37,7 +37,11 @@ describe("SearchTool", () => {
   // --- Search Logic & Version Resolution Tests ---
 
   it("should search with exact version when exactMatch is true", async () => {
-    const options: SearchToolOptions = { ...baseOptions, version: "1.0.0", exactMatch: true };
+    const options: SearchToolOptions = {
+      ...baseOptions,
+      version: "1.0.0",
+      exactMatch: true,
+    };
     (mockDocService.searchStore as Mock).mockResolvedValue(mockSearchResults);
 
     const result = await searchTool.execute(options);
@@ -72,7 +76,7 @@ describe("SearchTool", () => {
     expect(result.error).toBeUndefined();
   });
 
-   it("should search unversioned docs if findBestVersion returns null bestMatch but hasUnversioned", async () => {
+  it("should search unversioned docs if findBestVersion returns null bestMatch but hasUnversioned", async () => {
     const options: SearchToolOptions = { ...baseOptions, version: "2.0.0" }; // Version doesn't exist
     const findVersionResult = { bestMatch: null, hasUnversioned: true };
     (mockDocService.findBestVersion as Mock).mockResolvedValue(findVersionResult);
@@ -112,7 +116,12 @@ describe("SearchTool", () => {
   // --- Limit Handling ---
 
   it("should use the specified limit", async () => {
-    const options: SearchToolOptions = { ...baseOptions, version: "1.0.0", exactMatch: true, limit: 10 };
+    const options: SearchToolOptions = {
+      ...baseOptions,
+      version: "1.0.0",
+      exactMatch: true,
+      limit: 10,
+    };
     (mockDocService.searchStore as Mock).mockResolvedValue([]);
 
     await searchTool.execute(options);
@@ -135,13 +144,18 @@ describe("SearchTool", () => {
 
     const result = await searchTool.execute(options);
 
-    expect(mockDocService.findBestVersion).toHaveBeenCalledWith("test-lib", "nonexistent");
+    expect(mockDocService.findBestVersion).toHaveBeenCalledWith(
+      "test-lib",
+      "nonexistent",
+    );
     expect(mockDocService.searchStore).not.toHaveBeenCalled();
     expect(result.results).toEqual([]);
     expect(result.error).toBeDefined();
     expect(result.error?.message).toContain("Version nonexistent not found");
     expect(result.error?.availableVersions).toEqual(available);
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("Version not found"));
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining("Version not found"),
+    );
   });
 
   it("should re-throw unexpected errors from findBestVersion", async () => {
@@ -150,15 +164,23 @@ describe("SearchTool", () => {
     (mockDocService.findBestVersion as Mock).mockRejectedValue(unexpectedError);
 
     await expect(searchTool.execute(options)).rejects.toThrow("Store connection failed");
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Search failed: Store connection failed"));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("Search failed: Store connection failed"),
+    );
   });
 
   it("should re-throw unexpected errors from searchStore", async () => {
-    const options: SearchToolOptions = { ...baseOptions, version: "1.0.0", exactMatch: true };
+    const options: SearchToolOptions = {
+      ...baseOptions,
+      version: "1.0.0",
+      exactMatch: true,
+    };
     const unexpectedError = new Error("Search index corrupted");
     (mockDocService.searchStore as Mock).mockRejectedValue(unexpectedError);
 
     await expect(searchTool.execute(options)).rejects.toThrow("Search index corrupted");
-     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Search failed: Search index corrupted"));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("Search failed: Search index corrupted"),
+    );
   });
 });

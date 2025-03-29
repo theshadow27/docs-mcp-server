@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentManagementService } from "../store";
+import { logger } from "../utils/logger";
 import { FindVersionTool, type FindVersionToolOptions } from "./FindVersionTool";
 import { VersionNotFoundError } from "./errors";
-import { logger } from "../utils/logger";
 
 // Mock dependencies
 vi.mock("../store"); // Mock the entire store module if DocumentManagementService is complex
@@ -22,9 +22,7 @@ describe("FindVersionTool", () => {
     };
 
     // Create instance of the tool with the mock service
-    findVersionTool = new FindVersionTool(
-      mockDocService as DocumentManagementService,
-    );
+    findVersionTool = new FindVersionTool(mockDocService as DocumentManagementService);
   });
 
   it("should return message indicating best match when found", async () => {
@@ -51,9 +49,9 @@ describe("FindVersionTool", () => {
     expect(result).toContain("Unversioned docs also available");
   });
 
-   it("should return message indicating only unversioned docs when no version matches", async () => {
+  it("should return message indicating only unversioned docs when no version matches", async () => {
     const options: FindVersionToolOptions = { library: "vue", targetVersion: "4.0.0" };
-     const mockResult = { bestMatch: null, hasUnversioned: true };
+    const mockResult = { bestMatch: null, hasUnversioned: true };
     (mockDocService.findBestVersion as Mock).mockResolvedValue(mockResult);
 
     const result = await findVersionTool.execute(options);
@@ -64,8 +62,14 @@ describe("FindVersionTool", () => {
   });
 
   it("should return message indicating no match when VersionNotFoundError is thrown", async () => {
-    const options: FindVersionToolOptions = { library: "angular", targetVersion: "1.0.0" };
-    const available = [{ version: "15.0.0", indexed: true }, { version: "16.1.0", indexed: false }];
+    const options: FindVersionToolOptions = {
+      library: "angular",
+      targetVersion: "1.0.0",
+    };
+    const available = [
+      { version: "15.0.0", indexed: true },
+      { version: "16.1.0", indexed: false },
+    ];
     const error = new VersionNotFoundError("angular", "1.0.0", available);
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);
 
@@ -78,7 +82,7 @@ describe("FindVersionTool", () => {
     expect(result).toContain("16.1.0");
   });
 
-   it("should return message indicating no match when VersionNotFoundError is thrown with no available versions", async () => {
+  it("should return message indicating no match when VersionNotFoundError is thrown with no available versions", async () => {
     const options: FindVersionToolOptions = { library: "unknown-lib" };
     const error = new VersionNotFoundError("unknown-lib", "latest", []); // Assuming default is 'latest' if targetVersion omitted
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);

@@ -1,6 +1,6 @@
-import type { PipelineJob } from "../pipeline/types";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import { PipelineStateError } from "../pipeline/errors";
+import type { PipelineJob } from "../pipeline/types";
 
 /**
  * Input parameters for the GetJobStatusTool.
@@ -8,15 +8,6 @@ import { PipelineStateError } from "../pipeline/errors";
 export interface GetJobStatusInput {
   /** The ID of the job to retrieve status for. */
   jobId: string;
-}
-
-/**
- * Output result for the GetJobStatusTool.
- * Returns the job details or null if not found.
- */
-export interface GetJobStatusResult {
-  /** The pipeline job details, or null if the job ID was not found. */
-  job: PipelineJob | null;
 }
 
 /**
@@ -36,26 +27,30 @@ export class GetJobStatusTool {
   /**
    * Executes the tool to retrieve the status of a specific job.
    * @param input - The input parameters, containing the jobId.
-   * @returns A promise that resolves with the job details or null if not found.
+   * @returns A promise that resolves with the simplified job details or null if not found.
    */
-  async execute(input: GetJobStatusInput): Promise<GetJobStatusResult> {
+  async execute(
+    input: GetJobStatusInput,
+  ): Promise<{ job: Record<string, unknown> | null }> {
     const job = await this.manager.getJob(input.jobId);
 
     if (!job) {
-      // Return null in the result if job not found, rather than throwing
+      // Return null in the result if job not found
       return { job: null };
     }
 
-    // Sanitize the job object similar to ListJobsTool
-    const sanitizedJob: PipelineJob = {
-      ...job,
-      // Explicitly remove potentially sensitive or internal fields if needed
-      // completionPromise: undefined,
-      // resolveCompletion: undefined,
-      // rejectCompletion: undefined,
-      // abortController: undefined,
+    // Transform the job into a simplified object
+    const simplifiedJob = {
+      id: job.id,
+      library: job.library,
+      version: job.version,
+      status: job.status,
+      createdAt: job.createdAt.toISOString(),
+      startedAt: job.startedAt?.toISOString() ?? null,
+      finishedAt: job.finishedAt?.toISOString() ?? null,
+      error: job.error?.message ?? null,
     };
 
-    return { job: sanitizedJob };
+    return { job: simplifiedJob };
   }
 }

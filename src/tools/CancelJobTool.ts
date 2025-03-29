@@ -1,6 +1,5 @@
 import type { PipelineManager } from "../pipeline/PipelineManager";
-import { PipelineJobStatus } from "../pipeline/types"; // Import the enum
-import { PipelineStateError } from "../pipeline/errors";
+import { PipelineJobStatus } from "../pipeline/types";
 import { logger } from "../utils/logger";
 
 /**

@@ -3,24 +3,28 @@ import "dotenv/config";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { PipelineManager } from "../pipeline/PipelineManager";
+import { PipelineJobStatus } from "../pipeline/types";
 import { DocumentManagementService } from "../store/DocumentManagementService";
-import { PipelineManager } from "../pipeline/PipelineManager"; // Import PipelineManager
-import { PipelineJobStatus } from "../pipeline/types"; // Import PipelineJobStatus
 import {
-  CancelJobTool, // Import new tool
+  CancelJobTool,
   FindVersionTool,
-  GetJobStatusTool, // Import new tool
-  ListJobsTool, // Import new tool
+  GetJobStatusTool,
+  ListJobsTool,
   ListLibrariesTool,
-  ScrapeTool, // Keep existing tools
+  ScrapeTool,
   SearchTool,
   VersionNotFoundError,
-} from "../tools"; // Ensure this path is correct
-import { createError, createResponse } from "./utils";
+} from "../tools";
 import { logger } from "../utils/logger";
-import { PipelineStateError } from "../pipeline/errors"; // Import error type
+import { createError, createResponse } from "./utils";
 
 export async function startServer() {
+  // Disable debug logs
+  // FIXME: This is a temporary fix. We should use a proper logging library with levels.
+  logger.debug = () => {};
+  logger.info = () => {};
+
   const docService = new DocumentManagementService();
 
   try {
@@ -252,11 +256,13 @@ ${formattedResults.join("")}`,
       async ({ status }) => {
         try {
           const result = await tools.listJobs.execute({ status });
-          // Format the job list for display
+          // Format the simplified job list for display
           const formattedJobs = result.jobs
             .map(
-              (job) =>
-                `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt.toISOString()}${job.startedAt ? `\n  Started: ${job.startedAt.toISOString()}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt.toISOString()}` : ""}${job.error ? `\n  Error: ${job.error.message}` : ""}`,
+              (
+                job, // Use 'any' or define a local type for the simplified structure
+              ) =>
+                `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}\n  Version: ${job.version}\n  Created: ${job.createdAt}${job.startedAt ? `\n  Started: ${job.startedAt}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt}` : ""}${job.error ? `\n  Error: ${job.error}` : ""}`,
             )
             .join("\n\n");
           return createResponse(
@@ -288,7 +294,7 @@ ${formattedResults.join("")}`,
             return createError(`Job with ID ${jobId} not found.`);
           }
           const job = result.job;
-          const formattedJob = `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt.toISOString()}${job.startedAt ? `\n  Started: ${job.startedAt.toISOString()}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt.toISOString()}` : ""}${job.error ? `\n  Error: ${job.error.message}` : ""}`;
+          const formattedJob = `- ID: ${job.id}\n  Status: ${job.status}\n  Library: ${job.library}@${job.version}\n  Created: ${job.createdAt}${job.startedAt ? `\n  Started: ${job.startedAt}` : ""}${job.finishedAt ? `\n  Finished: ${job.finishedAt}` : ""}${job.error ? `\n  Error: ${job.error}` : ""}`;
           return createResponse(`Job Status:\n\n${formattedJob}`);
         } catch (error) {
           return createError(
@@ -389,6 +395,91 @@ ${formattedResults.join("")}`,
             uri: new URL(v.version, uri).href,
             text: v.version,
           })),
+        };
+      },
+    );
+
+    /**
+     * Resource handler for listing pipeline jobs.
+     * Supports filtering by status via a query parameter (e.g., ?status=running).
+     * URI: docs://jobs[?status=<status>]
+     */
+    server.resource(
+      "jobs",
+      "docs://jobs",
+      {
+        description: "List pipeline jobs, optionally filtering by status.",
+        mimeType: "application/json",
+      },
+      async (uri: URL) => {
+        const statusParam = uri.searchParams.get("status");
+        let statusFilter: PipelineJobStatus | undefined;
+
+        // Validate status parameter if provided
+        if (statusParam) {
+          const validation = z.nativeEnum(PipelineJobStatus).safeParse(statusParam);
+          if (validation.success) {
+            statusFilter = validation.data;
+          } else {
+            // Handle invalid status - perhaps return an error or ignore?
+            // For simplicity, let's ignore invalid status for now and return all jobs.
+            // Alternatively, could throw an McpError or return specific error content.
+            logger.warn(`Invalid status parameter received: ${statusParam}`);
+          }
+        }
+
+        // Fetch simplified jobs using the ListJobsTool
+        const result = await tools.listJobs.execute({ status: statusFilter });
+
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: "application/json",
+              text: JSON.stringify(result.jobs, null, 2), // Stringify the simplified jobs array
+            },
+          ],
+        };
+      },
+    );
+
+    /**
+     * Resource handler for retrieving a specific pipeline job by its ID.
+     * URI Template: docs://jobs/{jobId}
+     */
+    server.resource(
+      "job", // A distinct name for this specific resource type
+      new ResourceTemplate("docs://jobs/{jobId}", { list: undefined }),
+      {
+        description: "Get details for a specific pipeline job by ID.",
+        mimeType: "application/json",
+      },
+      async (uri: URL, { jobId }) => {
+        // Validate jobId format if necessary (basic check)
+        if (typeof jobId !== "string" || jobId.length === 0) {
+          // Handle invalid jobId format - return empty or error
+          logger.warn(`Invalid jobId received in URI: ${jobId}`);
+          return { contents: [] }; // Return empty content for invalid ID format
+        }
+
+        // Fetch the simplified job status using GetJobStatusTool
+        const result = await tools.getJobStatus.execute({ jobId });
+
+        // result.job is either the simplified job object or null
+        if (!result.job) {
+          // Job not found, return empty content
+          return { contents: [] };
+        }
+
+        // Job found, return its simplified details as JSON
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: "application/json",
+              text: JSON.stringify(result.job, null, 2), // Stringify the simplified job object
+            },
+          ],
         };
       },
     );

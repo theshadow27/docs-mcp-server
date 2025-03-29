@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
-import type { ScraperOptions } from "../scraper/types";
 import { ScraperRegistry, ScraperService } from "../scraper";
+import type { ScraperOptions } from "../scraper/types";
 import type { DocumentManagementService } from "../store";
 import { logger } from "../utils/logger";
+import { PipelineWorker } from "./PipelineWorker"; // Import the worker
 import { CancellationError, PipelineStateError } from "./errors";
 import type { PipelineJob, PipelineManagerCallbacks } from "./types";
 import { PipelineJobStatus } from "./types";
-import { PipelineWorker } from "./PipelineWorker"; // Import the worker
 
 const DEFAULT_CONCURRENCY = 3;
 
@@ -50,7 +50,7 @@ export class PipelineManager {
       return;
     }
     this.isRunning = true;
-    logger.info(`PipelineManager started with concurrency ${this.concurrency}.`);
+    logger.debug(`PipelineManager started with concurrency ${this.concurrency}.`);
     this._processQueue(); // Start processing any existing jobs
   }
 
@@ -65,7 +65,7 @@ export class PipelineManager {
       return;
     }
     this.isRunning = false;
-    logger.info("PipelineManager stopping. No new jobs will be started.");
+    logger.debug("PipelineManager stopping. No new jobs will be started.");
     // Note: Does not automatically cancel active jobs.
   }
 

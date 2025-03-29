@@ -1,16 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
-import type { DocumentManagementService } from "../store/DocumentManagementService";
+import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScraperService } from "../scraper";
-import type { PipelineJob, PipelineManagerCallbacks } from "./types";
-import { PipelineJobStatus } from "./types";
+import type { DocumentManagementService } from "../store/DocumentManagementService";
 import { PipelineManager } from "./PipelineManager";
 import { PipelineWorker } from "./PipelineWorker";
-import { CancellationError } from "./errors";
+import type { PipelineManagerCallbacks } from "./types";
+import { PipelineJobStatus } from "./types";
 
 // Mock dependencies
 vi.mock("../store/DocumentManagementService");
 vi.mock("../scraper/ScraperService");
-vi.mock("./PipelineWorker"); // Mock the worker
+vi.mock("./PipelineWorker");
 
 // Mock uuid
 const mockUuid = "mock-uuid-123";

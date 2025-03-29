@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import "dotenv/config";
 import { Command } from "commander";
-import { DocumentManagementService } from "./store/DocumentManagementService";
 import { PipelineManager } from "./pipeline/PipelineManager"; // Import PipelineManager
+import { DocumentManagementService } from "./store/DocumentManagementService";
 import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
