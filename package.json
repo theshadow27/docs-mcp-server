@@ -7,13 +7,9 @@
     "docs-server": "./dist/server.js",
     "docs-cli": "./dist/cli.js"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "package.json"
-  ],
+  "files": ["dist", "README.md", "LICENSE", "package.json"],
   "scripts": {
+    "prepare": "husky",
     "build": "tsup",
     "cli": "node --enable-source-maps dist/cli.js",
     "start": "node --enable-source-maps dist/server.js",
@@ -51,6 +47,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.1",
@@ -62,6 +60,8 @@
     "@types/semver": "^7.5.8",
     "@types/turndown": "^5.0.5",
     "drizzle-kit": "^0.30.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
     "memfs": "^4.17.0",
     "npm-run-all": "^4.1.5",
     "semantic-release": "^24.2.3",
@@ -72,5 +72,11 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,json,md}": [
+      "biome check --apply --no-errors-on-unmatched",
+      "biome format --write --no-errors-on-unmatched"
+    ]
   }
 }
