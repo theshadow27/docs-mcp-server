@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockedObject } from "vitest"; // Import MockedObject
 import type { DocumentManagementService } from "../store";
 import { RemoveTool, type RemoveToolArgs } from "./RemoveTool";
