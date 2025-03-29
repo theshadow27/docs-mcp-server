@@ -104,7 +104,7 @@ async function main() {
       });
 
     program
-      .command("list-libraries")
+      .command("list")
       .description("List all available libraries and their versions")
       .action(async () => {
         const result = await tools.listLibraries.execute();
@@ -130,6 +130,34 @@ async function main() {
           throw new Error("Failed to get version information");
         }
         console.log(versionInfo); // Log the descriptive string from the tool
+      });
+
+    program
+      .command("remove <library>") // Library as positional argument
+      .description("Remove documents for a specific library and version")
+      .option(
+        "-v, --version <string>",
+        "Version to remove (optional, removes unversioned if omitted)",
+      )
+      .action(async (library, options) => {
+        // library is now the first arg
+        if (!docService) {
+          throw new Error("Document service not initialized.");
+        }
+        const { version } = options; // Get version from options
+        try {
+          await docService.removeAllDocuments(library, version);
+          console.log(
+            `✅ Successfully removed documents for ${library}${version ? `@${version}` : " (unversioned)"}.`,
+          );
+        } catch (error) {
+          console.error(
+            `❌ Failed to remove documents for ${library}${version ? `@${version}` : " (unversioned)"}:`,
+            error instanceof Error ? error.message : String(error),
+          );
+          // Re-throw to trigger the main catch block for shutdown
+          throw error;
+        }
       });
 
     await program.parseAsync();

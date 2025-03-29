@@ -15,6 +15,7 @@ The server exposes MCP tools for:
 - Searching documentation (`search_docs`).
 - Listing indexed libraries (`list_libraries`).
 - Finding appropriate versions (`find_version`).
+- Removing indexed documents (`remove_docs`).
 
 A companion CLI (`docs-mcp`) is also included for local management and interaction (note: the CLI `scrape` command waits for completion).
 
@@ -112,6 +113,7 @@ docs-mcp --help
 docs-mcp scrape --help
 docs-mcp search --help
 docs-mcp find-version --help
+docs-mcp remove --help
 ```
 
 ### Scraping Documentation (`scrape`)
@@ -216,6 +218,28 @@ Lists all libraries currently indexed in the store.
 
 ```bash
 docs-mcp list-libraries
+```
+
+### Removing Documentation (`remove`)
+
+Removes indexed documents for a specific library and version.
+
+```bash
+docs-mcp remove <library> [options]
+```
+
+**Options:**
+
+- `-v, --version <string>`: The specific version to remove. If omitted, removes **unversioned** documents for the library.
+
+**Examples:**
+
+```bash
+# Remove React 18.2.0 docs
+docs-mcp remove react --version 18.2.0
+
+# Remove unversioned React docs
+docs-mcp remove react
 ```
 
 ### Version Handling Summary

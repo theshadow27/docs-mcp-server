@@ -12,6 +12,7 @@ import {
   GetJobInfoTool,
   ListJobsTool,
   ListLibrariesTool,
+  RemoveTool,
   ScrapeTool,
   SearchTool,
   VersionNotFoundError,
@@ -48,6 +49,7 @@ export async function startServer() {
       listJobs: new ListJobsTool(pipelineManager),
       getJobInfo: new GetJobInfoTool(pipelineManager),
       cancelJob: new CancelJobTool(pipelineManager),
+      remove: new RemoveTool(docService), // Instantiate RemoveTool
     };
 
     const server = new McpServer(
@@ -64,7 +66,7 @@ export async function startServer() {
       },
     );
 
-    // --- Existing Tool Definitions ---
+    // --- Tool Definitions ---
 
     // Scrape docs tool (Keep as is for now, but likely needs ScrapeTool refactor)
     server.tool(
@@ -326,6 +328,34 @@ ${formattedResults.join("")}`,
           // Catch any unexpected errors during the tool execution itself
           return createError(
             `Failed to cancel job ${jobId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      },
+    );
+
+    // Remove docs tool
+    server.tool(
+      "remove_docs",
+      "Remove indexed documentation for a library version.",
+      {
+        library: z.string().describe("Name of the library"),
+        version: z
+          .string()
+          .optional()
+          .describe("Version of the library (optional, removes unversioned if omitted)"),
+      },
+      async ({ library, version }) => {
+        try {
+          // Execute the remove tool logic
+          const result = await tools.remove.execute({ library, version });
+          // Use the message from the tool's successful execution
+          return createResponse(result.message);
+        } catch (error) {
+          // Catch errors thrown by the RemoveTool's execute method
+          return createError(
+            `Failed to remove documents: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );

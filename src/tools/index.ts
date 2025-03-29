@@ -5,4 +5,5 @@ export * from "./ScrapeTool";
 export * from "./ListJobsTool";
 export * from "./GetJobInfoTool";
 export * from "./CancelJobTool";
+export * from "./RemoveTool";
 export * from "./errors";
