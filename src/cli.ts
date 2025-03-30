@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import "dotenv/config";
 import { Command } from "commander";
-import { PipelineManager } from "./pipeline/PipelineManager"; // Import PipelineManager
+import packageJson from "../package.json";
+import { PipelineManager } from "./pipeline/PipelineManager";
 import { DocumentManagementService } from "./store/DocumentManagementService";
 import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
+import { LogLevel, setLogLevel } from "./utils/logger";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
@@ -39,7 +41,10 @@ async function main() {
     program
       .name("docs-mcp")
       .description("CLI for managing documentation vector store")
-      .version("1.0.0");
+      .version(packageJson.version)
+      // Add global options for logging level
+      .option("--verbose", "Enable verbose (debug) logging", false)
+      .option("--silent", "Disable all logging except errors", false);
 
     program
       .command("scrape <library> <url>") // Remove <version> as positional
@@ -159,6 +164,19 @@ async function main() {
           throw error;
         }
       });
+
+    // Hook to set log level after parsing global options but before executing command action
+    program.hook("preAction", (thisCommand) => {
+      // Global options are attached to the program (thisCommand)
+      const options = thisCommand.opts();
+      if (options.silent) {
+        // If silent is true, it overrides verbose
+        setLogLevel(LogLevel.ERROR);
+      } else if (options.verbose) {
+        setLogLevel(LogLevel.DEBUG);
+      }
+      // Otherwise, the default LogLevel.INFO remains set from logger.ts
+    });
 
     await program.parseAsync();
   } catch (error) {

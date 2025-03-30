@@ -17,14 +17,12 @@ import {
   SearchTool,
   VersionNotFoundError,
 } from "../tools";
-import { logger } from "../utils/logger";
+import { LogLevel, logger, setLogLevel } from "../utils/logger"; // Import LogLevel and setLogLevel
 import { createError, createResponse } from "./utils";
 
 export async function startServer() {
-  // Disable debug logs
-  // FIXME: This is a temporary fix. We should use a proper logging library with levels.
-  logger.debug = () => {};
-  logger.info = () => {};
+  // Set the default log level for the server to ERROR
+  setLogLevel(LogLevel.ERROR);
 
   const docService = new DocumentManagementService();
 
