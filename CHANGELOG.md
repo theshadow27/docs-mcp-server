@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/arabold/docs-mcp-server/compare/v1.0.0...v1.1.0) (2025-03-30)
+
+
+### Features
+
+* implement log level control via CLI flags ([b2f8b73](https://github.com/arabold/docs-mcp-server/commit/b2f8b73f1d0d63e58b76e92fd61bf9188014a563))
+
 # 1.0.0 (2025-03-30)
 
 
