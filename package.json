@@ -1,5 +1,5 @@
 {
-  "name": "docs-mcp-server",
+  "name": "@arabold/docs-mcp-server",
   "version": "0.1.0",
   "description": "MCP server for fetching and searching documentation",
   "type": "module",
@@ -7,7 +7,12 @@
     "docs-server": "./dist/server.js",
     "docs-cli": "./dist/cli.js"
   },
-  "files": ["dist", "README.md", "LICENSE", "package.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "scripts": {
     "prepare": "husky",
     "build": "tsup",
