@@ -6,6 +6,7 @@ import { GetJobInfoTool } from "./GetJobInfoTool"; // Updated import
 
 // Mock dependencies
 vi.mock("../pipeline/PipelineManager");
+vi.mock("../utils/logger");
 
 describe("GetJobInfoTool", () => {
   // Updated describe block

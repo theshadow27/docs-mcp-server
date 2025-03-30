@@ -1,10 +1,10 @@
-// src/store/DocumentRetrieverService.test.ts
 import { Document } from "@langchain/core/documents";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
 
 vi.mock("./DocumentStore");
+vi.mock("../utils/logger");
 
 describe("DocumentRetrieverService", () => {
   let retrieverService: DocumentRetrieverService;

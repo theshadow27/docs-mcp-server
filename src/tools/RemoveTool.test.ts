@@ -4,6 +4,10 @@ import type { DocumentManagementService } from "../store";
 import { RemoveTool, type RemoveToolArgs } from "./RemoveTool";
 import { ToolError } from "./errors";
 
+// Mock dependencies
+vi.mock("../store");
+vi.mock("../utils/logger");
+
 // Create a properly typed mock using MockedObject
 const mockDocService = {
   removeAllDocuments: vi.fn(),

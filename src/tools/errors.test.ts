@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { LibraryVersion } from "./ListLibrariesTool";
 import { ToolError, VersionNotFoundError } from "./errors";
+
+vi.mock("../utils/logger");
 
 describe("Tool Errors", () => {
   describe("ToolError", () => {

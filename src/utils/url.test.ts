@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { type UrlNormalizerOptions, normalizeUrl } from "./url";
+
+vi.mock("./logger");
 
 describe("URL normalization", () => {
   describe("default behavior", () => {

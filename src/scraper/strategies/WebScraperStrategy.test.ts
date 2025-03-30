@@ -4,7 +4,8 @@ import { HtmlProcessor, type ProcessedContent } from "../processor";
 import type { ScraperOptions } from "../types";
 import { WebScraperStrategy } from "./WebScraperStrategy";
 
-// Mock the processor module
+// Mock dependencies
+vi.mock("../../utils/logger");
 vi.mock("../processor");
 
 describe("WebScraperStrategy", () => {

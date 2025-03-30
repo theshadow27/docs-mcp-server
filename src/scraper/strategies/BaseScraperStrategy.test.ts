@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScraperOptions } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
 
+// Mock logger
+vi.mock("../../utils/logger");
+
 // Mock implementation for testing abstract class
 class TestScraperStrategy extends BaseScraperStrategy {
   canHandle(): boolean {

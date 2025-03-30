@@ -5,6 +5,7 @@ import remarkHtml from "remark-html";
 import remarkParse from "remark-parse";
 import TurndownService from "turndown";
 import { unified } from "unified";
+import { logger } from "../utils/logger";
 import { fullTrim } from "../utils/string";
 import { ContentSplitterError, MinimumChunkSizeError } from "./errors";
 import { CodeContentSplitter } from "./splitters/CodeContentSplitter";
@@ -237,7 +238,7 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
         } catch (err) {
           // If it's a MinimumChunkSizeError, use RecursiveCharacterTextSplitter directly
           if (err instanceof MinimumChunkSizeError) {
-            console.warn(
+            logger.warn(
               `⚠ Cannot split ${content.type} chunk normally, using RecursiveCharacterTextSplitter: ${err.message}`,
             );
 

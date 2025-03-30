@@ -2,8 +2,9 @@ import { Document } from "@langchain/core/documents";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VersionNotFoundError } from "../tools/errors";
 import { DocumentManagementService } from "./DocumentManagementService";
-import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { StoreError } from "./errors";
+
+vi.mock("../utils/logger");
 
 // Mock document store and retriever
 const mockStore = {

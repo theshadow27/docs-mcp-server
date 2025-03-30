@@ -10,6 +10,7 @@ import { PipelineJobStatus } from "./types";
 vi.mock("../store/DocumentManagementService");
 vi.mock("../scraper/ScraperService");
 vi.mock("./PipelineWorker");
+vi.mock("../utils/logger");
 
 // Mock uuid
 const mockUuid = "mock-uuid-123";

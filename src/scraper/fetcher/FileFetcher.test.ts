@@ -4,6 +4,7 @@ import { ScraperError } from "../../utils/errors";
 import { FileFetcher } from "./FileFetcher";
 
 vi.mock("node:fs/promises", () => ({ default: vol.promises }));
+vi.mock("../../utils/logger");
 
 describe("FileFetcher", () => {
   beforeEach(() => {

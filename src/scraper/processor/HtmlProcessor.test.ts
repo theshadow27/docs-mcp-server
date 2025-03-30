@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ScraperError } from "../../utils/errors";
 import type { RawContent } from "../fetcher/types";
 import { HtmlProcessor } from "./HtmlProcessor";
+
+vi.mock("../../utils/logger");
 
 describe("HtmlProcessor", () => {
   it("should process valid HTML content", async () => {

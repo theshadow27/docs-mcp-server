@@ -38,4 +38,4 @@ jobs:
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Provided by Actions automatically
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # Use a secret stored in GitHub repository settings
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Use a secret stored in GitHub repository settings

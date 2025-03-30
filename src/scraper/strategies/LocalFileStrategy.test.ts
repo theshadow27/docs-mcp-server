@@ -4,7 +4,8 @@ import type { ScraperOptions } from "../types";
 import { LocalFileStrategy } from "./LocalFileStrategy";
 
 vi.mock("node:fs/promises", () => ({ default: vol.promises }));
-vi.mock("node:fs"); // Also mock 'fs' for 'existsSync'
+vi.mock("../../utils/logger");
+vi.mock("node:fs");
 
 describe("LocalFileStrategy", () => {
   beforeEach(() => {

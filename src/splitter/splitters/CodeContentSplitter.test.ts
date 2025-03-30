@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CodeContentSplitter } from "./CodeContentSplitter";
 import type { ContentSplitterOptions } from "./types";
+
+vi.mock("../../utils/logger");
 
 describe("CodeContentSplitter", () => {
   const options = {

@@ -6,6 +6,7 @@ import { CancelJobTool } from "./CancelJobTool";
 
 // Mock dependencies
 vi.mock("../pipeline/PipelineManager");
+vi.mock("../utils/logger");
 
 describe("CancelJobTool", () => {
   let mockManagerInstance: Partial<PipelineManager>;

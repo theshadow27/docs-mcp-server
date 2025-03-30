@@ -7,6 +7,7 @@ import { ListJobsTool } from "./ListJobsTool";
 
 // Mock dependencies
 vi.mock("../pipeline/PipelineManager");
+vi.mock("../utils/logger");
 
 describe("ListJobsTool", () => {
   // Define the mock instance directly

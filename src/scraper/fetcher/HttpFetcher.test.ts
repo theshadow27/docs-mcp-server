@@ -4,6 +4,7 @@ import { ScraperError } from "../../utils/errors";
 import { HttpFetcher } from "./HttpFetcher";
 
 vi.mock("axios");
+vi.mock("../../utils/logger");
 const mockedAxios = vi.mocked(axios, true);
 
 describe("HttpFetcher", () => {
