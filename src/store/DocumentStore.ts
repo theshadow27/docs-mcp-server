@@ -178,6 +178,17 @@ export class DocumentStore {
   }
 
   /**
+   * Escapes a query string for use with SQLite FTS5 MATCH operator.
+   * Wraps the query in double quotes and escapes internal double quotes.
+   */
+  private escapeFtsQuery(query: string): string {
+    // Escape internal double quotes by doubling them
+    const escapedQuotes = query.replace(/"/g, '""');
+    // Wrap the entire string in double quotes
+    return `"${escapedQuotes}"`;
+  }
+
+  /**
    * Initializes database connection and ensures readiness
    */
   async initialize(): Promise<void> {
@@ -354,6 +365,7 @@ export class DocumentStore {
   ): Promise<Document[]> {
     try {
       const embedding = await this.embeddings.embedQuery(query);
+      const ftsQuery = this.escapeFtsQuery(query); // Escape the query for FTS
 
       const stmt = this.db.prepare(`
         WITH vec_scores AS (
@@ -398,7 +410,7 @@ export class DocumentStore {
         limit,
         library.toLowerCase(),
         version.toLowerCase(),
-        query,
+        ftsQuery, // Use the escaped query
         limit,
       ) as RawSearchResult[];
 
