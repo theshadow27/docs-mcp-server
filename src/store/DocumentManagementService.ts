@@ -1,10 +1,11 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import type { Document } from "@langchain/core/documents";
+import Fuse from "fuse.js";
 import semver from "semver";
 import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
 import type { ContentChunk, DocumentSplitter } from "../splitter/types";
-import { VersionNotFoundError } from "../tools";
+import { LibraryNotFoundError, VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
@@ -46,9 +47,16 @@ export class DocumentManagementService {
     this.splitter = greedySplitter;
   }
 
+  /**
+   * Initializes the underlying document store.
+   */
   async initialize(): Promise<void> {
     await this.store.initialize();
   }
+
+  /**
+   * Shuts down the underlying document store.
+   */
 
   async shutdown(): Promise<void> {
     logger.info("🔌 Shutting down store manager");
@@ -56,8 +64,48 @@ export class DocumentManagementService {
   }
 
   /**
-   * Returns a list of all available versions for a library.
-   * Only returns versions that follow semver format.
+   * Validates if a library exists in the store (either versioned or unversioned).
+   * Throws LibraryNotFoundError with suggestions if the library is not found.
+   * @param library The name of the library to validate.
+   * @throws {LibraryNotFoundError} If the library does not exist.
+   */
+  async validateLibraryExists(library: string): Promise<void> {
+    logger.info(`🔎 Validating existence of library: ${library}`);
+    const normalizedLibrary = library.toLowerCase(); // Ensure consistent casing
+
+    // Check for both versioned and unversioned documents
+    const versions = await this.listVersions(normalizedLibrary);
+    const hasUnversioned = await this.exists(normalizedLibrary, ""); // Check explicitly for unversioned
+
+    if (versions.length === 0 && !hasUnversioned) {
+      logger.warn(`⚠️ Library '${library}' not found.`);
+
+      // Library doesn't exist, fetch all libraries to provide suggestions
+      const allLibraries = await this.listLibraries();
+      const libraryNames = allLibraries.map((lib) => lib.library);
+
+      let suggestions: string[] = [];
+      if (libraryNames.length > 0) {
+        const fuse = new Fuse(libraryNames, {
+          // Configure fuse.js options if needed (e.g., threshold)
+          // isCaseSensitive: false, // Handled by normalizing library names
+          // includeScore: true,
+          threshold: 0.4, // Adjust threshold for desired fuzziness (0=exact, 1=match anything)
+        });
+        const results = fuse.search(normalizedLibrary);
+        // Take top 3 suggestions
+        suggestions = results.slice(0, 3).map((result) => result.item);
+        logger.info(`🔍 Found suggestions: ${suggestions.join(", ")}`);
+      }
+
+      throw new LibraryNotFoundError(library, suggestions);
+    }
+
+    logger.info(`✅ Library '${library}' confirmed to exist.`);
+  }
+
+  /**
+   * Returns a list of all available semantic versions for a library.
    */
   async listVersions(library: string): Promise<LibraryVersion[]> {
     const versions = await this.store.queryUniqueVersions(library);

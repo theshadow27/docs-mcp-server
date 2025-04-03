@@ -1,6 +1,6 @@
 import { Document } from "@langchain/core/documents";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { VersionNotFoundError } from "../tools/errors";
+import { LibraryNotFoundError, VersionNotFoundError } from "../tools/errors";
 import { DocumentManagementService } from "./DocumentManagementService";
 import { StoreError } from "./errors";
 
@@ -411,6 +411,100 @@ describe("DocumentManagementService", () => {
       // Call with another explicit limit
       await docService.searchStore(library, "", query, 10);
       expect(mockRetriever.search).toHaveBeenCalledWith(library, "", query, 10);
+    });
+  });
+
+  describe("validateLibraryExists", () => {
+    const library = "test-lib";
+    const existingLibraries = [
+      { library: "test-lib", versions: [{ version: "1.0.0", indexed: true }] },
+      { library: "another-lib", versions: [{ version: "2.0.0", indexed: true }] },
+      { library: "react", versions: [] },
+    ];
+
+    it("should resolve successfully if versioned documents exist", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0"]); // Has versioned docs
+      mockStore.checkDocumentExists.mockResolvedValue(false); // No unversioned docs
+
+      await expect(docService.validateLibraryExists(library)).resolves.toBeUndefined();
+      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library.toLowerCase());
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(
+        library.toLowerCase(),
+        "",
+      );
+    });
+
+    it("should resolve successfully if only unversioned documents exist", async () => {
+      mockStore.queryUniqueVersions.mockResolvedValue([]); // No versioned docs
+      mockStore.checkDocumentExists.mockResolvedValue(true); // Has unversioned docs
+
+      await expect(docService.validateLibraryExists(library)).resolves.toBeUndefined();
+      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library.toLowerCase());
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(
+        library.toLowerCase(),
+        "",
+      );
+    });
+
+    it("should throw LibraryNotFoundError if library does not exist (no suggestions)", async () => {
+      const nonExistentLibrary = "non-existent-lib";
+      mockStore.queryUniqueVersions.mockResolvedValue([]);
+      mockStore.checkDocumentExists.mockResolvedValue(false);
+      mockStore.queryLibraryVersions.mockResolvedValue(new Map()); // No libraries exist at all
+
+      await expect(docService.validateLibraryExists(nonExistentLibrary)).rejects.toThrow(
+        LibraryNotFoundError,
+      );
+
+      const error = await docService
+        .validateLibraryExists(nonExistentLibrary)
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(LibraryNotFoundError);
+      expect(error.requestedLibrary).toBe(nonExistentLibrary);
+      expect(error.suggestions).toEqual([]);
+      expect(mockStore.queryLibraryVersions).toHaveBeenCalled(); // Ensure it tried to get suggestions
+    });
+
+    it("should throw LibraryNotFoundError with suggestions if library does not exist", async () => {
+      const misspelledLibrary = "reac"; // Misspelled 'react'
+      mockStore.queryUniqueVersions.mockResolvedValue([]);
+      mockStore.checkDocumentExists.mockResolvedValue(false);
+      // Mock listLibraries to return existing libraries
+      const mockLibraryMap = new Map(
+        existingLibraries.map((l) => [
+          l.library,
+          new Set(l.versions.map((v) => v.version)),
+        ]),
+      );
+      mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
+
+      await expect(docService.validateLibraryExists(misspelledLibrary)).rejects.toThrow(
+        LibraryNotFoundError,
+      );
+
+      const error = await docService
+        .validateLibraryExists(misspelledLibrary)
+        .catch((e) => e);
+      expect(error).toBeInstanceOf(LibraryNotFoundError);
+      expect(error.requestedLibrary).toBe(misspelledLibrary);
+      expect(error.suggestions).toEqual(["react"]); // Expect 'react' as suggestion
+      expect(mockStore.queryLibraryVersions).toHaveBeenCalled();
+    });
+
+    it("should handle case insensitivity", async () => {
+      const libraryUpper = "TEST-LIB";
+      mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0"]); // Mock store uses lowercase
+      mockStore.checkDocumentExists.mockResolvedValue(false);
+
+      // Should still resolve because the service normalizes the input
+      await expect(
+        docService.validateLibraryExists(libraryUpper),
+      ).resolves.toBeUndefined();
+      expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library.toLowerCase());
+      expect(mockStore.checkDocumentExists).toHaveBeenCalledWith(
+        library.toLowerCase(),
+        "",
+      );
     });
   });
 });

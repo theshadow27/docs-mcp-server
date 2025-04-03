@@ -1,7 +1,7 @@
 import type { DocumentManagementService } from "../store";
 import type { StoreSearchResult } from "../store/types";
 import { logger } from "../utils/logger";
-import { VersionNotFoundError } from "./errors";
+import { LibraryNotFoundError, VersionNotFoundError } from "./errors";
 
 export interface SearchToolOptions {
   library: string;
@@ -11,12 +11,15 @@ export interface SearchToolOptions {
   exactMatch?: boolean;
 }
 
+export interface SearchToolResultError {
+  message: string;
+  availableVersions?: Array<{ version: string; indexed: boolean }>; // Specific to VersionNotFoundError
+  suggestions?: string[]; // Specific to LibraryNotFoundError
+}
+
 export interface SearchToolResult {
   results: StoreSearchResult[];
-  error?: {
-    message: string;
-    availableVersions: Array<{ version: string; indexed: boolean }>;
-  };
+  error?: SearchToolResultError;
 }
 
 /**
@@ -39,6 +42,10 @@ export class SearchTool {
     );
 
     try {
+      // 1. Validate library exists first
+      await this.docService.validateLibraryExists(library);
+
+      // 2. Proceed with version finding and searching
       let versionToSearch: string | null | undefined = version;
 
       if (!exactMatch) {
@@ -66,6 +73,16 @@ export class SearchTool {
 
       return { results };
     } catch (error) {
+      if (error instanceof LibraryNotFoundError) {
+        logger.info(`ℹ️ Library not found: ${error.message}`);
+        return {
+          results: [],
+          error: {
+            message: error.message,
+            suggestions: error.suggestions,
+          },
+        };
+      }
       if (error instanceof VersionNotFoundError) {
         logger.info(`ℹ️ Version not found: ${error.message}`);
         return {

@@ -3,7 +3,7 @@ import type { DocumentManagementService } from "../store";
 import type { StoreSearchResult } from "../store/types";
 import { logger } from "../utils/logger";
 import { SearchTool, type SearchToolOptions } from "./SearchTool";
-import { VersionNotFoundError } from "./errors";
+import { LibraryNotFoundError, VersionNotFoundError } from "./errors";
 
 // Mock dependencies
 vi.mock("../store");
@@ -17,6 +17,7 @@ describe("SearchTool", () => {
     vi.resetAllMocks();
 
     mockDocService = {
+      validateLibraryExists: vi.fn(),
       findBestVersion: vi.fn(),
       searchStore: vi.fn(),
     };
@@ -166,6 +167,41 @@ describe("SearchTool", () => {
     await expect(searchTool.execute(options)).rejects.toThrow("Store connection failed");
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining("Search failed: Store connection failed"),
+    );
+  });
+
+  it("should return error structure with suggestions when LibraryNotFoundError occurs", async () => {
+    const options: SearchToolOptions = { ...baseOptions };
+    const suggestions = ["test-lib-correct", "another-test-lib"];
+    const error = new LibraryNotFoundError("test-lib", suggestions);
+    (mockDocService.validateLibraryExists as Mock).mockRejectedValue(error);
+
+    const result = await searchTool.execute(options);
+
+    expect(mockDocService.validateLibraryExists).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.findBestVersion).not.toHaveBeenCalled();
+    expect(mockDocService.searchStore).not.toHaveBeenCalled();
+    expect(result.results).toEqual([]);
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toContain("Library 'test-lib' not found.");
+    expect(result.error?.suggestions).toEqual(suggestions);
+    expect(result.error?.availableVersions).toBeUndefined(); // Ensure version info isn't present
+    expect(logger.info).toHaveBeenCalledWith(
+      // Changed from warn to info to match implementation
+      expect.stringContaining("Library not found"),
+    );
+  });
+
+  it("should re-throw unexpected errors from validateLibraryExists", async () => {
+    const options: SearchToolOptions = { ...baseOptions };
+    const unexpectedError = new Error("Validation DB connection failed");
+    (mockDocService.validateLibraryExists as Mock).mockRejectedValue(unexpectedError);
+
+    await expect(searchTool.execute(options)).rejects.toThrow(
+      "Validation DB connection failed",
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("Search failed: Validation DB connection failed"),
     );
   });
 
