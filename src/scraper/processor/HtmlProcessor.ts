@@ -6,8 +6,6 @@ import type { RawContent } from "../fetcher/types";
 import type { ContentProcessor, ProcessedContent } from "./types";
 
 export interface HtmlProcessOptions {
-  /** CSS selectors to include in processing */
-  includeSelectors?: string[];
   /** CSS selectors to exclude from processing */
   excludeSelectors?: string[];
   /** Whether to extract links from content */
