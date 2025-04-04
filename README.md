@@ -17,103 +17,97 @@ The server exposes MCP tools for:
 - Finding appropriate versions (`find_version`).
 - Removing indexed documents (`remove_docs`).
 
-A companion CLI (`docs-mcp`) is also included for local management and interaction (note: the CLI `scrape` command waits for completion).
+## Usage
 
-## Building the Project
+Once the package is published to npm (`@arabold/docs-mcp-server`), you can run the server or the companion CLI in two main ways:
 
-Before you can use the server (e.g., by integrating it with Claude Desktop as described in the "Installation" section), you need to clone the repository and build the project from source.
+### Method 1: Global Installation (Recommended for CLI Usage)
 
-1.  **Clone the repository:**
-    If you haven't already, clone the project to your local machine:
+Install the package globally using npm. This makes the `docs-server` and `docs-cli` commands directly available in your terminal.
+
+1.  **Install Globally:**
+    ```bash
+    npm install -g @arabold/docs-mcp-server
+    ```
+2.  **Run the Server:**
+    ```bash
+    docs-server
+    ```
+    _(Note: You'll need to manage environment variables like `OPENAI_API_KEY` yourself when running this way, e.g., by setting them in your shell profile or using a tool like `dotenv`.)_
+3.  **Run the CLI:**
+    ```bash
+    docs-cli <command> [options]
+    ```
+    (See "CLI Command Reference" below for available commands and options.)
+
+This method is convenient if you plan to use the `docs-cli` frequently.
+
+### Method 2: Direct Execution with `npx` (Recommended for MCP Integration)
+
+Run the server or CLI directly using `npx` without needing a global installation. The `-y` flag ensures the package is automatically downloaded if needed.
+
+1.  **Run the Server (e.g., for MCP Integration):**
 
     ```bash
-    git clone <repository-url> # Replace <repository-url> with the actual URL
-    cd docs-mcp-server
+    npx -y --package=@arabold/docs-mcp-server docs-server
     ```
 
-2.  **Install dependencies:**
-    Navigate into the project directory and install the required Node.js packages:
+    This is the recommended approach for integrating with tools like Claude Desktop or Cline, as it avoids polluting the global namespace and ensures the correct version is used.
 
-    ```bash
-    npm install
-    ```
+    **Claude/Cline Configuration Example:**
+    Add the following configuration block to your MCP settings file (adjust path as needed):
 
-3.  **Build the server:**
-    Compile the TypeScript source code into JavaScript. The output will be placed in the `dist/` directory. This step is necessary to generate the `dist/server.js` file referenced in the installation instructions.
+    - Cline: `/Users/andrerabold/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+    - Claude Desktop (MacOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
+    - Claude Desktop (Windows): `%APPDATA%/Claude/claude_desktop_config.json`
 
-    ```bash
-    npm run build
-    ```
-
-After completing these steps and setting up your `.env` file (see "Environment Setup" under Development), you can proceed with the "Installation" or "Running with Docker" instructions.
-
-## Installation
-
-To use with Claude Desktop, add the server config:
-
-- On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "docs-mcp-server": {
-      "command": "node",
-      "args": ["/path/to/docs-mcp-server/dist/server.js"],
-      "env": {
-        "OPENAI_API_KEY": "sk-proj-..."
-      },
-      "disabled": false,
-      "autoApprove": []
+    ```json
+    {
+      "mcpServers": {
+        "docs-mcp-server": {
+          "command": "npx",
+          "args": ["-y", "--package=@arabold/docs-mcp-server", "docs-server"],
+          "env": {
+            "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
+          },
+          "disabled": false,
+          "autoApprove": []
+        }
+        // ... other servers might be listed here
+      }
     }
-  }
-}
-```
-
-## Running with Docker
-
-Alternatively, you can build and run the server using Docker. This provides an isolated environment and exposes the server via HTTP endpoints.
-
-1.  **Build the Docker image:**
-
-    ```bash
-    docker build -t docs-mcp-server .
     ```
 
-2.  **Run the Docker container:**
+    Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
 
-    Make sure your `.env` file is present in the project root directory, as it contains the necessary `OPENAI_API_KEY`. The container will read variables from this file at runtime using the `--env-file` flag. (See "Environment Setup" under Development for details on the `.env` file).
-
+2.  **Run the CLI:**
     ```bash
-    docker run -p 8000:8000 --env-file .env --name docs-mcp-server-container docs-mcp-server
+    npx -y --package=@arabold/docs-mcp-server docs-cli <command> [options]
     ```
+    (See "CLI Command Reference" below for available commands and options.)
 
-    - `-p 8000:8000`: Maps port 8000 on your host to port 8000 in the container.
-    - `--env-file .env`: Loads environment variables from your local `.env` file at runtime. This is the recommended way to handle secrets.
-    - `--name docs-mcp-server-container`: Assigns a name to the container for easier management.
+This method is ideal for one-off executions or when integrating the server into other tools.
 
-3.  **Available Endpoints:**
+## CLI Command Reference
 
-    Once the container is running, the MCP server is accessible via:
+The `docs-cli` provides commands for managing the documentation index. Access it either via global installation (`docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
 
-    - **SSE Endpoint:** `http://localhost:8000/sse` (for Server-Sent Events communication)
-    - **POST Messages:** `http://localhost:8000/message` (for sending individual messages)
-
-This method is useful if you prefer not to run the server directly via Node.js or integrate it with Claude Desktop using the standard installation method.
-
-## CLI Usage
-
-The `docs-mcp` CLI provides commands for managing documentation. To see available commands and options:
+**General Help:**
 
 ```bash
-# Show all commands
-docs-mcp --help
+docs-cli --help
+# or
+npx -y --package=@arabold/docs-mcp-server docs-cli --help
+```
 
-# Show help for a specific command
-docs-mcp scrape --help
-docs-mcp search --help
-docs-mcp find-version --help
-docs-mcp remove --help
+**Command Specific Help:** (Replace `docs-cli` with the `npx...` command if not installed globally)
+
+```bash
+docs-cli scrape --help
+docs-cli search --help
+docs-cli find-version --help
+docs-cli remove --help
+docs-cli list-libraries --help
 ```
 
 ### Scraping Documentation (`scrape`)
@@ -121,7 +115,7 @@ docs-mcp remove --help
 Scrapes and indexes documentation from a given URL for a specific library.
 
 ```bash
-docs-mcp scrape <library> <url> [options]
+docs-cli scrape <library> <url> [options]
 ```
 
 **Options:**
@@ -137,17 +131,11 @@ docs-mcp scrape <library> <url> [options]
 **Examples:**
 
 ```bash
-# Scrape React 18.2.0 docs
-docs-mcp scrape react --version 18.2.0 https://react.dev/
+# Scrape React 18.2.0 docs (assuming global install)
+docs-cli scrape react --version 18.2.0 https://react.dev/
 
-# Scrape React docs without a specific version (indexed as unversioned)
-docs-mcp scrape react https://react.dev/
-
-# Scrape partial version (will be stored as 7.0.0)
-docs-mcp scrape semver --version 7 https://github.com/npm/node-semver
-
-# Scrape pre-release version
-docs-mcp scrape mylib --version 2.0.0-rc.1 https://mylib.com/docs
+# Scrape React docs without a specific version (using npx)
+npx -y --package=@arabold/docs-mcp-server docs-cli scrape react https://react.dev/
 ```
 
 ### Searching Documentation (`search`)
@@ -155,7 +143,7 @@ docs-mcp scrape mylib --version 2.0.0-rc.1 https://mylib.com/docs
 Searches the indexed documentation for a library, optionally filtering by version.
 
 ```bash
-docs-mcp search <library> <query> [options]
+docs-cli search <library> <query> [options]
 ```
 
 **Options:**
@@ -172,19 +160,10 @@ docs-mcp search <library> <query> [options]
 
 ```bash
 # Search latest React docs for 'hooks'
-docs-mcp search react 'hooks'
+docs-cli search react 'hooks'
 
-# Search React 18.x docs for 'hooks'
-docs-mcp search react --version 18.x 'hooks'
-
-# Search React 17 docs (will match 17.x.x or older if 17.x.x not found)
-docs-mcp search react --version 17 'hooks'
-
-# Search only React 18.0.0 docs
-docs-mcp search react --version 18.0.0 --exact-match 'hooks'
-
-# Search only unversioned React docs
-docs-mcp search react --version "" 'hooks'
+# Search React 18.x docs for 'hooks' (using npx)
+npx -y --package=@arabold/docs-mcp-server docs-cli search react --version 18.x 'hooks'
 ```
 
 ### Finding Available Versions (`find-version`)
@@ -192,7 +171,7 @@ docs-mcp search react --version "" 'hooks'
 Checks the index for the best matching version for a library based on a target, and indicates if unversioned documents exist.
 
 ```bash
-docs-mcp find-version <library> [options]
+docs-cli find-version <library> [options]
 ```
 
 **Options:**
@@ -203,13 +182,7 @@ docs-mcp find-version <library> [options]
 
 ```bash
 # Find the latest indexed version for react
-docs-mcp find-version react
-
-# Find the best match for react version 17.x
-docs-mcp find-version react --version 17.x
-
-# Find the best match for react version 17.0.0 (may fall back to older)
-docs-mcp find-version react --version 17.0.0
+docs-cli find-version react
 ```
 
 ### Listing Libraries (`list-libraries`)
@@ -217,7 +190,7 @@ docs-mcp find-version react --version 17.0.0
 Lists all libraries currently indexed in the store.
 
 ```bash
-docs-mcp list-libraries
+docs-cli list-libraries
 ```
 
 ### Removing Documentation (`remove`)
@@ -225,7 +198,7 @@ docs-mcp list-libraries
 Removes indexed documents for a specific library and version.
 
 ```bash
-docs-mcp remove <library> [options]
+docs-cli remove <library> [options]
 ```
 
 **Options:**
@@ -236,10 +209,7 @@ docs-mcp remove <library> [options]
 
 ```bash
 # Remove React 18.2.0 docs
-docs-mcp remove react --version 18.2.0
-
-# Remove unversioned React docs
-docs-mcp remove react
+docs-cli remove react --version 18.2.0
 ```
 
 ### Version Handling Summary
@@ -248,70 +218,111 @@ docs-mcp remove react
 - **Searching/Finding:** Accepts specific versions, partials, or ranges (`X.Y.Z`, `X.Y`, `X`, `X.x`). Falls back to the latest older version if the target doesn't match. Omitting the version targets the latest available. Explicitly searching `--version ""` targets unversioned documents.
 - **Unversioned Docs:** Libraries can have documentation stored without a specific version (by omitting `--version` during scrape). These can be searched explicitly using `--version ""`. The `find-version` command will also report if unversioned docs exist alongside any semver matches.
 
-## Development
+## Development & Advanced Setup
 
-For details on the project's architecture and design principles, please see [ARCHITECTURE.md](ARCHITECTURE.md).
+This section covers running the server/CLI using Docker or directly from the source code for development purposes.
 
-_Notably, the vast majority of this project's code was generated by the AI assistant Cline, leveraging the capabilities of this very MCP server._
+### Running with Docker
 
-## Releasing
+This provides an isolated environment and exposes the server via HTTP endpoints.
 
-This project uses [semantic-release](https://github.com/semantic-release/semantic-release) and [Conventional Commits](https://www.conventionalcommits.org/) to automate the release process.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/arabold/docs-mcp-server.git # Replace with actual URL if different
+    cd docs-mcp-server
+    ```
+2.  **Create `.env` file:**
+    Copy the example and add your OpenAI key (see "Environment Setup" below).
+    ```bash
+    cp .env.example .env
+    # Edit .env and add your OPENAI_API_KEY
+    ```
+3.  **Build the Docker image:**
+    ```bash
+    docker build -t docs-mcp-server .
+    ```
+4.  **Run the Docker container:**
 
-**How it works:**
+    ```bash
+    docker run -p 8000:8000 --env-file .env --name docs-mcp-server-container docs-mcp-server
+    ```
 
-1.  **Commit Messages:** All commits merged into the `main` branch **must** follow the Conventional Commits specification. This allows `semantic-release` to automatically determine the type of changes (feature, fix, breaking change, etc.).
-    - `feat:` commits trigger a `minor` release.
-    - `fix:` commits trigger a `patch` release.
-    - Commits with `BREAKING CHANGE:` in the footer or `!` after the type/scope (e.g., `feat!:`) trigger a `major` release.
-    - Other types (`chore:`, `docs:`, `style:`, `refactor:`, `test:`, etc.) do not trigger a release by themselves.
-2.  **Automation:** When commits with release-triggering types (`feat`, `fix`, `BREAKING CHANGE`) are pushed or merged to the `main` branch, the "Release" GitHub Actions workflow automatically runs `semantic-release`.
-3.  **`semantic-release` Actions:** The tool performs the following steps automatically:
-    - Determines the next semantic version number based on the commits.
-    - Updates the `CHANGELOG.md` file with the relevant commits.
-    - Updates the `version` in `package.json`.
-    - Commits the updated `CHANGELOG.md` and `package.json`.
-    - Creates a Git tag for the new version (e.g., `v1.2.3`).
-    - Publishes the package to npm.
-    - Creates a corresponding GitHub Release with the generated release notes.
+    - `-p 8000:8000`: Maps host port 8000 to container port 8000.
+    - `--env-file .env`: Loads environment variables from your local `.env`.
+    - `--name docs-mcp-server-container`: Assigns a container name.
 
-**What you need to do:**
+5.  **Available Endpoints:**
+    - SSE: `http://localhost:8000/sse`
+    - POST Messages: `http://localhost:8000/message`
 
-- **Use Conventional Commits:** Strictly adhere to the Conventional Commits format for all your commit messages. The commit hooks (`commitlint`) will help enforce this.
-- **Merge to `main`:** Merge your feature branches into `main` when they are ready.
+### Running from Source (Development)
 
-**You do _not_ need to manually:**
+This method is required for contributing to the project or running un-published versions.
 
-- Update the `CHANGELOG.md`.
-- Bump the version number in `package.json`.
-- Create Git tags.
-- Publish to npm.
-- Create GitHub releases.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/arabold/docs-mcp-server.git # Replace with actual URL if different
+    cd docs-mcp-server
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Build the project:**
+    This compiles TypeScript to JavaScript in the `dist/` directory.
+    ```bash
+    npm run build
+    ```
+4.  **Setup Environment:**
+    Create and configure your `.env` file as described in "Environment Setup" below. This is crucial for providing the `OPENAI_API_KEY`.
 
-The automation handles all of these steps based on your commit history on the `main` branch.
+5.  **Run:**
+    - **Server (Development Mode):** `npm run dev:server` (builds, watches, and restarts)
+    - **Server (Production Mode):** `npm run start` (runs pre-built code)
+    - **CLI:** `npm run cli -- <command> [options]` or `node dist/cli.js <command> [options]`
 
-### Environment Setup
+### Environment Setup (for Source/Docker)
 
-**Note:** This `.env` file setup is primarily needed when running the server manually (e.g., `node dist/server.js`) or during local development/testing using the CLI (`docs-mcp`). When configuring the server for Claude Desktop (see "Installation"), the `OPENAI_API_KEY` is typically set directly in the `claude_desktop_config.json` file, and this `.env` file is not used by the Claude integration.
+**Note:** This `.env` file setup is primarily needed when running the server from source or using the Docker method. When using the `npx` integration method, the `OPENAI_API_KEY` is set directly in the MCP configuration file.
 
 1. Create a `.env` file based on `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
+   ```bash
+   cp .env.example .env
+   ```
 2. Update your OpenAI API key in `.env`:
+   ```
+   OPENAI_API_KEY=your-api-key-here
+   ```
 
-```
-OPENAI_API_KEY=your-api-key-here
-```
+### Debugging (from Source)
 
-### Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
+Since MCP servers communicate over stdio when run directly via Node.js, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script after building:
 
 ```bash
 npx @modelcontextprotocol/inspector node dist/server.js
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
+
+### Releasing
+
+This project uses [semantic-release](https://github.com/semantic-release/semantic-release) and [Conventional Commits](https://www.conventionalcommits.org/) to automate the release process.
+
+**How it works:**
+
+1.  **Commit Messages:** All commits merged into the `main` branch **must** follow the Conventional Commits specification.
+2.  **Automation:** The "Release" GitHub Actions workflow automatically runs `semantic-release` on pushes to `main`.
+3.  **`semantic-release` Actions:** Determines version, updates `CHANGELOG.md` & `package.json`, commits, tags, publishes to npm, and creates a GitHub Release.
+
+**What you need to do:**
+
+- Use Conventional Commits.
+- Merge to `main`.
+
+**Automation handles:** Changelog, version bumps, tags, npm publish, GitHub releases.
+
+### Architecture
+
+For details on the project's architecture and design principles, please see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+_Notably, the vast majority of this project's code was generated by the AI assistant Cline, leveraging the capabilities of this very MCP server._

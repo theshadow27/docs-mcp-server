@@ -1,6 +1,7 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { Document } from "@langchain/core/documents";
+import envPaths from "env-paths";
 import Fuse from "fuse.js";
 import semver from "semver";
 import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
@@ -29,7 +30,20 @@ export class DocumentManagementService {
   }
 
   constructor() {
-    const dbPath = path.join(process.cwd(), ".store", "documents.db");
+    // Define potential database paths
+    const oldDbPath = path.join(process.cwd(), ".store", "documents.db");
+    const standardPaths = envPaths("docs-mcp-server", { suffix: "" });
+    const standardDbPath = path.join(standardPaths.data, "documents.db");
+
+    // Check if the old local path exists
+    const oldDbExists = existsSync(oldDbPath);
+
+    // Prioritize old path if it exists, otherwise use the standard path
+    const dbPath = oldDbExists ? oldDbPath : standardDbPath;
+
+    // logger.debug(`Using database path: ${dbPath}`);
+
+    // Ensure the directory for the chosen path exists
     mkdirSync(path.dirname(dbPath), { recursive: true });
 
     this.store = new DocumentStore(dbPath);
