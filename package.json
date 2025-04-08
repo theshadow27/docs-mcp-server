@@ -19,7 +19,7 @@
     "package.json"
   ],
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky || true",
     "build": "tsup",
     "cli": "node --enable-source-maps dist/cli.js",
     "start": "node --enable-source-maps dist/server.js",

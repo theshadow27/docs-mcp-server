@@ -30,21 +30,42 @@ export class DocumentManagementService {
   }
 
   constructor() {
-    // Define potential database paths
-    const oldDbPath = path.join(process.cwd(), ".store", "documents.db");
-    const standardPaths = envPaths("docs-mcp-server", { suffix: "" });
-    const standardDbPath = path.join(standardPaths.data, "documents.db");
+    let dbPath: string;
+    let dbDir: string;
 
-    // Check if the old local path exists
-    const oldDbExists = existsSync(oldDbPath);
+    // 1. Check Environment Variable
+    const envStorePath = process.env.DOCS_MCP_STORE_PATH;
+    if (envStorePath) {
+      dbDir = envStorePath;
+      dbPath = path.join(dbDir, "documents.db");
+      logger.debug(`💾 Using database directory from DOCS_MCP_STORE_PATH: ${dbDir}`);
+    } else {
+      // 2. Check Old Local Path
+      const oldDbDir = path.join(process.cwd(), ".store");
+      const oldDbPath = path.join(oldDbDir, "documents.db");
+      const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
 
-    // Prioritize old path if it exists, otherwise use the standard path
-    const dbPath = oldDbExists ? oldDbPath : standardDbPath;
+      if (oldDbExists) {
+        dbPath = oldDbPath;
+        dbDir = oldDbDir;
+        logger.debug(`💾 Using legacy database path: ${dbPath}`);
+      } else {
+        // 3. Use Standard Path
+        const standardPaths = envPaths("docs-mcp-server", { suffix: "" });
+        dbDir = standardPaths.data;
+        dbPath = path.join(dbDir, "documents.db");
+        logger.debug(`💾 Using standard database directory: ${dbDir}`);
+      }
+    }
 
-    // logger.debug(`Using database path: ${dbPath}`);
-
-    // Ensure the directory for the chosen path exists
-    mkdirSync(path.dirname(dbPath), { recursive: true });
+    // Ensure the chosen directory exists
+    try {
+      mkdirSync(dbDir, { recursive: true });
+    } catch (error) {
+      // Log potential error during directory creation but proceed
+      // The DocumentStore constructor might handle DB file creation errors
+      logger.error(`⚠️ Failed to create database directory ${dbDir}: ${error}`);
+    }
 
     this.store = new DocumentStore(dbPath);
     this.documentRetriever = new DocumentRetrieverService(this.store);

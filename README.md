@@ -42,17 +42,27 @@ Install the package globally using npm. This makes the `docs-server` and `docs-c
 
 This method is convenient if you plan to use the `docs-cli` frequently.
 
-### Method 2: Direct Execution with `npx` (Recommended for MCP Integration)
+### Method 2: Running with Docker (Recommended for MCP Integration)
 
-Run the server or CLI directly using `npx` without needing a global installation. The `-y` flag ensures the package is automatically downloaded if needed.
+Run the server using the pre-built Docker image available on GitHub Container Registry. This provides an isolated environment and simplifies setup.
 
-1.  **Run the Server (e.g., for MCP Integration):**
+1.  **Ensure Docker is installed and running.**
+2.  **Run the Server (e.g., for MCP Integration):**
 
     ```bash
-    npx -y --package=@arabold/docs-mcp-server docs-server
+    docker run -i --rm \
+      -e OPENAI_API_KEY="your-openai-api-key-here" \
+      -v docs-mcp-data:/data \
+      ghcr.io/arabold/docs-mcp-server:latest
     ```
 
-    This is the recommended approach for integrating with tools like Claude Desktop or Cline, as it avoids polluting the global namespace and ensures the correct version is used.
+    - `-i`: Keep STDIN open, crucial for MCP communication over stdio.
+    - `--rm`: Automatically remove the container when it exits.
+    - `-e OPENAI_API_KEY="..."`: **Required.** Set your OpenAI API key.
+    - `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume (`docs-mcp-data` is created automatically if it doesn't exist) to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
+    - `ghcr.io/arabold/docs-mcp-server:latest`: Specifies the public Docker image to use.
+
+    This is the recommended approach for integrating with tools like Claude Desktop or Cline.
 
     **Claude/Cline Configuration Example:**
     Add the following configuration block to your MCP settings file (adjust path as needed):
@@ -65,8 +75,17 @@ Run the server or CLI directly using `npx` without needing a global installation
     {
       "mcpServers": {
         "docs-mcp-server": {
-          "command": "npx",
-          "args": ["-y", "--package=@arabold/docs-mcp-server", "docs-server"],
+          "command": "docker",
+          "args": [
+            "run",
+            "-i",
+            "--rm",
+            "-e",
+            "OPENAI_API_KEY",
+            "-v",
+            "docs-mcp-data:/data",
+            "ghcr.io/arabold/docs-mcp-server:latest"
+          ],
           "env": {
             "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
           },
@@ -80,13 +99,18 @@ Run the server or CLI directly using `npx` without needing a global installation
 
     Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
 
-2.  **Run the CLI:**
+3.  **Run the CLI (Requires Docker):**
+    To use the CLI commands, you can run them inside a temporary container:
     ```bash
-    npx -y --package=@arabold/docs-mcp-server docs-cli <command> [options]
+    docker run --rm \
+      -e OPENAI_API_KEY="your-openai-api-key-here" \
+      -v docs-mcp-data:/data \
+      ghcr.io/arabold/docs-mcp-server:latest \
+      npx docs-cli <command> [options]
     ```
     (See "CLI Command Reference" below for available commands and options.)
 
-This method is ideal for one-off executions or when integrating the server into other tools.
+This method is ideal for integrating the server into other tools and ensures a consistent runtime environment.
 
 ## CLI Command Reference
 
@@ -220,9 +244,9 @@ docs-cli remove react --version 18.2.0
 
 ## Development & Advanced Setup
 
-This section covers running the server/CLI using Docker or directly from the source code for development purposes.
+This section covers running the server/CLI directly from the source code for development purposes. The primary usage method is now via the public Docker image as described in "Method 2".
 
-### Running with Docker
+### Running from Source (Development)
 
 This provides an isolated environment and exposes the server via HTTP endpoints.
 
@@ -244,20 +268,22 @@ This provides an isolated environment and exposes the server via HTTP endpoints.
 4.  **Run the Docker container:**
 
     ```bash
-    docker run -p 8000:8000 --env-file .env --name docs-mcp-server-container docs-mcp-server
+    # Option 1: Using a named volume (recommended)
+    # Docker automatically creates the volume 'docs-mcp-data' if it doesn't exist on first run.
+    docker run -i --env-file .env -v docs-mcp-data:/data --name docs-mcp-server docs-mcp-server
+
+    # Option 2: Mapping to a host directory
+    # docker run -i --env-file .env -v /path/on/your/host:/data --name docs-mcp-server docs-mcp-server
     ```
 
-    - `-p 8000:8000`: Maps host port 8000 to container port 8000.
-    - `--env-file .env`: Loads environment variables from your local `.env`.
-    - `--name docs-mcp-server-container`: Assigns a container name.
+    - `-i`: Keep STDIN open even if not attached. This is crucial for interacting with the server over stdio.
+    - `--env-file .env`: Loads environment variables (like `OPENAI_API_KEY`) from your local `.env` file.
+    - `-v docs-mcp-data:/data` or `-v /path/on/your/host:/data`: **Crucial for persistence.** This mounts a Docker named volume (Docker creates `docs-mcp-data` automatically if needed) or a host directory to the `/data` directory inside the container. The `/data` directory is where the server stores its `documents.db` file (as configured by `DOCS_MCP_STORE_PATH` in the Dockerfile). This ensures your indexed documentation persists even if the container is stopped or removed.
+    - `--name docs-mcp-server`: Assigns a convenient name to the container.
 
-5.  **Available Endpoints:**
-    - SSE: `http://localhost:8000/sse`
-    - POST Messages: `http://localhost:8000/message`
+    The server inside the container now runs directly using Node.js and communicates over **stdio**.
 
-### Running from Source (Development)
-
-This method is required for contributing to the project or running un-published versions.
+This method is useful for contributing to the project or running un-published versions.
 
 1.  **Clone the repository:**
     ```bash
@@ -290,8 +316,17 @@ This method is required for contributing to the project or running un-published 
    cp .env.example .env
    ```
 2. Update your OpenAI API key in `.env`:
+
    ```
+   # Required: Your OpenAI API key for generating embeddings.
    OPENAI_API_KEY=your-api-key-here
+
+   # Optional: Specify a custom directory to store the SQLite database file (documents.db).
+   # If set, this path takes precedence over the default locations.
+   # Default behavior (if unset):
+   # 1. Uses './.store/' in the project root if it exists (legacy).
+   # 2. Falls back to OS-specific data directory (e.g., ~/Library/Application Support/docs-mcp-server on macOS).
+   # DOCS_MCP_STORE_PATH=/path/to/your/desired/storage/directory
    ```
 
 ### Debugging (from Source)
