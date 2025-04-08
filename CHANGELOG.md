@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/arabold/docs-mcp-server/compare/v1.4.2...v1.4.3) (2025-04-08)
+
+
+### Bug Fixes
+
+* empty commit to trigger patch release ([50bb240](https://github.com/arabold/docs-mcp-server/commit/50bb24026abc1eba3b1a3fa011e04814ba5f3387))
+
 ## [1.4.2](https://github.com/arabold/docs-mcp-server/compare/v1.4.1...v1.4.2) (2025-04-08)
 
 
