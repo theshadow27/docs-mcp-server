@@ -3,6 +3,16 @@
 
 ### Bug Fixes
 
+* empty commit to trigger patch release ([be47616](https://github.com/arabold/docs-mcp-server/commit/be47616ace3d30e222ef4f896287f231fab242be))
+* empty commit to trigger patch release ([ff7f518](https://github.com/arabold/docs-mcp-server/commit/ff7f51845bf7778f3af0d5c25460eb53e052c649))
+* **workflow:** update semantic-release configuration and output variables ([7725875](https://github.com/arabold/docs-mcp-server/commit/772587511f5fc2c193fcd69f41c0381dfff0df3c))
+* **workflow:** update semantic-release configuration and output variables ([7628854](https://github.com/arabold/docs-mcp-server/commit/76288548a5688f68397add9abadb69837bb65b55))
+
+## [1.4.4](https://github.com/arabold/docs-mcp-server/compare/v1.4.3...v1.4.4) (2025-04-08)
+
+
+### Bug Fixes
+
 * empty commit to trigger patch release ([ff7f518](https://github.com/arabold/docs-mcp-server/commit/ff7f51845bf7778f3af0d5c25460eb53e052c649))
 * **workflow:** update semantic-release configuration and output variables ([7725875](https://github.com/arabold/docs-mcp-server/commit/772587511f5fc2c193fcd69f41c0381dfff0df3c))
 * **workflow:** update semantic-release configuration and output variables ([7628854](https://github.com/arabold/docs-mcp-server/commit/76288548a5688f68397add9abadb69837bb65b55))
