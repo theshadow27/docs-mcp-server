@@ -96,7 +96,7 @@ describe("WebScraperStrategy", () => {
     vi.restoreAllMocks();
   });
 
-  it("should only follow subpage links when subpagesOnly is true (default)", async () => {
+  it("should only follow subpage links when scope is 'subpages' (default)", async () => {
     const strategy = new WebScraperStrategy();
     const options: ScraperOptions = {
       url: "https://example.com/docs/", // Base path with trailing slash
@@ -104,7 +104,7 @@ describe("WebScraperStrategy", () => {
       version: "1.0",
       maxPages: 5, // Allow multiple pages
       maxDepth: 2, // Allow following links
-      subpagesOnly: true, // Explicitly true (also default)
+      scope: "subpages", // Default scope
     };
     const progressCallback = vi.fn();
 
@@ -180,7 +180,7 @@ describe("WebScraperStrategy", () => {
     expect(processSpy).toHaveBeenCalledTimes(4); // Processor called for each fetched page
   });
 
-  it("should follow links outside base path when subpagesOnly is false", async () => {
+  it("should follow links outside base path when scope is 'hostname'", async () => {
     const strategy = new WebScraperStrategy();
     const options: ScraperOptions = {
       url: "https://example.com/docs/",
@@ -188,7 +188,7 @@ describe("WebScraperStrategy", () => {
       version: "1.0",
       maxPages: 5,
       maxDepth: 2,
-      subpagesOnly: false, // Explicitly false
+      scope: "hostname", // Use hostname scope instead of subpagesOnly
     };
     const progressCallback = vi.fn();
 
@@ -255,5 +255,216 @@ describe("WebScraperStrategy", () => {
       expect.anything(),
     );
     expect(processSpy).toHaveBeenCalledTimes(5); // Processor called for each fetched page
+  });
+
+  it("should follow only same hostname links when scope is 'hostname'", async () => {
+    const strategy = new WebScraperStrategy();
+    const options: ScraperOptions = {
+      url: "https://example.com/docs/",
+      library: "test",
+      version: "1.0",
+      maxPages: 5,
+      maxDepth: 2,
+      scope: "hostname", // Use hostname scope
+    };
+    const progressCallback = vi.fn();
+
+    const fetchSpy = vi
+      .spyOn(HttpFetcher.prototype, "fetch")
+      .mockImplementation(async (url) => ({
+        // Simple fetch mock
+        content: `Content for ${url}`,
+        mimeType: "text/html",
+        source: url,
+      }));
+
+    // Mock HtmlProcessor to return specific links for the root URL
+    const processSpy = vi
+      .spyOn(HtmlProcessor.prototype, "process")
+      .mockImplementation(async (rawContent) => {
+        if (rawContent.source === "https://example.com/docs/") {
+          return {
+            content: "Processed content",
+            title: "Docs Index",
+            source: rawContent.source,
+            links: [
+              "https://example.com/docs/page1", // Same path
+              "https://example.com/other/page2", // Different path, same hostname
+              "https://subdomain.example.com/page", // Subdomain (should be excluded)
+              "https://anothersite.com/", // Different domain
+              "/docs/relative", // Relative within same path
+              "/other/relative", // Relative to different path
+            ],
+            metadata: {},
+          };
+        }
+        // Return no links for subsequent pages
+        return {
+          content: "Processed subpage",
+          title: "Subpage",
+          source: rawContent.source,
+          links: [],
+          metadata: {},
+        };
+      });
+
+    await strategy.scrape(options, progressCallback);
+
+    // Should fetch: same hostname URLs regardless of path
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/page1", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/page2", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/relative", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/other/relative", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+
+    // Check calls that should NOT have happened
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://subdomain.example.com/page",
+      expect.anything(),
+    );
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://anothersite.com/",
+      expect.anything(),
+    );
+    expect(processSpy).toHaveBeenCalledTimes(5);
+  });
+
+  it("should follow all same domain links (including subdomains) when scope is 'domain'", async () => {
+    const strategy = new WebScraperStrategy();
+    const options: ScraperOptions = {
+      url: "https://docs.example.com/v1/",
+      library: "test",
+      version: "1.0",
+      maxPages: 5,
+      maxDepth: 2,
+      scope: "domain", // Use domain scope
+    };
+    const progressCallback = vi.fn();
+
+    const fetchSpy = vi
+      .spyOn(HttpFetcher.prototype, "fetch")
+      .mockImplementation(async (url) => ({
+        // Simple fetch mock
+        content: `Content for ${url}`,
+        mimeType: "text/html",
+        source: url,
+      }));
+
+    // Mock HtmlProcessor to return specific links for the root URL
+    const processSpy = vi
+      .spyOn(HtmlProcessor.prototype, "process")
+      .mockImplementation(async (rawContent) => {
+        if (rawContent.source === "https://docs.example.com/v1/") {
+          return {
+            content: "Processed content",
+            title: "Docs Index",
+            source: rawContent.source,
+            links: [
+              "https://docs.example.com/v1/intro", // Same subdomain, same path
+              "https://docs.example.com/v2/guide", // Same subdomain, different path
+              "https://api.example.com/reference", // Different subdomain, same domain
+              "https://example.com/main", // Apex domain
+              "https://different.org/page", // Different domain
+              "/v1/relative", // Relative within same path
+            ],
+            metadata: {},
+          };
+        }
+        // Return no links for subsequent pages
+        return {
+          content: "Processed subpage",
+          title: "Subpage",
+          source: rawContent.source,
+          links: [],
+          metadata: {},
+        };
+      });
+
+    await strategy.scrape(options, progressCallback);
+
+    // Should fetch: all URLs on same domain, including subdomains
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    expect(fetchSpy).toHaveBeenCalledWith("https://docs.example.com/v1/", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://docs.example.com/v1/intro", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://docs.example.com/v2/guide", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.example.com/reference", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/main", {
+      signal: undefined,
+      followRedirects: undefined,
+    });
+
+    // Check calls that should NOT have happened
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "https://different.org/page",
+      expect.anything(),
+    );
+
+    expect(processSpy).toHaveBeenCalledTimes(5);
+  });
+
+  it("should respect the followRedirects option", async () => {
+    const strategy = new WebScraperStrategy();
+    const options: ScraperOptions = {
+      url: "https://example.com/docs/",
+      library: "test",
+      version: "1.0",
+      maxPages: 2,
+      maxDepth: 1,
+      followRedirects: false, // Explicitly disable following redirects
+    };
+    const progressCallback = vi.fn();
+
+    const fetchSpy = vi
+      .spyOn(HttpFetcher.prototype, "fetch")
+      .mockImplementation(async (url, options) => ({
+        content: `Content for ${url}`,
+        mimeType: "text/html",
+        source: url,
+      }));
+
+    // Mock HtmlProcessor for a single page with no links
+    vi.spyOn(HtmlProcessor.prototype, "process").mockResolvedValue({
+      content: "Processed content",
+      title: "Page",
+      source: "https://example.com/docs/",
+      links: [],
+      metadata: {},
+    });
+
+    await strategy.scrape(options, progressCallback);
+
+    // Verify the followRedirects option was passed to the fetcher
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.com/docs/", {
+      signal: undefined,
+      followRedirects: false,
+    });
   });
 });

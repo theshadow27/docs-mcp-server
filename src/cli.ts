@@ -54,6 +54,23 @@ async function main() {
       .option("-d, --max-depth <number>", "Maximum navigation depth", "3")
       .option("-c, --max-concurrency <number>", "Maximum concurrent page requests", "3")
       .option("--ignore-errors", "Ignore errors during scraping", true)
+      .option(
+        "--scope <scope>",
+        "Crawling boundary: 'subpages' (default), 'hostname', or 'domain'",
+        (value) => {
+          const validScopes = ["subpages", "hostname", "domain"];
+          if (!validScopes.includes(value)) {
+            console.warn(`Warning: Invalid scope '${value}'. Using default 'subpages'.`);
+            return "subpages";
+          }
+          return value;
+        },
+        "subpages",
+      )
+      .option(
+        "--no-follow-redirects",
+        "Disable following HTTP redirects (default: follow redirects)",
+      )
       .action(async (library, url, options) => {
         // Update action parameters
         const result = await tools.scrape.execute({
@@ -65,6 +82,8 @@ async function main() {
             maxDepth: Number.parseInt(options.maxDepth),
             maxConcurrency: Number.parseInt(options.maxConcurrency),
             ignoreErrors: options.ignoreErrors,
+            scope: options.scope,
+            followRedirects: options.followRedirects, // This will be `true` by default, or `false` if --no-follow-redirects is used
           },
           // CLI always waits for completion (default behavior)
         });

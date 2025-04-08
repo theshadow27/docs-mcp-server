@@ -66,7 +66,7 @@ export async function startServer() {
 
     // --- Tool Definitions ---
 
-    // Scrape docs tool (Keep as is for now, but likely needs ScrapeTool refactor)
+    // Scrape docs tool
     server.tool(
       "scrape_docs",
       "Scrape and index documentation from a URL",
@@ -80,17 +80,21 @@ export async function startServer() {
           .default(100)
           .describe("Maximum number of pages to scrape"),
         maxDepth: z.number().optional().default(3).describe("Maximum navigation depth"),
-        subpagesOnly: z
+        scope: z
+          .enum(["subpages", "hostname", "domain"])
+          .optional()
+          .default("subpages")
+          .describe("Defines the crawling boundary: 'subpages', 'hostname', or 'domain'"),
+        followRedirects: z
           .boolean()
           .optional()
           .default(true)
-          .describe("Only scrape pages under the initial URL path"),
+          .describe("Whether to follow HTTP redirects (3xx responses)"),
       },
       // Remove context as it's not used without progress reporting
-      async ({ url, library, version, maxPages, maxDepth, subpagesOnly }) => {
+      async ({ url, library, version, maxPages, maxDepth, scope, followRedirects }) => {
         try {
           // Execute scrape tool without waiting and without progress callback
-          // NOTE: This might fail if ScrapeTool relies on docService.getPipelineManager()
           const result = await tools.scrape.execute({
             url,
             library,
@@ -100,7 +104,8 @@ export async function startServer() {
             options: {
               maxPages,
               maxDepth,
-              subpagesOnly,
+              scope,
+              followRedirects,
             },
           });
 

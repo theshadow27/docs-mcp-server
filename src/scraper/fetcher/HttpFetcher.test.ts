@@ -1,6 +1,6 @@
 import axios from "axios";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { ScraperError } from "../../utils/errors";
+import { RedirectError, ScraperError } from "../../utils/errors";
 import { HttpFetcher } from "./HttpFetcher";
 
 vi.mock("axios");
@@ -104,6 +104,88 @@ describe("HttpFetcher", () => {
       responseType: "arraybuffer",
       headers,
       timeout: undefined,
+      maxRedirects: 5, // Default follows redirects
+    });
+  });
+
+  describe("redirect handling", () => {
+    it("should follow redirects by default", async () => {
+      const fetcher = new HttpFetcher();
+      const mockResponse = {
+        data: "<html><body><h1>Hello</h1></body></html>",
+        headers: { "content-type": "text/html" },
+      };
+      mockedAxios.get.mockResolvedValue(mockResponse);
+
+      await fetcher.fetch("https://example.com");
+      expect(mockedAxios.get).toHaveBeenCalledWith("https://example.com", {
+        responseType: "arraybuffer",
+        headers: undefined,
+        timeout: undefined,
+        maxRedirects: 5, // Default follows redirects
+        signal: undefined,
+      });
+    });
+
+    it("should follow redirects when followRedirects is true", async () => {
+      const fetcher = new HttpFetcher();
+      const mockResponse = {
+        data: "<html><body><h1>Hello</h1></body></html>",
+        headers: { "content-type": "text/html" },
+      };
+      mockedAxios.get.mockResolvedValue(mockResponse);
+
+      await fetcher.fetch("https://example.com", { followRedirects: true });
+      expect(mockedAxios.get).toHaveBeenCalledWith("https://example.com", {
+        responseType: "arraybuffer",
+        headers: undefined,
+        timeout: undefined,
+        maxRedirects: 5,
+        signal: undefined,
+      });
+    });
+
+    it("should not follow redirects when followRedirects is false", async () => {
+      const fetcher = new HttpFetcher();
+      const mockResponse = {
+        data: "<html><body><h1>Hello</h1></body></html>",
+        headers: { "content-type": "text/html" },
+      };
+      mockedAxios.get.mockResolvedValue(mockResponse);
+
+      await fetcher.fetch("https://example.com", { followRedirects: false });
+      expect(mockedAxios.get).toHaveBeenCalledWith("https://example.com", {
+        responseType: "arraybuffer",
+        headers: undefined,
+        timeout: undefined,
+        maxRedirects: 0, // No redirects allowed
+        signal: undefined,
+      });
+    });
+
+    it("should throw RedirectError when a redirect is encountered and followRedirects is false", async () => {
+      const fetcher = new HttpFetcher();
+      const redirectError = {
+        response: {
+          status: 301,
+          headers: {
+            location: "https://new-example.com",
+          },
+        },
+      };
+      mockedAxios.get.mockRejectedValue(redirectError);
+
+      await expect(
+        fetcher.fetch("https://example.com", { followRedirects: false }),
+      ).rejects.toBeInstanceOf(RedirectError);
+
+      await expect(
+        fetcher.fetch("https://example.com", { followRedirects: false }),
+      ).rejects.toMatchObject({
+        originalUrl: "https://example.com",
+        redirectUrl: "https://new-example.com",
+        statusCode: 301,
+      });
     });
   });
 });

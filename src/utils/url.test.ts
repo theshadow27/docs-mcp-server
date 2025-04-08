@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { type UrlNormalizerOptions, normalizeUrl } from "./url";
+import {
+  type UrlNormalizerOptions,
+  hasSameDomain,
+  hasSameHostname,
+  isSubpath,
+  normalizeUrl,
+} from "./url";
 
 vi.mock("./logger");
 
@@ -117,6 +123,92 @@ describe("URL normalization", () => {
       expect(normalizeUrl("https://example.com/path/index.html?param=1")).toBe(
         "https://example.com/path?param=1",
       );
+    });
+  });
+});
+
+describe("URL comparison utilities", () => {
+  describe("hasSameHostname", () => {
+    it("should return true for exact same hostname", () => {
+      const urlA = new URL("https://example.com/path/to/page");
+      const urlB = new URL("https://example.com/different/path");
+      expect(hasSameHostname(urlA, urlB)).toBe(true);
+    });
+
+    it("should return true for same hostname with different case", () => {
+      const urlA = new URL("https://example.com/path");
+      const urlB = new URL("https://EXAMPLE.com/path");
+      expect(hasSameHostname(urlA, urlB)).toBe(true);
+    });
+
+    it("should return false for different subdomains", () => {
+      const urlA = new URL("https://docs.example.com/path");
+      const urlB = new URL("https://api.example.com/path");
+      expect(hasSameHostname(urlA, urlB)).toBe(false);
+    });
+
+    it("should return false for different domains", () => {
+      const urlA = new URL("https://example.com/path");
+      const urlB = new URL("https://example.org/path");
+      expect(hasSameHostname(urlA, urlB)).toBe(false);
+    });
+  });
+
+  describe("hasSameDomain", () => {
+    it("should return true for exact same domain", () => {
+      const urlA = new URL("https://example.com/path");
+      const urlB = new URL("https://example.com/different");
+      expect(hasSameDomain(urlA, urlB)).toBe(true);
+    });
+
+    it("should return true for different subdomains of same domain", () => {
+      const urlA = new URL("https://docs.example.com/path");
+      const urlB = new URL("https://api.example.com/path");
+      expect(hasSameDomain(urlA, urlB)).toBe(true);
+    });
+
+    it("should handle domain with public suffix correctly", () => {
+      const urlA = new URL("https://example.co.uk/path");
+      const urlB = new URL("https://docs.example.co.uk/path");
+      expect(hasSameDomain(urlA, urlB)).toBe(true);
+    });
+
+    it("should return false for different domains", () => {
+      const urlA = new URL("https://example.com/path");
+      const urlB = new URL("https://different.org/path");
+      expect(hasSameDomain(urlA, urlB)).toBe(false);
+    });
+  });
+
+  describe("isSubpath", () => {
+    it("should return true when target is exactly under base path", () => {
+      const baseUrl = new URL("https://example.com/docs/");
+      const targetUrl = new URL("https://example.com/docs/getting-started");
+      expect(isSubpath(baseUrl, targetUrl)).toBe(true);
+    });
+
+    it("should return true when target is deeply nested under base path", () => {
+      const baseUrl = new URL("https://example.com/docs/");
+      const targetUrl = new URL("https://example.com/docs/tutorials/advanced/topic");
+      expect(isSubpath(baseUrl, targetUrl)).toBe(true);
+    });
+
+    it("should return false when target is not under base path", () => {
+      const baseUrl = new URL("https://example.com/docs/");
+      const targetUrl = new URL("https://example.com/api/endpoint");
+      expect(isSubpath(baseUrl, targetUrl)).toBe(false);
+    });
+
+    it("should handle trailing slashes correctly", () => {
+      const baseUrl = new URL("https://example.com/docs"); // no trailing slash
+      const targetUrl = new URL("https://example.com/docs/page");
+      expect(isSubpath(baseUrl, targetUrl)).toBe(true);
+    });
+
+    it("should not match partial path segments", () => {
+      const baseUrl = new URL("https://example.com/doc/");
+      const targetUrl = new URL("https://example.com/docs/page"); // 'doc' vs 'docs'
+      expect(isSubpath(baseUrl, targetUrl)).toBe(false);
     });
   });
 });

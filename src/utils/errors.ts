@@ -43,4 +43,24 @@ class ParsingError extends ScraperError {
   }
 }
 
-export { ScraperError, NetworkError, RateLimitError, InvalidUrlError, ParsingError };
+class RedirectError extends ScraperError {
+  constructor(
+    public readonly originalUrl: string,
+    public readonly redirectUrl: string,
+    public readonly statusCode: number,
+  ) {
+    super(
+      `Redirect detected from ${originalUrl} to ${redirectUrl} (status: ${statusCode})`,
+      false,
+    );
+  }
+}
+
+export {
+  ScraperError,
+  NetworkError,
+  RateLimitError,
+  InvalidUrlError,
+  ParsingError,
+  RedirectError,
+};

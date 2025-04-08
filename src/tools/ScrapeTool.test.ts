@@ -129,11 +129,6 @@ describe("ScrapeTool", () => {
     };
     await scrapeTool.execute(options);
 
-    // Check manager constructor mock call correctly
-    // The mock implementation captures the instance, not the constructor directly in this setup.
-    // Remove potentially unreliable constructor check
-    // expect(PipelineManager).toHaveBeenCalledWith(mockDocService, 5);
-
     // Check enqueueJob options
     expect(mockManagerInstance.enqueueJob).toHaveBeenCalledWith(
       "test-lib",
@@ -142,10 +137,10 @@ describe("ScrapeTool", () => {
         url: "http://example.com/docs",
         library: "test-lib",
         version: "1.0.0",
-        subpagesOnly: true, // Default
+        scope: "subpages", // Using new scope option instead of subpagesOnly
+        followRedirects: true, // Default value
         maxPages: 50, // Overridden
         maxDepth: 2, // Overridden
-        // maxConcurrency is NOT passed to enqueueJob anymore
         ignoreErrors: false, // Overridden
       },
     );

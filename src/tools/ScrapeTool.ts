@@ -13,7 +13,19 @@ export interface ScrapeToolOptions {
   options?: {
     maxPages?: number;
     maxDepth?: number;
-    subpagesOnly?: boolean;
+    /**
+     * Defines the allowed crawling boundary relative to the starting URL
+     * - 'subpages': Only crawl URLs on the same hostname and within the same starting path (default)
+     * - 'hostname': Crawl any URL on the same hostname, regardless of path
+     * - 'domain': Crawl any URL on the same top-level domain, including subdomains
+     */
+    scope?: "subpages" | "hostname" | "domain";
+    /**
+     * Controls whether HTTP redirects (3xx responses) should be followed
+     * - When true: Redirects are followed automatically (default)
+     * - When false: A RedirectError is thrown when a 3xx response is received
+     */
+    followRedirects?: boolean;
     maxConcurrency?: number; // Note: Concurrency is now set when PipelineManager is created
     ignoreErrors?: boolean;
   };
@@ -101,7 +113,8 @@ export class ScrapeTool {
       url: url,
       library: library,
       version: internalVersion,
-      subpagesOnly: scraperOptions?.subpagesOnly ?? true,
+      scope: scraperOptions?.scope ?? "subpages",
+      followRedirects: scraperOptions?.followRedirects ?? true,
       maxPages: scraperOptions?.maxPages ?? 100,
       maxDepth: scraperOptions?.maxDepth ?? 3,
       // maxConcurrency is handled by the manager itself now

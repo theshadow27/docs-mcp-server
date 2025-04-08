@@ -1,6 +1,7 @@
 import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import type { UrlNormalizerOptions } from "../../utils/url";
+import { hasSameDomain, hasSameHostname, isSubpath } from "../../utils/url";
 import { HttpFetcher } from "../fetcher";
 import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
@@ -28,11 +29,24 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     }
   }
 
-  private isSubpage(baseUrl: URL, targetUrl: URL): boolean {
+  /**
+   * Determines if a target URL should be followed based on the scope setting.
+   */
+  private isInScope(
+    baseUrl: URL,
+    targetUrl: URL,
+    scope: "subpages" | "hostname" | "domain",
+  ): boolean {
     try {
-      const basePath = baseUrl.origin + baseUrl.pathname;
-      const targetPath = targetUrl.origin + targetUrl.pathname;
-      return targetPath.startsWith(basePath);
+      // First check if the URLs are on the same domain or hostname
+      if (scope === "domain") {
+        return hasSameDomain(baseUrl, targetUrl);
+      }
+      if (scope === "hostname") {
+        return hasSameHostname(baseUrl, targetUrl);
+      }
+      // 'subpages' (default)
+      return hasSameHostname(baseUrl, targetUrl) && isSubpath(baseUrl, targetUrl);
     } catch {
       return false;
     }
@@ -47,10 +61,15 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     const { url } = item;
 
     try {
-      // Pass signal to fetcher within an options object
-      const rawContent = await this.httpFetcher.fetch(url, { signal });
+      // Define fetch options, passing both signal and followRedirects
+      const fetchOptions = {
+        signal,
+        followRedirects: options.followRedirects,
+      };
+
+      // Pass options to fetcher
+      const rawContent = await this.httpFetcher.fetch(url, fetchOptions);
       const processor = this.getProcessor(rawContent.mimeType);
-      // TODO: Consider passing signal to processor if processing is long
       const result = await processor.process(rawContent);
 
       // Filter out links
@@ -58,13 +77,13 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       const links = result.links.filter((link) => {
         try {
           const targetUrl = new URL(link, baseUrl);
-          // Always ensure the target is on the same origin
-          if (targetUrl.origin !== baseUrl.origin) {
-            return false;
-          }
-          // Apply subpagesOnly and custom filter logic
+
+          // Determine scope - use 'subpages' as default
+          const scope = options.scope || "subpages";
+
+          // Apply scope and custom filter logic
           return (
-            (!options.subpagesOnly || this.isSubpage(baseUrl, targetUrl)) &&
+            this.isInScope(baseUrl, targetUrl, scope) &&
             (!this.shouldFollowLinkFn || this.shouldFollowLinkFn(baseUrl, targetUrl))
           );
         } catch {

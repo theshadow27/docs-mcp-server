@@ -27,6 +27,8 @@ export interface FetchOptions {
   timeout?: number;
   /** AbortSignal for cancellation */
   signal?: AbortSignal;
+  /** Whether to follow HTTP redirects (3xx responses) */
+  followRedirects?: boolean;
 }
 
 /**
