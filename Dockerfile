@@ -28,6 +28,7 @@ RUN npm ci --omit=dev
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+RUN ln -s /app/dist/cli.js /app/docs-cli
 
 # Define the data directory environment variable and volume
 ENV DOCS_MCP_STORE_PATH=/data

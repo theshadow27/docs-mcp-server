@@ -26,54 +26,14 @@ The server exposes MCP tools for:
 - Finding appropriate versions (`find_version`).
 - Removing indexed documents (`remove_docs`).
 
-## Usage
+## MCP Integration (Claude Desktop, VS Code, Cline, Roo Code)
 
-Once the package is published to npm (`@arabold/docs-mcp-server`), you can run the server or the companion CLI in two main ways:
-
-### Method 1: Global Installation (Recommended for CLI Usage)
-
-Install the package globally using npm. This makes the `docs-server` and `docs-cli` commands directly available in your terminal.
-
-1.  **Install Globally:**
-    ```bash
-    npm install -g @arabold/docs-mcp-server
-    ```
-2.  **Run the Server:**
-    ```bash
-    docs-server
-    ```
-    _(Note: You'll need to manage environment variables like `OPENAI_API_KEY` yourself when running this way, e.g., by setting them in your shell profile or using a tool like `dotenv`.)_
-3.  **Run the CLI:**
-    ```bash
-    docs-cli <command> [options]
-    ```
-    (See "CLI Command Reference" below for available commands and options.)
-
-This method is convenient if you plan to use the `docs-cli` frequently.
-
-### Method 2: Running with Docker (Recommended for MCP Integration)
-
-Run the server using the pre-built Docker image available on GitHub Container Registry. This provides an isolated environment and simplifies setup.
+Run the server using the pre-built Docker image available on GitHub Container Registry. This is the **recommended approach** for integrating with AI tools like Claude Desktop, Cline, or Roo Code.
 
 1.  **Ensure Docker is installed and running.**
-2.  **Run the Server (e.g., for MCP Integration):**
+2.  **Configure your MCP settings:**
 
-    ```bash
-    docker run -i --rm \
-      -e OPENAI_API_KEY="your-openai-api-key-here" \
-      -v docs-mcp-data:/data \
-      ghcr.io/arabold/docs-mcp-server:latest
-    ```
-
-    - `-i`: Keep STDIN open, crucial for MCP communication over stdio.
-    - `--rm`: Automatically remove the container when it exits.
-    - `-e OPENAI_API_KEY="..."`: **Required.** Set your OpenAI API key.
-    - `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
-    - `ghcr.io/arabold/docs-mcp-server:latest`: Specifies the public Docker image to use.
-
-    This is the recommended approach for integrating with tools like Claude Desktop or Cline.
-
-    **Claude/Cline Configuration Example:**
+    **Claude/Cline/Roo Configuration Example:**
     Add the following configuration block to your MCP settings file (adjust path as needed):
 
     - Cline: `/Users/andrerabold/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
@@ -108,20 +68,32 @@ Run the server using the pre-built Docker image available on GitHub Container Re
 
     Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
 
-3.  **Run the CLI (Requires Docker):**
-    To use the CLI commands, you can run them inside a temporary container:
-    ```bash
-    docker run --rm \
-      -e OPENAI_API_KEY="your-openai-api-key-here" \
-      -v docs-mcp-data:/data \
-      ghcr.io/arabold/docs-mcp-server:latest \
-      npx docs-cli <command> [options]
-    ```
-    (See "CLI Command Reference" below for available commands and options.)
+3.  **That's it!** The server will now be available to your AI assistant, allowing it to scrape, index, and search documentation as needed.
 
-This method is ideal for integrating the server into other tools and ensures a consistent runtime environment.
+The Docker container will run with these settings:
 
-## CLI Command Reference
+- `-i`: Keep STDIN open, crucial for MCP communication over stdio.
+- `--rm`: Automatically remove the container when it exits.
+- `-e OPENAI_API_KEY="..."`: **Required.** Set your OpenAI API key.
+- `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
+
+## CLI Usage
+
+The docs-mcp-server provides a CLI for managing documentation directly. You have two options:
+
+Run CLI commands using the same Docker image:
+
+```bash
+docker run --rm \
+  -e OPENAI_API_KEY="your-openai-api-key-here" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest \
+  docs-cli <command> [options]
+```
+
+(See "CLI Command Reference" below for available commands and options.)
+
+### CLI Command Reference
 
 The `docs-cli` provides commands for managing the documentation index. Access it either via global installation (`docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
 
@@ -140,7 +112,7 @@ docs-cli scrape --help
 docs-cli search --help
 docs-cli find-version --help
 docs-cli remove --help
-docs-cli list-libraries --help
+docs-cli list --help
 ```
 
 ### Scraping Documentation (`scrape`)
@@ -218,12 +190,12 @@ docs-cli find-version <library> [options]
 docs-cli find-version react
 ```
 
-### Listing Libraries (`list-libraries`)
+### Listing Libraries (`list`)
 
 Lists all libraries currently indexed in the store.
 
 ```bash
-docs-cli list-libraries
+docs-cli list
 ```
 
 ### Removing Documentation (`remove`)
