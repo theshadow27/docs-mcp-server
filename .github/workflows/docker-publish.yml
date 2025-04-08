@@ -1,22 +1,28 @@
 # .github/workflows/docker-publish.yml
-name: Docker Publish
+name: Docker Publish on Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*' # Trigger only on version tags like v1.0.0, v1.2.3, etc.
+  release:
+    types: [published] # Trigger when a release is published on GitHub
 
 jobs:
   publish:
     name: Build and Push Docker Image to GHCR
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Needed to check out the code
-      packages: write # Needed to push Docker image to GHCR
+      contents: read      # Needed to check out the code
+      packages: write     # Needed to push Docker image to GHCR
+      id-token: write     # Needed for OIDC (though not strictly used here, good practice)
+      attestations: write # Needed for build attestations
 
     steps:
       - name: Checkout code
+        # Checks out the code for the specific tag associated with the release
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        # Sets up Docker Buildx for multi-platform builds (optional but recommended)
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -30,20 +36,36 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }} # Use ghcr.io/arabold/docs-mcp-server
+          # Extract tags from the release event (github.ref_name contains the tag e.g., v1.4.1)
           tags: |
-            # Extract version number from the Git tag (e.g., v1.2.3 -> 1.2.3)
+            # Get version from tag (e.g., v1.4.1 -> 1.4.1)
             type=semver,pattern={{version}}
-            # Also tag with 'v' prefix (e.g., v1.2.3)
+            # Get tag with v prefix (e.g., v1.4.1)
             type=semver,pattern={{raw}}
-            # Add the 'latest' tag
-            type=raw,value=latest,enable={{is_default_branch}} # Only add latest tag if the tag is on the default branch (usually main) - semantic-release should ensure this
+            # Add major.minor tag (e.g., v1.4)
+            type=semver,pattern=v{{major}}.{{minor}}
+            # Add major tag (e.g., v1)
+            type=semver,pattern=v{{major}}
+            # Add latest tag if this is the latest release (based on release properties)
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        id: push # Add id for attestation step
+        uses: docker/build-push-action@v6 # Use v6 for attestations
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Optional: Build for multiple platforms
+          # platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Generate artifact attestation
+        # Creates a signed attestation linking the build to the source code
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ghcr.io/${{ github.repository }} # Use the same image name
+          subject-digest: ${{ steps.push.outputs.digest }} # Get digest from build-push action
+          push-to-registry: true # Upload attestation to GHCR
