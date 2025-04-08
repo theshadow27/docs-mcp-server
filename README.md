@@ -59,7 +59,7 @@ Run the server using the pre-built Docker image available on GitHub Container Re
     - `-i`: Keep STDIN open, crucial for MCP communication over stdio.
     - `--rm`: Automatically remove the container when it exits.
     - `-e OPENAI_API_KEY="..."`: **Required.** Set your OpenAI API key.
-    - `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume (`docs-mcp-data` is created automatically if it doesn't exist) to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
+    - `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
     - `ghcr.io/arabold/docs-mcp-server:latest`: Specifies the public Docker image to use.
 
     This is the recommended approach for integrating with tools like Claude Desktop or Cline.
