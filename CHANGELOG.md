@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/arabold/docs-mcp-server/compare/v1.4.5...v1.5.0) (2025-04-08)
+
+
+### Bug Fixes
+
+* **ci:** increase allowed footer line length ([afbc62c](https://github.com/arabold/docs-mcp-server/commit/afbc62ca14f65126e39718448563cd795e5b1d6d))
+
+
+### Features
+
+* **scraper:** enhance crawler controls with scope and redirect options ([45d0e93](https://github.com/arabold/docs-mcp-server/commit/45d0e93313ce5ff3eaddac848cd629ace9190418)), closes [#15](https://github.com/arabold/docs-mcp-server/issues/15)
+
 ## [1.4.5](https://github.com/arabold/docs-mcp-server/compare/v1.4.4...v1.4.5) (2025-04-08)
 
 
