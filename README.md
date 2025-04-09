@@ -9,7 +9,7 @@ A MCP server for fetching and searching 3rd party package documentation.
 - 💾 **Efficient Storage:** Store data in SQLite, leveraging `sqlite-vec` for vector search and FTS5 for full-text search.
 - 🔍 **Hybrid Search:** Combine vector and full-text search for relevant results across different library versions.
 - ⚙️ **Job Management:** Handle scraping tasks asynchronously with a robust job queue and management tools (MCP & CLI).
-- 🐳 **Easy Deployment:** Run the server easily using the provided Docker image.
+- 🐳 **Easy Deployment:** Run the server easily using Docker or npx.
 
 ## Overview
 
@@ -26,62 +26,93 @@ The server exposes MCP tools for:
 - Finding appropriate versions (`find_version`).
 - Removing indexed documents (`remove_docs`).
 
-## MCP Integration (Claude Desktop, VS Code, Cline, Roo Code)
+## Running the MCP Server
 
-Run the server using the pre-built Docker image available on GitHub Container Registry. This is the **recommended approach** for integrating with AI tools like Claude Desktop, Cline, or Roo Code.
+There are two ways to run the docs-mcp-server:
 
-1.  **Ensure Docker is installed and running.**
-2.  **Configure your MCP settings:**
+### Option 1: Using Docker (Recommended)
 
-    **Claude/Cline/Roo Configuration Example:**
-    Add the following configuration block to your MCP settings file (adjust path as needed):
+This is the recommended approach for most users. It's easy, straightforward, and doesn't require Node.js to be installed.
 
-    - Cline: `/Users/andrerabold/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-    - Claude Desktop (MacOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
-    - Claude Desktop (Windows): `%APPDATA%/Claude/claude_desktop_config.json`
+1. **Ensure Docker is installed and running.**
+2. **Configure your MCP settings:**
 
-    ```json
-    {
-      "mcpServers": {
-        "docs-mcp-server": {
-          "command": "docker",
-          "args": [
-            "run",
-            "-i",
-            "--rm",
-            "-e",
-            "OPENAI_API_KEY",
-            "-v",
-            "docs-mcp-data:/data",
-            "ghcr.io/arabold/docs-mcp-server:latest"
-          ],
-          "env": {
-            "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
-          },
-          "disabled": false,
-          "autoApprove": []
-        }
-        // ... other servers might be listed here
-      }
-    }
-    ```
+   **Claude/Cline/Roo Configuration Example:**
+   Add the following configuration block to your MCP settings file (adjust path as needed):
 
-    Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
+   ```json
+   {
+     "mcpServers": {
+       "docs-mcp-server": {
+         "command": "docker",
+         "args": [
+           "run",
+           "-i",
+           "--rm",
+           "-e",
+           "OPENAI_API_KEY",
+           "-v",
+           "docs-mcp-data:/data",
+           "ghcr.io/arabold/docs-mcp-server:latest"
+         ],
+         "env": {
+           "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
+         },
+         "disabled": false,
+         "autoApprove": []
+       }
+     }
+   }
+   ```
 
-3.  **That's it!** The server will now be available to your AI assistant, allowing it to scrape, index, and search documentation as needed.
+   Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
 
-The Docker container will run with these settings:
+3. **That's it!** The server will now be available to your AI assistant.
+
+**Docker Container Settings:**
 
 - `-i`: Keep STDIN open, crucial for MCP communication over stdio.
 - `--rm`: Automatically remove the container when it exits.
-- `-e OPENAI_API_KEY="..."`: **Required.** Set your OpenAI API key.
-- `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to the container's `/data` directory, where the database is stored. You can replace `docs-mcp-data` with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
+- `-e OPENAI_API_KEY`: **Required.** Set your OpenAI API key.
+- `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to store the database. You can replace with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
 
-## CLI Usage
+### Option 2: Using npx
 
-The docs-mcp-server provides a CLI for managing documentation directly. You have two options:
+This approach is recommended when you need local file access (e.g., indexing documentation from your local file system). While this can also be achieved by mounting paths into a Docker container, using npx is simpler but requires a Node.js installation.
 
-Run CLI commands using the same Docker image:
+1. **Ensure Node.js is installed.**
+2. **Configure your MCP settings:**
+
+   **Claude/Cline/Roo Configuration Example:**
+   Add the following configuration block to your MCP settings file:
+
+   ```json
+   {
+     "mcpServers": {
+       "docs-mcp-server": {
+         "command": "npx",
+         "args": ["-y", "--package=@arabold/docs-mcp-server", "docs-server"],
+         "env": {
+           "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
+         },
+         "disabled": false,
+         "autoApprove": []
+       }
+     }
+   }
+   ```
+
+   Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
+
+3. **That's it!** The server will now be available to your AI assistant.
+
+## Using the CLI
+
+You can use the CLI to manage documentation directly, either via Docker or npx. **Important: Use the same method (Docker or npx) for both the server and CLI to ensure access to the same indexed documentation.**
+
+### Using Docker CLI
+
+If you're running the server with Docker, use Docker for the CLI as well:
 
 ```bash
 docker run --rm \
@@ -91,11 +122,23 @@ docker run --rm \
   docs-cli <command> [options]
 ```
 
+Make sure to use the same volume name (`docs-mcp-data` in this example) as you did for the server.
+
+### Using npx CLI
+
+If you're running the server with npx, use npx for the CLI as well:
+
+```bash
+npx -y --package=@arabold/docs-mcp-server docs-cli <command> [options]
+```
+
+The npx approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and CLI.
+
 (See "CLI Command Reference" below for available commands and options.)
 
 ### CLI Command Reference
 
-The `docs-cli` provides commands for managing the documentation index. Access it either via global installation (`docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
+The `docs-cli` provides commands for managing the documentation index. Access it either via Docker (`docker run -v docs-mcp-data:/data ghcr.io/arabold/docs-mcp-server:latest docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
 
 **General Help:**
 
@@ -136,11 +179,8 @@ docs-cli scrape <library> <url> [options]
 **Examples:**
 
 ```bash
-# Scrape React 18.2.0 docs (assuming global install)
+# Scrape React 18.2.0 docs
 docs-cli scrape react --version 18.2.0 https://react.dev/
-
-# Scrape React docs without a specific version (using npx)
-npx -y --package=@arabold/docs-mcp-server docs-cli scrape react https://react.dev/
 ```
 
 ### Searching Documentation (`search`)
@@ -166,9 +206,6 @@ docs-cli search <library> <query> [options]
 ```bash
 # Search latest React docs for 'hooks'
 docs-cli search react 'hooks'
-
-# Search React 18.x docs for 'hooks' (using npx)
-npx -y --package=@arabold/docs-mcp-server docs-cli search react --version 18.x 'hooks'
 ```
 
 ### Finding Available Versions (`find-version`)
