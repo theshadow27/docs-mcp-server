@@ -216,12 +216,6 @@ export class DocumentStore {
     if (this.modelDimension > this.dbDimension) {
       throw new DimensionError(modelName, this.modelDimension, this.dbDimension);
     }
-
-    console.log(
-      `[DocumentStore] Initialized OpenAIEmbeddings with model="${modelName}", ` +
-        `dimension=${this.modelDimension} (padded to ${this.dbDimension}), ` +
-        `baseURL="${baseURL || "default"}"`,
-    );
   }
 
   /**
