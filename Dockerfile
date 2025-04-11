@@ -30,13 +30,34 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 RUN ln -s /app/dist/cli.js /app/docs-cli
 
-# Define the data directory environment variable and volume
-# Environment variables
-ENV DOCS_MCP_STORE_PATH=/data
-ENV OPENAI_API_BASE=
-ENV OPENAI_ORG_ID=
-ENV DOCS_MCP_EMBEDDING_MODEL=
+# Define environment variables with defaults
+# OpenAI (default provider)
+ENV OPENAI_API_BASE=""
+ENV OPENAI_ORG_ID=""
 
+# Google Cloud - Vertex AI
+ENV GOOGLE_APPLICATION_CREDENTIALS=""
+
+# Google Generative AI (Gemini)
+ENV GOOGLE_API_KEY=""
+
+# AWS Bedrock
+ENV AWS_ACCESS_KEY_ID=""
+ENV AWS_SECRET_ACCESS_KEY=""
+ENV AWS_REGION=""
+ENV BEDROCK_AWS_REGION=""
+
+# Azure OpenAI
+ENV AZURE_OPENAI_API_KEY=""
+ENV AZURE_OPENAI_API_INSTANCE_NAME=""
+ENV AZURE_OPENAI_API_DEPLOYMENT_NAME=""
+ENV AZURE_OPENAI_API_VERSION=""
+
+# Core configuration
+ENV DOCS_MCP_STORE_PATH=/data
+ENV DOCS_MCP_EMBEDDING_MODEL=""
+
+# Define volumes
 VOLUME /data
 
 # Set the command to run the application

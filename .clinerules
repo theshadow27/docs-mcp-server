@@ -6,9 +6,8 @@
 - ALWAYS use the latest version of the programming language and libraries.
 - ALWAYS prefer the simplest solution.
 - When importing a relative path, avoid using file extensions like ".js" and ".ts".
-- ALWAYS add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning. Avoid documenting individual parameters or return values if their use can easily be derived from their name.
-- ALWAYS format Git commit messages as markdown.
-- ALWAYS adhere to the Conventional Commits specification for all Git commit messages
+- ALWAYS add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning.
+- NEVER document individual parameters or return values if their use can easily be derived from their name.
 
 ## Architecture Documentation Guidelines
 
@@ -19,3 +18,12 @@ Keep `ARCHITECTURE.md` high-level:
 - Use simple MermaidJS diagrams for visualization
 - Put implementation details in source code
 - Update when architecture changes
+
+## Git
+
+- The repository owner and name is `arabold/docs-mcp-server` on GitHub.
+- AWLAYS create new branches locally first before pushing them to the GitHub repository.
+- ALWAYS format Git commit messages as markdown.
+- ALWAYS adhere to the Conventional Commits specification for all Git commit messages
+- ALWAYS prefix branch names with the type of work being done, such as `feature/`, `bugfix/`, `chore/`, etc.
+- ALWAYS include the issue number in the branch name, such as `feature/1234-issue-name`.

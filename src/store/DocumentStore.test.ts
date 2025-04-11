@@ -1,15 +1,19 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // --- Mocking Setup ---
 
-// Mock OpenAIEmbeddings
-const mockEmbedQuery = vi.fn().mockResolvedValue([0.1, 0.2, 0.3]);
-const mockEmbedDocuments = vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]); // Keep this if addDocuments is tested elsewhere
+// Mock the embedding factory
+vi.mock("./embeddings/EmbeddingFactory");
 
-// Mock the module to export a mock function for the class constructor
-vi.mock("@langchain/openai", () => ({
-  OpenAIEmbeddings: vi.fn(), // Mock the class export as a vi.fn()
-}));
+// Mock embedding functions
+const mockEmbedQuery = vi.fn().mockResolvedValue([0.1, 0.2, 0.3]);
+const mockEmbedDocuments = vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]);
+
+import { createEmbeddingModel } from "./embeddings/EmbeddingFactory";
+(createEmbeddingModel as Mock).mockReturnValue({
+  embedQuery: vi.fn(),
+  embedDocuments: vi.fn(),
+});
 
 // Mock better-sqlite3
 const mockStatementAll = vi.fn().mockReturnValue([]);
@@ -41,13 +45,8 @@ vi.mock("sqlite-vec", () => ({
 
 // --- Test Suite ---
 
-// Import the mocked constructor function
-import { OpenAIEmbeddings } from "@langchain/openai";
 // Import DocumentStore AFTER mocks are defined
 import { DocumentStore } from "./DocumentStore";
-
-// Cast OpenAIEmbeddings to the correct Vitest mock type for configuration
-const MockedOpenAIEmbeddingsConstructor = OpenAIEmbeddings as ReturnType<typeof vi.fn>;
 
 describe("DocumentStore", () => {
   let documentStore: DocumentStore;
@@ -55,11 +54,11 @@ describe("DocumentStore", () => {
   beforeEach(async () => {
     vi.clearAllMocks(); // Clear call history etc.
 
-    // Configure the mock constructor's implementation for THIS test run
-    MockedOpenAIEmbeddingsConstructor.mockImplementation(() => ({
+    // Reset the mock factory implementation for this test run
+    (createEmbeddingModel as ReturnType<typeof vi.fn>).mockReturnValue({
       embedQuery: mockEmbedQuery,
       embedDocuments: mockEmbedDocuments,
-    }));
+    });
     mockPrepare.mockReturnValue(mockStatement); // <-- Re-configure prepare mock return value
 
     // Reset embedQuery to handle initialization vector

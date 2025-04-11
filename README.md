@@ -28,14 +28,43 @@ The server exposes MCP tools for:
 
 ## Configuration
 
-The following environment variables are supported to configure the OpenAI API and embedding behavior:
+The following environment variables are supported to configure the embedding model behavior:
 
-- `OPENAI_API_KEY`: **Required.** Your OpenAI API key for generating embeddings.
-- `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID (handled automatically by LangChain if set).
-- `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI API (e.g., for Azure OpenAI or compatible APIs).
-- `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Embedding model name (defaults to "text-embedding-3-small"). Must produce vectors with ≤1536 dimensions. Smaller dimensions are automatically padded with zeros.
+### Embedding Model Configuration
 
-The database schema uses a fixed dimension of 1536 for embedding vectors. Models that produce larger vectors are not supported and will cause an error. Models with smaller vectors (e.g., older embedding models) are automatically padded with zeros to match the required dimension.
+- `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Format: `provider:model_name` or just `model_name` (defaults to `text-embedding-3-small`). Supported providers and their required environment variables:
+
+  - `openai` (default): Uses OpenAI's embedding models
+
+    - `OPENAI_API_KEY`: **Required.** Your OpenAI API key
+    - `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID
+    - `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI-compatible APIs (e.g., Ollama, Azure OpenAI)
+
+  - `vertex`: Uses Google Cloud Vertex AI embeddings
+
+    - `GOOGLE_APPLICATION_CREDENTIALS`: **Required.** Path to service account JSON key file
+
+  - `gemini`: Uses Google Generative AI (Gemini) embeddings
+
+    - `GOOGLE_API_KEY`: **Required.** Your Google API key
+
+  - `aws`: Uses AWS Bedrock embeddings
+
+    - `AWS_ACCESS_KEY_ID`: **Required.** AWS access key
+    - `AWS_SECRET_ACCESS_KEY`: **Required.** AWS secret key
+    - `AWS_REGION` or `BEDROCK_AWS_REGION`: **Required.** AWS region for Bedrock
+
+  - `microsoft`: Uses Azure OpenAI embeddings
+    - `AZURE_OPENAI_API_KEY`: **Required.** Azure OpenAI API key
+    - `AZURE_OPENAI_API_INSTANCE_NAME`: **Required.** Azure instance name
+    - `AZURE_OPENAI_API_DEPLOYMENT_NAME`: **Required.** Azure deployment name
+    - `AZURE_OPENAI_API_VERSION`: **Required.** Azure API version
+
+### Vector Dimensions
+
+The database schema uses a fixed dimension of 1536 for embedding vectors. Only models that produce vectors with dimension ≤ 1536 are supported, except for certain providers (like Gemini) that support dimension reduction.
+
+For OpenAI-compatible APIs (like Ollama), use the `openai` provider with `OPENAI_API_BASE` pointing to your endpoint.
 
 These variables can be set regardless of how you run the server (Docker, npx, or from source).
 
@@ -92,10 +121,54 @@ This is the recommended approach for most users. It's easy, straightforward, and
 Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed to the container using the `-e` flag. For example:
 
 ```bash
+# Example 1: Using OpenAI embeddings (default)
 docker run -i --rm \
   -e OPENAI_API_KEY="your-key-here" \
-  -e DOCS_MCP_EMBEDDING_MODEL="text-embedding-3-large" \
-  -e OPENAI_API_BASE="http://your-api-endpoint" \
+  -e DOCS_MCP_EMBEDDING_MODEL="text-embedding-3-small" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest
+
+# Example 2: Using OpenAI-compatible API (like Ollama)
+docker run -i --rm \
+  -e OPENAI_API_KEY="your-key-here" \
+  -e OPENAI_API_BASE="http://localhost:11434/v1" \
+  -e DOCS_MCP_EMBEDDING_MODEL="embeddings" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest
+
+# Example 3a: Using Google Cloud Vertex AI embeddings
+docker run -i --rm \
+  -e OPENAI_API_KEY="your-openai-key" \  # Keep for fallback to OpenAI
+  -e DOCS_MCP_EMBEDDING_MODEL="vertex:text-embedding-004" \
+  -e GOOGLE_APPLICATION_CREDENTIALS="/app/gcp-key.json" \
+  -v docs-mcp-data:/data \
+  -v /path/to/gcp-key.json:/app/gcp-key.json:ro \
+  ghcr.io/arabold/docs-mcp-server:latest
+
+# Example 3b: Using Google Generative AI (Gemini) embeddings
+docker run -i --rm \
+  -e OPENAI_API_KEY="your-openai-key" \  # Keep for fallback to OpenAI
+  -e DOCS_MCP_EMBEDDING_MODEL="gemini:embedding-001" \
+  -e GOOGLE_API_KEY="your-google-api-key" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest
+
+# Example 4: Using AWS Bedrock embeddings
+docker run -i --rm \
+  -e AWS_ACCESS_KEY_ID="your-aws-key" \
+  -e AWS_SECRET_ACCESS_KEY="your-aws-secret" \
+  -e AWS_REGION="us-east-1" \
+  -e DOCS_MCP_EMBEDDING_MODEL="aws:amazon.titan-embed-text-v1" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest
+
+# Example 5: Using Azure OpenAI embeddings
+docker run -i --rm \
+  -e AZURE_OPENAI_API_KEY="your-azure-key" \
+  -e AZURE_OPENAI_API_INSTANCE_NAME="your-instance" \
+  -e AZURE_OPENAI_API_DEPLOYMENT_NAME="your-deployment" \
+  -e AZURE_OPENAI_API_VERSION="2024-02-01" \
+  -e DOCS_MCP_EMBEDDING_MODEL="microsoft:text-embedding-ada-002" \
   -v docs-mcp-data:/data \
   ghcr.io/arabold/docs-mcp-server:latest
 ```

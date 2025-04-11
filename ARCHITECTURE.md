@@ -153,6 +153,63 @@ graph TD
 
 The project uses SQLite for document storage, providing a lightweight and efficient database solution that requires no separate server setup.
 
+#### Embedding Generation
+
+Document embeddings are generated using a flexible provider system implemented in `src/store/embeddings/EmbeddingFactory.ts`. This factory supports multiple embedding providers through LangChain.js integrations:
+
+```mermaid
+graph TD
+    subgraph Input
+        EM[DOCS_MCP_EMBEDDING_MODEL]
+        DC[Document Content]
+    end
+
+    subgraph EmbeddingFactory
+        P[Parse provider:model]
+        PV[Provider Selection]
+        Config[Provider Configuration]
+        LangChain[LangChain Integration]
+    end
+
+    subgraph Providers
+        OpenAI[OpenAI Embeddings]
+        VertexAI[Google Vertex AI]
+        Bedrock[AWS Bedrock]
+        Azure[Azure OpenAI]
+    end
+
+    subgraph Output
+        Vec[1536d Vector]
+        Pad[Zero Padding if needed]
+    end
+
+    EM --> P
+    P --> PV
+    PV --> Config
+    Config --> LangChain
+    DC --> LangChain
+
+    LangChain --> |provider selection| OpenAI
+    LangChain --> |provider selection| VertexAI
+    LangChain --> |provider selection| Bedrock
+    LangChain --> |provider selection| Azure
+
+    OpenAI & VertexAI & Bedrock & Azure --> Vec
+    Vec --> |if dimension < 1536| Pad
+```
+
+The factory:
+
+- Parses the `DOCS_MCP_EMBEDDING_MODEL` environment variable to determine the provider and model
+- Configures the appropriate LangChain embeddings class based on provider-specific environment variables
+- Ensures consistent vector dimensions through the `FixedDimensionEmbeddings` wrapper:
+  - Models producing vectors < 1536 dimensions: Padded with zeros
+  - Models with MRL support (e.g., Gemini): Safely truncated to 1536 dimensions
+  - Other models producing vectors > 1536: Not supported, throws error
+- Maintains a fixed database dimension of 1536 for all embeddings for compatibility with `sqlite-vec`
+
+This design allows easy addition of new embedding providers while maintaining consistent vector dimensions in the database.
+
 **Database Location:** The application determines the database file (`documents.db`) location dynamically:
 
 1. It first checks for a `.store` directory in the current working directory (`process.cwd()`). If `.store/documents.db` exists, it uses this path. This prioritizes local development databases.
@@ -250,6 +307,44 @@ This hierarchy ensures:
 3. **Extensibility**
    - Easy to add new tools
    - Simple to add new interfaces (e.g., REST API) using same tools
+
+## Testing Conventions
+
+This section outlines conventions and best practices for writing tests within this project.
+
+### Mocking with Vitest
+
+When mocking modules or functions using `vitest`, it's crucial to follow a specific order due to how `vi.mock` hoisting works. `vi.mock` calls are moved to the top of the file before any imports. This means you cannot define helper functions _before_ `vi.mock` and then use them _within_ the mock setup directly.
+
+To correctly mock dependencies, follow these steps:
+
+1.  **Declare the Mock:** Call `vi.mock('./path/to/module-to-mock')` at the top of your test file, before any imports or other code.
+2.  **Define Mock Implementations:** _After_ the `vi.mock` call, define any helper functions, variables, or mock implementations you'll need.
+3.  **Import the Actual Module:** Import the specific functions or classes you intend to mock from the original module.
+4.  **Apply the Mock:** Use the defined mock implementations to replace the behavior of the imported functions/classes. You might need to cast the imported item as a `Mock` type (`import { type Mock } from 'vitest'`).
+
+**Example Structure:**
+
+```typescript
+import { vi, type Mock } from "vitest";
+
+// 1. Declare the mock (hoisted to top)
+vi.mock("./dependency");
+
+// 2. Define mock function/variable *after* vi.mock
+const mockImplementation = vi.fn(() => "mocked result");
+
+// 3. Import the actual function/class *after* defining mocks
+import { functionToMock } from "./dependency";
+
+// 4. Apply the mock implementation
+(functionToMock as Mock).mockImplementation(mockImplementation);
+
+// ... rest of your test code using the mocked functionToMock ...
+// expect(functionToMock()).toBe('mocked result');
+```
+
+This structure ensures that mocks are set up correctly before the modules that depend on them are imported and used in your tests.
 
 ## Future Considerations
 

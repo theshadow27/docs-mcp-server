@@ -1,5 +1,5 @@
 import type { Document } from "@langchain/core/documents";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import type { Embeddings } from "@langchain/core/embeddings";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import type { DocumentMetadata } from "../types";
@@ -26,7 +26,7 @@ interface RankedResult extends RawSearchResult {
  */
 export class DocumentStore {
   private readonly db: DatabaseType;
-  private embeddings!: OpenAIEmbeddings;
+  private embeddings!: Embeddings;
   private readonly dbDimension: number = 1536; // Fixed dimension from schema.ts
   private modelDimension!: number;
   private statements!: {
@@ -187,34 +187,29 @@ export class DocumentStore {
   /**
    * Initializes embeddings client using environment variables for configuration.
    *
-   * Supports:
-   * - OPENAI_API_KEY (handled automatically by LangChain)
-   * - OPENAI_ORG_ID (handled automatically by LangChain)
-   * - DOCS_MCP_EMBEDDING_MODEL (optional, defaults to "text-embedding-3-small")
-   * - OPENAI_API_BASE (optional)
+   * The embedding model is configured using DOCS_MCP_EMBEDDING_MODEL environment variable.
+   * Format: "provider:model_name" (e.g., "google:text-embedding-004") or just "model_name"
+   * for OpenAI (default).
+   *
+   * Supported providers and their required environment variables:
+   * - openai: OPENAI_API_KEY (and optionally OPENAI_API_BASE, OPENAI_ORG_ID)
+   * - google: GOOGLE_APPLICATION_CREDENTIALS (path to service account JSON)
+   * - aws: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION (or BEDROCK_AWS_REGION)
+   * - microsoft: Azure OpenAI credentials (AZURE_OPENAI_API_*)
    */
   private async initializeEmbeddings(): Promise<void> {
-    const modelName = process.env.DOCS_MCP_EMBEDDING_MODEL || "text-embedding-3-small";
-    const baseURL = process.env.OPENAI_API_BASE;
+    const modelSpec = process.env.DOCS_MCP_EMBEDDING_MODEL || "text-embedding-3-small";
 
-    const config: ConstructorParameters<typeof OpenAIEmbeddings>[0] = {
-      stripNewLines: true,
-      batchSize: 512,
-      modelName,
-    };
-
-    if (baseURL) {
-      config.configuration = { baseURL };
-    }
-
-    this.embeddings = new OpenAIEmbeddings(config);
+    // Import dynamically to avoid circular dependencies
+    const { createEmbeddingModel } = await import("./embeddings/EmbeddingFactory");
+    this.embeddings = createEmbeddingModel(modelSpec);
 
     // Determine the model's actual dimension by embedding a test string
     const testVector = await this.embeddings.embedQuery("test");
     this.modelDimension = testVector.length;
 
     if (this.modelDimension > this.dbDimension) {
-      throw new DimensionError(modelName, this.modelDimension, this.dbDimension);
+      throw new DimensionError(modelSpec, this.modelDimension, this.dbDimension);
     }
   }
 
