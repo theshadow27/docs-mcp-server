@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/arabold/docs-mcp-server/compare/v1.6.0...v1.7.0) (2025-04-11)
+
+
+### Features
+
+* **embeddings:** add support for multiple embedding providers ([e197bec](https://github.com/arabold/docs-mcp-server/commit/e197beca104192a77793c2a585b74bdfaa0da53e)), closes [#28](https://github.com/arabold/docs-mcp-server/issues/28)
+
 # [1.6.0](https://github.com/arabold/docs-mcp-server/compare/v1.5.0...v1.6.0) (2025-04-11)
 
 
