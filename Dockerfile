@@ -30,13 +30,10 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 RUN ln -s /app/dist/cli.js /app/docs-cli
 
-# Define the data directory environment variable and volume
-# Environment variables
+# Set data directory for the container
 ENV DOCS_MCP_STORE_PATH=/data
-ENV OPENAI_API_BASE=
-ENV OPENAI_ORG_ID=
-ENV DOCS_MCP_EMBEDDING_MODEL=
 
+# Define volumes
 VOLUME /data
 
 # Set the command to run the application

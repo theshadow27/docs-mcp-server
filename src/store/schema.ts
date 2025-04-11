@@ -1,3 +1,6 @@
+/** Default vector dimension used across the application */
+export const VECTOR_DIMENSION = 1536;
+
 // Main table and index creation SQL
 export const createTablesSQL = `
   -- Documents table
@@ -20,7 +23,7 @@ export const createTablesSQL = `
   CREATE VIRTUAL TABLE IF NOT EXISTS documents_vec USING vec0(
     library TEXT NOT NULL,
     version TEXT NOT NULL,
-    embedding FLOAT[1536]
+    embedding FLOAT[${VECTOR_DIMENSION}]
   );
 
   -- Create FTS5 virtual table
