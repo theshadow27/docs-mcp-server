@@ -1,3 +1,12 @@
+# [1.6.0](https://github.com/arabold/docs-mcp-server/compare/v1.5.0...v1.6.0) (2025-04-11)
+
+
+### Features
+
+* **#26:** add environment variables to Dockerfile ([51b7059](https://github.com/arabold/docs-mcp-server/commit/51b7059147b846c5a85bebd6226ec63ef99b00e7)), closes [#26](https://github.com/arabold/docs-mcp-server/issues/26)
+* **#26:** handle different embedding model dimensions via padding ([f712c9b](https://github.com/arabold/docs-mcp-server/commit/f712c9b0e43c2d90e2a9ad68f5cc1883af7b0a2a)), closes [#26](https://github.com/arabold/docs-mcp-server/issues/26)
+* **#26:** support OpenAI API base URL and model name config ([66b70bb](https://github.com/arabold/docs-mcp-server/commit/66b70bba1b677cd20db85180d796b901583ca3b8)), closes [#26](https://github.com/arabold/docs-mcp-server/issues/26)
+
 # [1.5.0](https://github.com/arabold/docs-mcp-server/compare/v1.4.5...v1.5.0) (2025-04-08)
 
 
