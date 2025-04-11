@@ -8,6 +8,7 @@ import {
   OpenAIEmbeddings,
   type OpenAIEmbeddingsParams,
 } from "@langchain/openai";
+import { VECTOR_DIMENSION } from "../schema";
 import { FixedDimensionEmbeddings } from "./FixedDimensionEmbeddings";
 
 /**
@@ -105,7 +106,12 @@ export function createEmbeddingModel(providerAndModel: string): Embeddings {
         apiKey: process.env.GOOGLE_API_KEY,
         model: model, // e.g., "gemini-embedding-exp-03-07"
       });
-      return new FixedDimensionEmbeddings(baseEmbeddings, 1536, providerAndModel, true);
+      return new FixedDimensionEmbeddings(
+        baseEmbeddings,
+        VECTOR_DIMENSION,
+        providerAndModel,
+        true,
+      );
     }
 
     case "aws": {

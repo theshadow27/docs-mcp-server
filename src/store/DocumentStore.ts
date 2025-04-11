@@ -4,7 +4,7 @@ import Database, { type Database as DatabaseType } from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import type { DocumentMetadata } from "../types";
 import { ConnectionError, DimensionError, StoreError } from "./errors";
-import { createTablesSQL } from "./schema";
+import { VECTOR_DIMENSION, createTablesSQL } from "./schema";
 import { type DbDocument, type DbQueryResult, mapDbDocumentToDocument } from "./types";
 
 interface RawSearchResult extends DbDocument {
@@ -27,7 +27,7 @@ interface RankedResult extends RawSearchResult {
 export class DocumentStore {
   private readonly db: DatabaseType;
   private embeddings!: Embeddings;
-  private readonly dbDimension: number = 1536; // Fixed dimension from schema.ts
+  private readonly dbDimension: number = VECTOR_DIMENSION;
   private modelDimension!: number;
   private statements!: {
     getById: Database.Statement;

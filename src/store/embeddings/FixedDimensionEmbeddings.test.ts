@@ -1,6 +1,7 @@
 import { Embeddings } from "@langchain/core/embeddings";
 import { describe, expect, test } from "vitest";
 import { DimensionError } from "../errors";
+import { VECTOR_DIMENSION } from "../schema";
 import { FixedDimensionEmbeddings } from "./FixedDimensionEmbeddings";
 
 // Mock embedding models that produce vectors of different sizes
@@ -19,7 +20,7 @@ class MockBaseEmbeddings extends Embeddings {
 }
 
 describe("FixedDimensionEmbeddings", () => {
-  const targetDimension = 1536;
+  const targetDimension = VECTOR_DIMENSION;
 
   test("should pass through vectors of correct dimension", async () => {
     const base = new MockBaseEmbeddings(targetDimension);

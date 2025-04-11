@@ -1,4 +1,5 @@
 import { type Mock, afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { VECTOR_DIMENSION } from "./schema";
 
 // --- Mocking Setup ---
 
@@ -62,7 +63,7 @@ describe("DocumentStore", () => {
     mockPrepare.mockReturnValue(mockStatement); // <-- Re-configure prepare mock return value
 
     // Reset embedQuery to handle initialization vector
-    mockEmbedQuery.mockResolvedValue(new Array(1536).fill(0.1));
+    mockEmbedQuery.mockResolvedValue(new Array(VECTOR_DIMENSION).fill(0.1));
 
     // Now create the store and initialize.
     // initialize() will call 'new OpenAIEmbeddings()', which uses our fresh mock implementation.
@@ -159,9 +160,9 @@ describe("DocumentStore", () => {
   });
 
   describe("Embedding Model Dimensions", () => {
-    it("should accept a model that produces 1536-dimensional vectors", async () => {
-      // Mock a 1536-dimensional vector
-      mockEmbedQuery.mockResolvedValueOnce(new Array(1536).fill(0.1));
+    it("should accept a model that produces ${VECTOR_DIMENSION}-dimensional vectors", async () => {
+      // Mock a ${VECTOR_DIMENSION}-dimensional vector
+      mockEmbedQuery.mockResolvedValueOnce(new Array(VECTOR_DIMENSION).fill(0.1));
       documentStore = new DocumentStore(":memory:");
       await expect(documentStore.initialize()).resolves.not.toThrow();
     });
@@ -174,7 +175,7 @@ describe("DocumentStore", () => {
       documentStore = new DocumentStore(":memory:");
       await documentStore.initialize();
 
-      // Should pad to 1536 when inserting
+      // Should pad to ${VECTOR_DIMENSION} when inserting
       const doc = {
         pageContent: "test content",
         metadata: { title: "test", url: "http://test.com", path: ["test"] },
@@ -186,11 +187,13 @@ describe("DocumentStore", () => {
       ).resolves.not.toThrow();
     });
 
-    it("should reject models that produce vectors larger than 1536 dimensions", async () => {
+    it("should reject models that produce vectors larger than ${VECTOR_DIMENSION} dimensions", async () => {
       // Mock a 3072-dimensional vector (like text-embedding-3-large)
       mockEmbedQuery.mockResolvedValueOnce(new Array(3072).fill(0.1));
       documentStore = new DocumentStore(":memory:");
-      await expect(documentStore.initialize()).rejects.toThrow(/exceeds.*1536/);
+      await expect(documentStore.initialize()).rejects.toThrow(
+        new RegExp(`exceeds.*${VECTOR_DIMENSION}`),
+      );
     });
 
     it("should pad both document and query vectors consistently", async () => {
@@ -223,11 +226,11 @@ describe("DocumentStore", () => {
       );
       const searchCall = mockStatementAll.mock.lastCall;
 
-      // Both vectors should be stringified arrays of length 1536
+      // Both vectors should be stringified arrays of length ${VECTOR_DIMENSION}
       const insertVector = JSON.parse(insertCall?.[3] || "[]");
       const searchVector = JSON.parse(searchCall?.[2] || "[]");
-      expect(insertVector.length).toBe(1536);
-      expect(searchVector.length).toBe(1536);
+      expect(insertVector.length).toBe(VECTOR_DIMENSION);
+      expect(searchVector.length).toBe(VECTOR_DIMENSION);
     });
   });
 });
