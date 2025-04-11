@@ -4,12 +4,12 @@ A MCP server for fetching and searching 3rd party package documentation.
 
 ## ✨ Key Features
 
-- 🌐 **Scrape & Index:** Fetch documentation from web sources or local files.
-- 🧠 **Smart Processing:** Utilize semantic splitting and OpenAI embeddings for meaningful content chunks.
-- 💾 **Efficient Storage:** Store data in SQLite, leveraging `sqlite-vec` for vector search and FTS5 for full-text search.
-- 🔍 **Hybrid Search:** Combine vector and full-text search for relevant results across different library versions.
-- ⚙️ **Job Management:** Handle scraping tasks asynchronously with a robust job queue and management tools (MCP & CLI).
-- 🐳 **Easy Deployment:** Run the server easily using Docker or npx.
+- 🌐 **Versatile Scraping:** Fetch documentation from diverse sources like websites, GitHub, npm, PyPI, or local files.
+- 🧠 **Intelligent Processing:** Automatically split content semantically and generate embeddings using your choice of models (OpenAI, Google Gemini, Azure OpenAI, AWS Bedrock, Ollama, and more).
+- 💾 **Optimized Storage:** Leverage SQLite with `sqlite-vec` for efficient vector storage and FTS5 for robust full-text search.
+- 🔍 **Powerful Hybrid Search:** Combine vector similarity and full-text search across different library versions for highly relevant results.
+- ⚙️ **Asynchronous Job Handling:** Manage scraping and indexing tasks efficiently with a background job queue and MCP/CLI tools.
+- 🐳 **Simple Deployment:** Get up and running quickly using Docker or npx.
 
 ## Overview
 
