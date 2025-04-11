@@ -3,7 +3,7 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import type { DocumentMetadata } from "../types";
-import { ConnectionError, StoreError } from "./errors";
+import { ConnectionError, DimensionError, StoreError } from "./errors";
 import { createTablesSQL } from "./schema";
 import { type DbDocument, type DbQueryResult, mapDbDocumentToDocument } from "./types";
 
@@ -27,6 +27,8 @@ interface RankedResult extends RawSearchResult {
 export class DocumentStore {
   private readonly db: DatabaseType;
   private embeddings!: OpenAIEmbeddings;
+  private readonly dbDimension: number = 1536; // Fixed dimension from schema.ts
+  private modelDimension!: number;
   private statements!: {
     getById: Database.Statement;
     insertDocument: Database.Statement;
@@ -167,14 +169,53 @@ export class DocumentStore {
   }
 
   /**
-   * Initializes embeddings client
+   * Pads a vector to the fixed database dimension by appending zeros.
+   * Throws an error if the input vector is longer than the database dimension.
    */
-  private initializeEmbeddings(): void {
-    this.embeddings = new OpenAIEmbeddings({
-      modelName: "text-embedding-3-small",
+  private padVector(vector: number[]): number[] {
+    if (vector.length > this.dbDimension) {
+      throw new Error(
+        `Vector dimension ${vector.length} exceeds database dimension ${this.dbDimension}`,
+      );
+    }
+    if (vector.length === this.dbDimension) {
+      return vector;
+    }
+    return [...vector, ...new Array(this.dbDimension - vector.length).fill(0)];
+  }
+
+  /**
+   * Initializes embeddings client using environment variables for configuration.
+   *
+   * Supports:
+   * - OPENAI_API_KEY (handled automatically by LangChain)
+   * - OPENAI_ORG_ID (handled automatically by LangChain)
+   * - DOCS_MCP_EMBEDDING_MODEL (optional, defaults to "text-embedding-3-small")
+   * - OPENAI_API_BASE (optional)
+   */
+  private async initializeEmbeddings(): Promise<void> {
+    const modelName = process.env.DOCS_MCP_EMBEDDING_MODEL || "text-embedding-3-small";
+    const baseURL = process.env.OPENAI_API_BASE;
+
+    const config: ConstructorParameters<typeof OpenAIEmbeddings>[0] = {
       stripNewLines: true,
       batchSize: 512,
-    });
+      modelName,
+    };
+
+    if (baseURL) {
+      config.configuration = { baseURL };
+    }
+
+    this.embeddings = new OpenAIEmbeddings(config);
+
+    // Determine the model's actual dimension by embedding a test string
+    const testVector = await this.embeddings.embedQuery("test");
+    this.modelDimension = testVector.length;
+
+    if (this.modelDimension > this.dbDimension) {
+      throw new DimensionError(modelName, this.modelDimension, this.dbDimension);
+    }
   }
 
   /**
@@ -202,9 +243,13 @@ export class DocumentStore {
       // 3. Initialize prepared statements
       this.prepareStatements();
 
-      // 4. Initialize embeddings client
-      this.initializeEmbeddings();
+      // 4. Initialize embeddings client (await to catch errors)
+      await this.initializeEmbeddings();
     } catch (error) {
+      // Re-throw StoreError directly, wrap others in ConnectionError
+      if (error instanceof StoreError) {
+        throw error;
+      }
       throw new ConnectionError("Failed to initialize database connection", error);
     }
   }
@@ -281,7 +326,8 @@ export class DocumentStore {
         const header = `<title>${doc.metadata.title}</title>\n<url>${doc.metadata.url}</url>\n<path>${doc.metadata.path.join(" / ")}</path>\n`;
         return `${header}${doc.pageContent}`;
       });
-      const embeddings = await this.embeddings.embedDocuments(texts);
+      const rawEmbeddings = await this.embeddings.embedDocuments(texts);
+      const paddedEmbeddings = rawEmbeddings.map((vector) => this.padVector(vector));
 
       // Insert documents in a transaction
       const transaction = this.db.transaction((docs: typeof documents) => {
@@ -308,7 +354,7 @@ export class DocumentStore {
             BigInt(rowId),
             library.toLowerCase(),
             version.toLowerCase(),
-            JSON.stringify(embeddings[i]),
+            JSON.stringify(paddedEmbeddings[i]),
           );
         }
       });
@@ -364,7 +410,8 @@ export class DocumentStore {
     limit: number,
   ): Promise<Document[]> {
     try {
-      const embedding = await this.embeddings.embedQuery(query);
+      const rawEmbedding = await this.embeddings.embedQuery(query);
+      const embedding = this.padVector(rawEmbedding);
       const ftsQuery = this.escapeFtsQuery(query); // Escape the query for FTS
 
       const stmt = this.db.prepare(`

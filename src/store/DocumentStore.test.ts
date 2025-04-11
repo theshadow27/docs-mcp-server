@@ -23,7 +23,11 @@ const mockPrepare = vi.fn().mockReturnValue(mockStatement);
 const mockDb = {
   prepare: mockPrepare,
   exec: vi.fn(),
-  transaction: vi.fn((fn) => fn()),
+  transaction: vi.fn(
+    (fn) =>
+      (...args: unknown[]) =>
+        fn(...args),
+  ),
   close: vi.fn(),
 };
 vi.mock("better-sqlite3", () => ({
@@ -58,6 +62,9 @@ describe("DocumentStore", () => {
     }));
     mockPrepare.mockReturnValue(mockStatement); // <-- Re-configure prepare mock return value
 
+    // Reset embedQuery to handle initialization vector
+    mockEmbedQuery.mockResolvedValue(new Array(1536).fill(0.1));
+
     // Now create the store and initialize.
     // initialize() will call 'new OpenAIEmbeddings()', which uses our fresh mock implementation.
     documentStore = new DocumentStore(":memory:");
@@ -79,9 +86,10 @@ describe("DocumentStore", () => {
 
       await documentStore.findByContent(library, version, query, limit);
 
-      // 1. Check if embedQuery was called
-      expect(mockEmbedQuery).toHaveBeenCalledWith(query);
-      expect(mockEmbedQuery).toHaveBeenCalledTimes(1);
+      // 1. Check if embedQuery was called with correct args
+      // Note: embedQuery is called twice - once during init and once for search
+      const embedCalls = mockEmbedQuery.mock.calls;
+      expect(embedCalls[embedCalls.length - 1][0]).toBe(query); // Last call should be our search
 
       // 2. Check if db.prepare was called correctly during findByContent
       // It's called multiple times during initialize, so check the specific call
@@ -148,6 +156,79 @@ describe("DocumentStore", () => {
       expect(mockStatementAll).toHaveBeenCalledTimes(1);
       const lastCallArgs = mockStatementAll.mock.lastCall;
       expect(lastCallArgs?.[6]).toBe(expectedFtsQuery);
+    });
+  });
+
+  describe("Embedding Model Dimensions", () => {
+    it("should accept a model that produces 1536-dimensional vectors", async () => {
+      // Mock a 1536-dimensional vector
+      mockEmbedQuery.mockResolvedValueOnce(new Array(1536).fill(0.1));
+      documentStore = new DocumentStore(":memory:");
+      await expect(documentStore.initialize()).resolves.not.toThrow();
+    });
+
+    it("should accept and pad vectors from models with smaller dimensions", async () => {
+      // Mock 768-dimensional vectors
+      mockEmbedQuery.mockResolvedValueOnce(new Array(768).fill(0.1));
+      mockEmbedDocuments.mockResolvedValueOnce([new Array(768).fill(0.1)]);
+
+      documentStore = new DocumentStore(":memory:");
+      await documentStore.initialize();
+
+      // Should pad to 1536 when inserting
+      const doc = {
+        pageContent: "test content",
+        metadata: { title: "test", url: "http://test.com", path: ["test"] },
+      };
+
+      // This should succeed (vectors are padded internally)
+      await expect(
+        documentStore.addDocuments("test-lib", "1.0.0", [doc]),
+      ).resolves.not.toThrow();
+    });
+
+    it("should reject models that produce vectors larger than 1536 dimensions", async () => {
+      // Mock a 3072-dimensional vector (like text-embedding-3-large)
+      mockEmbedQuery.mockResolvedValueOnce(new Array(3072).fill(0.1));
+      documentStore = new DocumentStore(":memory:");
+      await expect(documentStore.initialize()).rejects.toThrow(/exceeds.*1536/);
+    });
+
+    it("should pad both document and query vectors consistently", async () => {
+      // Mock 768-dimensional vectors for both init and subsequent operations
+      const smallVector = new Array(768).fill(0.1);
+      mockEmbedQuery
+        .mockResolvedValueOnce(smallVector) // for initialization
+        .mockResolvedValueOnce(smallVector); // for search query
+      mockEmbedDocuments.mockResolvedValueOnce([smallVector]); // for document embeddings
+
+      documentStore = new DocumentStore(":memory:");
+      await documentStore.initialize();
+
+      const doc = {
+        pageContent: "test content",
+        metadata: { title: "test", url: "http://test.com", path: ["test"] },
+      };
+
+      // Add a document (this pads the document vector)
+      await documentStore.addDocuments("test-lib", "1.0.0", [doc]);
+
+      // Search should work (query vector gets padded too)
+      await expect(
+        documentStore.findByContent("test-lib", "1.0.0", "test query", 5),
+      ).resolves.not.toThrow();
+
+      // Verify both vectors were padded (via the JSON stringification)
+      const insertCall = mockStatement.run.mock.calls.find(
+        (call) => call[0]?.toString().startsWith("1"), // Looking for rowid=1
+      );
+      const searchCall = mockStatementAll.mock.lastCall;
+
+      // Both vectors should be stringified arrays of length 1536
+      const insertVector = JSON.parse(insertCall?.[3] || "[]");
+      const searchVector = JSON.parse(searchCall?.[2] || "[]");
+      expect(insertVector.length).toBe(1536);
+      expect(searchVector.length).toBe(1536);
     });
   });
 });

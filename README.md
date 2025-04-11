@@ -26,6 +26,19 @@ The server exposes MCP tools for:
 - Finding appropriate versions (`find_version`).
 - Removing indexed documents (`remove_docs`).
 
+## Configuration
+
+The following environment variables are supported to configure the OpenAI API and embedding behavior:
+
+- `OPENAI_API_KEY`: **Required.** Your OpenAI API key for generating embeddings.
+- `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID (handled automatically by LangChain if set).
+- `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI API (e.g., for Azure OpenAI or compatible APIs).
+- `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Embedding model name (defaults to "text-embedding-3-small"). Must produce vectors with ≤1536 dimensions. Smaller dimensions are automatically padded with zeros.
+
+The database schema uses a fixed dimension of 1536 for embedding vectors. Models that produce larger vectors are not supported and will cause an error. Models with smaller vectors (e.g., older embedding models) are automatically padded with zeros to match the required dimension.
+
+These variables can be set regardless of how you run the server (Docker, npx, or from source).
+
 ## Running the MCP Server
 
 There are two ways to run the docs-mcp-server:
@@ -76,6 +89,17 @@ This is the recommended approach for most users. It's easy, straightforward, and
 - `-e OPENAI_API_KEY`: **Required.** Set your OpenAI API key.
 - `-v docs-mcp-data:/data`: **Required for persistence.** Mounts a Docker named volume `docs-mcp-data` to store the database. You can replace with a specific host path if preferred (e.g., `-v /path/on/host:/data`).
 
+Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed to the container using the `-e` flag. For example:
+
+```bash
+docker run -i --rm \
+  -e OPENAI_API_KEY="your-key-here" \
+  -e DOCS_MCP_EMBEDDING_MODEL="text-embedding-3-large" \
+  -e OPENAI_API_BASE="http://your-api-endpoint" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest
+```
+
 ### Option 2: Using npx
 
 This approach is recommended when you need local file access (e.g., indexing documentation from your local file system). While this can also be achieved by mounting paths into a Docker container, using npx is simpler but requires a Node.js installation.
@@ -122,7 +146,7 @@ docker run --rm \
   docs-cli <command> [options]
 ```
 
-Make sure to use the same volume name (`docs-mcp-data` in this example) as you did for the server.
+Make sure to use the same volume name (`docs-mcp-data` in this example) as you did for the server. Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed using `-e` flags, just like with the server.
 
 ### Using npx CLI
 
@@ -338,6 +362,16 @@ This method is useful for contributing to the project or running un-published ve
    ```
    # Required: Your OpenAI API key for generating embeddings.
    OPENAI_API_KEY=your-api-key-here
+
+   # Optional: Your OpenAI Organization ID (handled automatically by LangChain if set)
+   OPENAI_ORG_ID=
+
+   # Optional: Custom base URL for OpenAI API (e.g., for Azure OpenAI or compatible APIs)
+   OPENAI_API_BASE=
+
+   # Optional: Embedding model name (defaults to "text-embedding-3-small")
+   # Examples: text-embedding-3-large, text-embedding-ada-002
+   DOCS_MCP_EMBEDDING_MODEL=
 
    # Optional: Specify a custom directory to store the SQLite database file (documents.db).
    # If set, this path takes precedence over the default locations.

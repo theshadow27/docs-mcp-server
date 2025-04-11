@@ -91,7 +91,7 @@ export async function startServer() {
           .default(true)
           .describe("Whether to follow HTTP redirects (3xx responses)"),
       },
-      // Remove context as it's not used without progress reporting
+
       async ({ url, library, version, maxPages, maxDepth, scope, followRedirects }) => {
         try {
           // Execute scrape tool without waiting and without progress callback
