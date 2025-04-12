@@ -135,7 +135,6 @@ export async function startServer() {
       "Search indexed documentation. Examples:\n" +
         '- {library: "react", query: "how do hooks work"} -> matches latest version of React\n' +
         '- {library: "react", version: "18.0.0", query: "how do hooks work"} -> matches React 18.0.0 or earlier\n' +
-        '- {library: "react", version: "18.0.0", query: "how do hooks work", exactMatch: true} -> only React 18.0.0\n' +
         '- {library: "typescript", version: "5.x", query: "ReturnType example"} -> any TypeScript 5.x.x version\n' +
         '- {library: "typescript", version: "5.2.x", query: "ReturnType example"} -> any TypeScript 5.2.x version',
       {
@@ -148,20 +147,15 @@ export async function startServer() {
           ),
         query: z.string().describe("Search query"),
         limit: z.number().optional().default(5).describe("Maximum number of results"),
-        exactMatch: z
-          .boolean()
-          .optional()
-          .default(false)
-          .describe("Only use exact version match"),
       },
-      async ({ library, version, query, limit, exactMatch }) => {
+      async ({ library, version, query, limit }) => {
         try {
           const result = await tools.search.execute({
             library,
             version,
             query,
             limit,
-            exactMatch,
+            exactMatch: false, // Always false for MCP interface
           });
 
           const formattedResults = result.results.map(

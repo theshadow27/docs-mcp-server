@@ -35,10 +35,25 @@ export class SearchTool {
   }
 
   async execute(options: SearchToolOptions): Promise<SearchToolResult> {
-    const { library, version = "latest", query, limit = 5, exactMatch = false } = options;
+    const { library, version, query, limit = 5, exactMatch = false } = options;
+
+    // When exactMatch is true, version must be specified and not 'latest'
+    if (exactMatch && (!version || version === "latest")) {
+      // Get available versions for error message
+      await this.docService.validateLibraryExists(library);
+      const versions = await this.docService.listVersions(library);
+      throw new VersionNotFoundError(
+        library,
+        "latest",
+        versions, // versions already has the correct { version: string, indexed: boolean } format
+      );
+    }
+
+    // Default to 'latest' only when exactMatch is false
+    const resolvedVersion = version || "latest";
 
     logger.info(
-      `🔍 Searching ${library}@${version} for: ${query}${exactMatch ? " (exact match)" : ""}`,
+      `🔍 Searching ${library}@${resolvedVersion} for: ${query}${exactMatch ? " (exact match)" : ""}`,
     );
 
     try {
@@ -46,7 +61,7 @@ export class SearchTool {
       await this.docService.validateLibraryExists(library);
 
       // 2. Proceed with version finding and searching
-      let versionToSearch: string | null | undefined = version;
+      let versionToSearch: string | null | undefined = resolvedVersion;
 
       if (!exactMatch) {
         // If not exact match, find the best version (which might be null)

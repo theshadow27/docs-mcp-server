@@ -20,6 +20,7 @@ describe("SearchTool", () => {
       validateLibraryExists: vi.fn(),
       findBestVersion: vi.fn(),
       searchStore: vi.fn(),
+      listVersions: vi.fn(),
     };
 
     searchTool = new SearchTool(mockDocService as DocumentManagementService);
@@ -56,6 +57,37 @@ describe("SearchTool", () => {
     );
     expect(result.results).toEqual(mockSearchResults);
     expect(result.error).toBeUndefined();
+  });
+
+  it("should throw VersionNotFoundError when exactMatch is true but no version is specified", async () => {
+    const options: SearchToolOptions = {
+      ...baseOptions,
+      exactMatch: true,
+    };
+    const availableVersions = [{ version: "1.0.0", indexed: true }];
+    (mockDocService.validateLibraryExists as Mock).mockResolvedValue(undefined);
+    (mockDocService.listVersions as Mock).mockResolvedValue(availableVersions);
+
+    await expect(searchTool.execute(options)).rejects.toThrow(VersionNotFoundError);
+    expect(mockDocService.validateLibraryExists).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.listVersions).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.searchStore).not.toHaveBeenCalled();
+  });
+
+  it("should throw VersionNotFoundError when exactMatch is true with 'latest' version", async () => {
+    const options: SearchToolOptions = {
+      ...baseOptions,
+      version: "latest",
+      exactMatch: true,
+    };
+    const availableVersions = [{ version: "1.0.0", indexed: true }];
+    (mockDocService.validateLibraryExists as Mock).mockResolvedValue(undefined);
+    (mockDocService.listVersions as Mock).mockResolvedValue(availableVersions);
+
+    await expect(searchTool.execute(options)).rejects.toThrow(VersionNotFoundError);
+    expect(mockDocService.validateLibraryExists).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.listVersions).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.searchStore).not.toHaveBeenCalled();
   });
 
   it("should find best version and search when exactMatch is false (default)", async () => {
@@ -105,7 +137,8 @@ describe("SearchTool", () => {
 
     await searchTool.execute(options);
 
-    expect(mockDocService.findBestVersion).toHaveBeenCalledWith("test-lib", "latest"); // Default version
+    // The implementation passes undefined, which is defaulted to "latest" in the method
+    expect(mockDocService.findBestVersion).toHaveBeenCalledWith("test-lib", undefined);
     expect(mockDocService.searchStore).toHaveBeenCalledWith(
       "test-lib",
       "1.2.0",
