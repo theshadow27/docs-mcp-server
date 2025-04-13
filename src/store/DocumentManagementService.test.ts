@@ -59,7 +59,8 @@ describe("DocumentManagementService", () => {
   let docService: DocumentManagementService; // For general tests
 
   // Define expected paths consistently
-  const expectedOldDbPath = path.join(process.cwd(), ".store", "documents.db");
+  const projectRoot = path.resolve(import.meta.dirname, "..");
+  const expectedOldDbPath = path.join(projectRoot, ".store", "documents.db");
   const expectedStandardDbPath = path.join(mockEnvPaths.data, "documents.db");
 
   beforeEach(() => {
