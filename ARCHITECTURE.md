@@ -212,7 +212,7 @@ This design allows easy addition of new embedding providers while maintaining co
 
 **Database Location:** The application determines the database file (`documents.db`) location dynamically:
 
-1. It first checks for a `.store` directory in the current working directory (`process.cwd()`). If `.store/documents.db` exists, it uses this path. This prioritizes local development databases.
+1. It first checks for a `.store` directory in the current project directory. If `.store/documents.db` exists, it uses this path. This prioritizes local development databases.
 2. If the local `.store/documents.db` does not exist, it defaults to a standard, OS-specific application data directory (e.g., `~/Library/Application Support/docs-mcp-server/` on macOS, `~/.local/share/docs-mcp-server/` on Linux) determined using the `env-paths` library. This ensures a stable, persistent location when running via `npx` or outside a local project context.
 
 Documents are stored with URLs and sequential ordering to maintain source context:

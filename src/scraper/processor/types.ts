@@ -1,5 +1,7 @@
 import type { RawContent } from "../fetcher/types";
 
+export type { RawContent };
+
 /**
  * Processed content in normalized form (markdown)
  * with extracted metadata and references
