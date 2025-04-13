@@ -41,7 +41,9 @@ export class DocumentManagementService {
       logger.debug(`💾 Using database directory from DOCS_MCP_STORE_PATH: ${dbDir}`);
     } else {
       // 2. Check Old Local Path
-      const oldDbDir = path.join(process.cwd(), ".store");
+      const projectRoot = path.resolve(import.meta.dirname, "..");
+      const oldDbDir = path.join(projectRoot, ".store");
+      console.log("Old DB Directory:", oldDbDir);
       const oldDbPath = path.join(oldDbDir, "documents.db");
       const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
 
