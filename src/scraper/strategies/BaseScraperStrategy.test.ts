@@ -208,4 +208,76 @@ describe("BaseScraperStrategy", () => {
     expect(strategy.processItem).toHaveBeenCalledTimes(3);
     expect(progressCallback).toHaveBeenCalledTimes(3);
   });
+
+  it("should process page via shortest path (breadth-first search)", async () => {
+    const options: ScraperOptions = {
+      url: "https://example.com/",
+      library: "test",
+      version: "1.0.0",
+      maxPages: 99,
+      maxDepth: 3,
+      maxConcurrency: 3,
+    };
+    const progressCallback = vi.fn();
+
+    // Simulate the link structure and timing
+    strategy.processItem.mockImplementation(async (item: QueueItem) => {
+      // Simulate a tree structure: https://example.com/ (d=0)
+      // A (d=1) -> B (d=2) -> C (d=3) -> X (d=4)
+      //                    -> E (d=3) -> X (d=4)
+      // B (d=1) -> C (d=2) -> X (d=3)
+      // D (d=1) -> E (d=2) -> X (d=3)
+      const url = item.url;
+      let links: string[] = [];
+      if (url === "https://example.com/") {
+        links = [
+          "https://example.com/A",
+          "https://example.com/B",
+          "https://example.com/D",
+        ];
+      } else if (url === "https://example.com/A") {
+        links = ["https://example.com/B"];
+      } else if (url === "https://example.com/B") {
+        links = ["https://example.com/C", "https://example.com/E"];
+      } else if (url === "https://example.com/C") {
+        links = ["https://example.com/X"];
+      } else if (url === "https://example.com/D") {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        links = ["https://example.com/E"];
+      } else if (url === "https://example.com/E") {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        links = ["https://example.com/X"];
+      }
+      // X has no links
+      return {
+        document: { content: `Content for ${url}`, metadata: {} },
+        links,
+      };
+    });
+
+    await strategy.scrape(options, progressCallback);
+
+    // Verify which URLs were actually processed and their order
+    const processedCalls = strategy.processItem.mock.calls.map((call) => call[0]);
+    const processedUrls = processedCalls.map((item) => item.url);
+
+    // Assert the exact order for breadth-first search
+    expect(processedUrls).toEqual([
+      "https://example.com/",
+      "https://example.com/A",
+      "https://example.com/B",
+      "https://example.com/D",
+      "https://example.com/C",
+      "https://example.com/E",
+      "https://example.com/X",
+    ]);
+
+    // Verify X was processed exactly once and at the correct depth (3)
+    const xCalls = processedCalls.filter((item) => item.url === "https://example.com/X");
+    expect(xCalls.length).toBe(1);
+    expect(xCalls[0].depth).toBe(3);
+
+    // Total calls: /, A, B, C, D, E, X = 7
+    expect(strategy.processItem).toHaveBeenCalledTimes(7);
+  });
 });
