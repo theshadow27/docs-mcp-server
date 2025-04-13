@@ -471,13 +471,14 @@ This project uses [semantic-release](https://github.com/semantic-release/semanti
 **How it works:**
 
 1.  **Commit Messages:** All commits merged into the `main` branch **must** follow the Conventional Commits specification.
-2.  **Automation:** The "Release" GitHub Actions workflow automatically runs `semantic-release` on pushes to `main`.
+2.  **Manual Trigger:** The "Release" GitHub Actions workflow can be triggered manually from the Actions tab when you're ready to create a new release.
 3.  **`semantic-release` Actions:** Determines version, updates `CHANGELOG.md` & `package.json`, commits, tags, publishes to npm, and creates a GitHub Release.
 
 **What you need to do:**
 
 - Use Conventional Commits.
-- Merge to `main`.
+- Merge changes to `main`.
+- Trigger a release manually when ready from the Actions tab in GitHub.
 
 **Automation handles:** Changelog, version bumps, tags, npm publish, GitHub releases.
 
