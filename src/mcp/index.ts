@@ -5,9 +5,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { PipelineManager } from "../pipeline/PipelineManager";
 import { PipelineJobStatus } from "../pipeline/types";
+import { FileFetcher, HttpFetcher } from "../scraper/fetcher";
+import { HtmlProcessor } from "../scraper/processor";
 import { DocumentManagementService } from "../store/DocumentManagementService";
 import {
   CancelJobTool,
+  FetchUrlTool,
   FindVersionTool,
   GetJobInfoTool,
   ListJobsTool,
@@ -39,15 +42,17 @@ export async function startServer() {
     const tools = {
       listLibraries: new ListLibrariesTool(docService),
       findVersion: new FindVersionTool(docService),
-      // TODO: Update ScrapeTool constructor if needed to accept PipelineManager
-      // ScrapeTool currently uses docService.getPipelineManager() which doesn't exist.
-      // Pass both docService and pipelineManager to ScrapeTool constructor
       scrape: new ScrapeTool(docService, pipelineManager),
       search: new SearchTool(docService),
       listJobs: new ListJobsTool(pipelineManager),
       getJobInfo: new GetJobInfoTool(pipelineManager),
       cancelJob: new CancelJobTool(pipelineManager),
-      remove: new RemoveTool(docService), // Instantiate RemoveTool
+      remove: new RemoveTool(docService),
+      fetchUrl: new FetchUrlTool(
+        new HttpFetcher(),
+        new FileFetcher(),
+        new HtmlProcessor(),
+      ),
     };
 
     const server = new McpServer(
@@ -300,6 +305,30 @@ ${formattedResults.join("")}`,
             `Failed to get job info for ${jobId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
+          );
+        }
+      },
+    );
+
+    // Fetch URL tool
+    server.tool(
+      "fetch_url",
+      "Fetch a single URL and convert its content to Markdown",
+      {
+        url: z.string().url().describe("The URL to fetch and convert to markdown"),
+        followRedirects: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Whether to follow HTTP redirects (3xx responses)"),
+      },
+      async ({ url, followRedirects }) => {
+        try {
+          const result = await tools.fetchUrl.execute({ url, followRedirects });
+          return createResponse(result);
+        } catch (error) {
+          return createError(
+            `Failed to fetch URL: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       },

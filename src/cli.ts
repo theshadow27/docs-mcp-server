@@ -3,8 +3,16 @@ import "dotenv/config";
 import { Command } from "commander";
 import packageJson from "../package.json";
 import { PipelineManager } from "./pipeline/PipelineManager";
+import { FileFetcher, HttpFetcher } from "./scraper/fetcher";
+import { HtmlProcessor } from "./scraper/processor";
 import { DocumentManagementService } from "./store/DocumentManagementService";
-import { FindVersionTool, ListLibrariesTool, ScrapeTool, SearchTool } from "./tools";
+import {
+  FetchUrlTool,
+  FindVersionTool,
+  ListLibrariesTool,
+  ScrapeTool,
+  SearchTool,
+} from "./tools";
 import { LogLevel, setLogLevel } from "./utils/logger";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
@@ -27,6 +35,11 @@ async function main() {
       findVersion: new FindVersionTool(docService),
       scrape: new ScrapeTool(docService, pipelineManager), // Pass manager
       search: new SearchTool(docService),
+      fetchUrl: new FetchUrlTool(
+        new HttpFetcher(),
+        new FileFetcher(),
+        new HtmlProcessor(),
+      ),
     };
 
     const program = new Command();
@@ -182,6 +195,21 @@ async function main() {
           // Re-throw to trigger the main catch block for shutdown
           throw error;
         }
+      });
+
+    program
+      .command("fetch-url <url>")
+      .description("Fetch a URL and convert its content to Markdown")
+      .option(
+        "--no-follow-redirects",
+        "Disable following HTTP redirects (default: follow redirects)",
+      )
+      .action(async (url, options) => {
+        const content = await tools.fetchUrl.execute({
+          url,
+          followRedirects: options.followRedirects,
+        });
+        console.log(content);
       });
 
     // Hook to set log level after parsing global options but before executing command action

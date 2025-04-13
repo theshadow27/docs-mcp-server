@@ -25,6 +25,7 @@ The server exposes MCP tools for:
 - Listing indexed libraries (`list_libraries`).
 - Finding appropriate versions (`find_version`).
 - Removing indexed documents (`remove_docs`).
+- Fetching single URLs (`fetch_url`): Fetches a URL and returns its content as Markdown.
 
 ## Configuration
 
@@ -250,9 +251,29 @@ npx -y --package=@arabold/docs-mcp-server docs-cli --help
 ```bash
 docs-cli scrape --help
 docs-cli search --help
+docs-cli fetch-url --help
 docs-cli find-version --help
 docs-cli remove --help
 docs-cli list --help
+```
+
+### Fetching Single URLs (`fetch-url`)
+
+Fetches a single URL and converts its content to Markdown. Unlike `scrape`, this command does not crawl links or store the content.
+
+```bash
+docs-cli fetch-url <url> [options]
+```
+
+**Options:**
+
+- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects)
+
+**Examples:**
+
+```bash
+# Fetch a URL and convert to Markdown
+docs-cli fetch-url https://example.com/page.html
 ```
 
 ### Scraping Documentation (`scrape`)
