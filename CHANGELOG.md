@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/arabold/docs-mcp-server/compare/v1.8.0...v1.9.0) (2025-04-14)
+
+
+### Bug Fixes
+
+* **scraper:** use JSDOM title property for robust HTML title extraction ([dee350f](https://github.com/arabold/docs-mcp-server/commit/dee350f482428b7bc68192238aee1077eb6ace80)), closes [#41](https://github.com/arabold/docs-mcp-server/issues/41)
+
+
+### Features
+
+* increase default maxPages and add constants ([7b10eba](https://github.com/arabold/docs-mcp-server/commit/7b10ebaa3f610e53d8e2837702143f3f6d084bd2)), closes [#43](https://github.com/arabold/docs-mcp-server/issues/43)
+
 # [1.8.0](https://github.com/arabold/docs-mcp-server/compare/v1.7.0...v1.8.0) (2025-04-14)
 
 
