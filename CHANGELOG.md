@@ -1,3 +1,19 @@
+# [1.8.0](https://github.com/arabold/docs-mcp-server/compare/v1.7.0...v1.8.0) (2025-04-14)
+
+
+### Bug Fixes
+
+* disabled removal of form elements ([3b6afde](https://github.com/arabold/docs-mcp-server/commit/3b6afde7b8c6796f65d6d4f09d86fb11e6a34b6a))
+* preserve line breaks in pre tags ([b94b1e3](https://github.com/arabold/docs-mcp-server/commit/b94b1e3d4a56bd3ecf19b82c8d7b5c9abc715218))
+* remove overly aggressive html filtering ([6c76509](https://github.com/arabold/docs-mcp-server/commit/6c76509b80dd48a5a21923b54f985c456c19d46a)), closes [#36](https://github.com/arabold/docs-mcp-server/issues/36)
+* resolve store path correctly when not in project root ([49a3c1f](https://github.com/arabold/docs-mcp-server/commit/49a3c1ffb493a83c244708332dbe523e9c1e28ef))
+* **search:** remove exactMatch flag from MCP API, improve internal handling ([e5cb8d1](https://github.com/arabold/docs-mcp-server/commit/e5cb8d16204ff01a1747d2db9e169b9ecd3c676a)), closes [#24](https://github.com/arabold/docs-mcp-server/issues/24)
+
+
+### Features
+
+* add fetch-url tool to CLI and MCP server ([604175f](https://github.com/arabold/docs-mcp-server/commit/604175f7d7abe1765ab419abe04340b1478230b2)), closes [#34](https://github.com/arabold/docs-mcp-server/issues/34)
+
 # [1.7.0](https://github.com/arabold/docs-mcp-server/compare/v1.6.0...v1.7.0) (2025-04-11)
 
 
