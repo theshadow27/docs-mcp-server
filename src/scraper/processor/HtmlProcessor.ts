@@ -33,7 +33,7 @@ export class HtmlProcessor implements ContentProcessor {
     "input",
     "textarea",
     "select",
-    "form",
+    // "form", // Known issue: Some pages use alerts for important content
     ".ads",
     ".advertisement",
     ".banner",
@@ -66,18 +66,16 @@ export class HtmlProcessor implements ContentProcessor {
     ".signup-form",
     ".tooltip",
     ".dropdown-menu",
-    ".alert",
+    // ".alert", // Known issue: Some pages use alerts for important content
     ".breadcrumb",
     ".pagination",
-    '[role="alert"]',
+    // '[role="alert"]', // Known issue: Some pages use alerts for important content
     '[role="banner"]',
     '[role="dialog"]',
     '[role="alertdialog"]',
     '[role="region"][aria-label*="skip" i]',
     '[aria-modal="true"]',
     ".noprint",
-    "figure",
-    "sup",
   ];
 
   constructor(options?: HtmlProcessOptions) {
