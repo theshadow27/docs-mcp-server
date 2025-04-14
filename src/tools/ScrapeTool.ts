@@ -4,6 +4,10 @@ import type { DocumentManagementService } from "../store/DocumentManagementServi
 import type { ProgressResponse } from "../types"; // Keep for options interface, though onProgress is removed from internal logic
 import { logger } from "../utils/logger";
 
+// Default values for scraping configuration
+const DEFAULT_MAX_PAGES = 1000;
+const DEFAULT_MAX_DEPTH = 3;
+
 export interface ScrapeToolOptions {
   library: string;
   version?: string | null; // Make version optional
@@ -115,8 +119,8 @@ export class ScrapeTool {
       version: internalVersion,
       scope: scraperOptions?.scope ?? "subpages",
       followRedirects: scraperOptions?.followRedirects ?? true,
-      maxPages: scraperOptions?.maxPages ?? 100,
-      maxDepth: scraperOptions?.maxDepth ?? 3,
+      maxPages: scraperOptions?.maxPages ?? DEFAULT_MAX_PAGES,
+      maxDepth: scraperOptions?.maxDepth ?? DEFAULT_MAX_DEPTH,
       // maxConcurrency is handled by the manager itself now
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
     });
