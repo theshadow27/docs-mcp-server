@@ -43,7 +43,6 @@ export class DocumentManagementService {
       // 2. Check Old Local Path
       const projectRoot = path.resolve(import.meta.dirname, "..");
       const oldDbDir = path.join(projectRoot, ".store");
-      console.log("Old DB Directory:", oldDbDir);
       const oldDbPath = path.join(oldDbDir, "documents.db");
       const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
 
