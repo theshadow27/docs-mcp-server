@@ -112,8 +112,24 @@ export class HtmlProcessor implements ContentProcessor {
           }
         }
 
-        // use `node.textContent` to avoid escaping
-        return `\n\`\`\`${language}\n${node.textContent}\n\`\`\`\n`;
+        // We cannot use `content` here as it will escape the content.
+        // We also cannot use `element.textContent` as it will not preserve the line breaks.
+        // Instead, we implement a custom logic to extract the text content.
+        const text = (() => {
+          // Clone the node to avoid modifying the original
+          const clone = element.cloneNode(true) as HTMLElement;
+
+          // Replace <br> tags with newline characters
+          const brElements = Array.from(clone.querySelectorAll("br"));
+          for (const br of brElements) {
+            br.replaceWith("\n");
+          }
+
+          // Get the text content after replacing <br> tags
+          return clone.textContent;
+        })();
+
+        return `\n\`\`\`${language}\n${text}\n\`\`\`\n`;
       },
     });
 
