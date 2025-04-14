@@ -1,4 +1,5 @@
 import * as semver from "semver";
+import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../config";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import type { ProgressResponse } from "../types"; // Keep for options interface, though onProgress is removed from internal logic
@@ -115,9 +116,9 @@ export class ScrapeTool {
       version: internalVersion,
       scope: scraperOptions?.scope ?? "subpages",
       followRedirects: scraperOptions?.followRedirects ?? true,
-      maxPages: scraperOptions?.maxPages ?? 100,
-      maxDepth: scraperOptions?.maxDepth ?? 3,
-      // maxConcurrency is handled by the manager itself now
+      maxPages: scraperOptions?.maxPages ?? DEFAULT_MAX_PAGES,
+      maxDepth: scraperOptions?.maxDepth ?? DEFAULT_MAX_DEPTH,
+      maxConcurrency: scraperOptions?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
     });
 

@@ -289,7 +289,7 @@ docs-cli scrape <library> <url> [options]
 - `-v, --version <string>`: The specific version to associate with the scraped documents.
   - Accepts full versions (`1.2.3`), pre-release versions (`1.2.3-beta.1`), or partial versions (`1`, `1.2` which are expanded to `1.0.0`, `1.2.0`).
   - If omitted, the documentation is indexed as **unversioned**.
-- `-p, --max-pages <number>`: Maximum pages to scrape (default: 100).
+- `-p, --max-pages <number>`: Maximum pages to scrape (default: 1000).
 - `-d, --max-depth <number>`: Maximum navigation depth (default: 3).
 - `-c, --max-concurrency <number>`: Maximum concurrent requests (default: 3).
 - `--ignore-errors`: Ignore errors during scraping (default: true).

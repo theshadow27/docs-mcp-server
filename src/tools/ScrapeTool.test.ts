@@ -141,6 +141,7 @@ describe("ScrapeTool", () => {
         followRedirects: true, // Default value
         maxPages: 50, // Overridden
         maxDepth: 2, // Overridden
+        maxConcurrency: 5, // Test override
         ignoreErrors: false, // Overridden
       },
     );

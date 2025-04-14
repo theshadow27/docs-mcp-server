@@ -2,6 +2,7 @@
 import "dotenv/config";
 import { Command } from "commander";
 import packageJson from "../package.json";
+import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "./config";
 import { PipelineManager } from "./pipeline/PipelineManager";
 import { FileFetcher, HttpFetcher } from "./scraper/fetcher";
 import { HtmlProcessor } from "./scraper/processor";
@@ -63,9 +64,21 @@ async function main() {
       .command("scrape <library> <url>") // Remove <version> as positional
       .description("Scrape and index documentation from a URL")
       .option("-v, --version <string>", "Version of the library (optional)") // Add optional version flag
-      .option("-p, --max-pages <number>", "Maximum pages to scrape", "100")
-      .option("-d, --max-depth <number>", "Maximum navigation depth", "3")
-      .option("-c, --max-concurrency <number>", "Maximum concurrent page requests", "3")
+      .option(
+        "-p, --max-pages <number>",
+        "Maximum pages to scrape",
+        DEFAULT_MAX_PAGES.toString(),
+      )
+      .option(
+        "-d, --max-depth <number>",
+        "Maximum navigation depth",
+        DEFAULT_MAX_DEPTH.toString(),
+      )
+      .option(
+        "-c, --max-concurrency <number>",
+        "Maximum concurrent page requests",
+        DEFAULT_MAX_CONCURRENCY.toString(),
+      )
       .option("--ignore-errors", "Ignore errors during scraping", true)
       .option(
         "--scope <scope>",

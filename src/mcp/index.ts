@@ -3,6 +3,7 @@ import "dotenv/config";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../config";
 import { PipelineManager } from "../pipeline/PipelineManager";
 import { PipelineJobStatus } from "../pipeline/types";
 import { FileFetcher, HttpFetcher } from "../scraper/fetcher";
@@ -82,9 +83,13 @@ export async function startServer() {
         maxPages: z
           .number()
           .optional()
-          .default(100)
-          .describe("Maximum number of pages to scrape"),
-        maxDepth: z.number().optional().default(3).describe("Maximum navigation depth"),
+          .default(DEFAULT_MAX_PAGES)
+          .describe(`Maximum number of pages to scrape (default: ${DEFAULT_MAX_PAGES})`),
+        maxDepth: z
+          .number()
+          .optional()
+          .default(DEFAULT_MAX_DEPTH)
+          .describe(`Maximum navigation depth (default: ${DEFAULT_MAX_DEPTH})`),
         scope: z
           .enum(["subpages", "hostname", "domain"])
           .optional()
