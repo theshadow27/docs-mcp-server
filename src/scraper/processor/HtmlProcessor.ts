@@ -33,7 +33,7 @@ export class HtmlProcessor implements ContentProcessor {
     "input",
     "textarea",
     "select",
-    "form",
+    // "form", // Known issue: Some pages use alerts for important content
     ".ads",
     ".advertisement",
     ".banner",
