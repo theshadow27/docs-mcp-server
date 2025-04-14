@@ -162,11 +162,10 @@ export class HtmlProcessor implements ContentProcessor {
         ? content.content
         : content.content.toString((content.encoding as BufferEncoding) || "utf-8");
 
-    // Find title
-    const titleMatch = htmlContent.match(/<title>([^<]+)<\/title>/i);
-    const title = titleMatch?.[1] || "Untitled";
+    const window = new JSDOM(htmlContent, { url: content.source }).window;
 
-    const window = new JSDOM(content.content, { url: content.source }).window;
+    // Extract title using JSDOM
+    const title = window.document.title || "Untitled";
 
     const purify = createDOMPurify(window as unknown as WindowLike);
     const purifiedContent = purify.sanitize(htmlContent, {

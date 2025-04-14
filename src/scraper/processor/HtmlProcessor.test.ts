@@ -23,6 +23,20 @@ describe("HtmlProcessor", () => {
     expect(result.links).toEqual([]); // No links in this example
   });
 
+  it("should process HTML with attributes in the title tag", async () => {
+    const processor = new HtmlProcessor();
+    const rawContent: RawContent = {
+      content:
+        '<html><head><title lang="en">Title With Attributes</title></head><body><h1>Hello</h1></body></html>',
+      mimeType: "text/html",
+      source: "https://example.com",
+    };
+
+    const result = await processor.process(rawContent);
+    expect(result.title).toBe("Title With Attributes");
+    expect(result.content).toContain("# Hello");
+  });
+
   it("should extract links", async () => {
     const processor = new HtmlProcessor();
     const rawContent: RawContent = {
