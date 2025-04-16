@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@kitajs/html",
+    "plugins": [{ "name": "@kitajs/ts-html-plugin" }],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
@@ -8,13 +11,13 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "build",
+    "outDir": "dist",
     "sourceMap": true,
     "declaration": true,
     "allowJs": true,
     "resolveJsonModule": true,
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["@kitajs/html/htmx.d.ts"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "build"]
+  "include": ["src/**/*"]
 }

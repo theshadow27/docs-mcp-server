@@ -6,9 +6,10 @@ A MCP server for fetching and searching 3rd party package documentation.
 
 - 🌐 **Versatile Scraping:** Fetch documentation from diverse sources like websites, GitHub, npm, PyPI, or local files.
 - 🧠 **Intelligent Processing:** Automatically split content semantically and generate embeddings using your choice of models (OpenAI, Google Gemini, Azure OpenAI, AWS Bedrock, Ollama, and more).
-- 💾 **Optimized Storage:** Leverage SQLite with `sqlite-vec` for efficient vector storage and FTS5 for robust full-text search.
 - 🔍 **Powerful Hybrid Search:** Combine vector similarity and full-text search across different library versions for highly relevant results.
+- 🖥️ **Web Interface:** Real-time monitoring of jobs and indexed libraries through a modern web UI with dark mode support.
 - ⚙️ **Asynchronous Job Handling:** Manage scraping and indexing tasks efficiently with a background job queue and MCP/CLI tools.
+- 💾 **Local Storage:** Leverage SQLite with `sqlite-vec` for efficient vector storage and FTS5 for robust full-text search.
 - 🐳 **Simple Deployment:** Get up and running quickly using Docker or npx.
 
 ## Overview
@@ -203,6 +204,45 @@ This approach is recommended when you need local file access (e.g., indexing doc
    Remember to replace `"sk-proj-..."` with your actual OpenAI API key and restart the application.
 
 3. **That's it!** The server will now be available to your AI assistant.
+
+## Using the Web Interface
+
+You can access a web-based GUI at `http://localhost:3000` to monitor job status, view indexed libraries, and manage documentation through your browser. **Important: Use the same method (Docker or npx) for both the server and web interface to ensure access to the same indexed documentation.**
+
+### Using Docker Web Interface
+
+If you're running the server with Docker, use Docker for the web interface as well:
+
+```bash
+docker run --rm \
+  -e OPENAI_API_KEY="your-openai-api-key-here" \
+  -v docs-mcp-data:/data \
+  -p 3000:3000 \
+  ghcr.io/arabold/docs-mcp-server:latest \
+  docs-web
+```
+
+Make sure to:
+
+- Use the same volume name (`docs-mcp-data` in this example) as your server
+- Map port 3000 with `-p 3000:3000`
+- Pass any configuration environment variables with `-e` flags
+
+### Using npx Web Interface
+
+If you're running the server with npx, use npx for the web interface as well:
+
+```bash
+npx -y --package=@arabold/docs-mcp-server docs-web
+```
+
+The npx approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and web interface.
+
+The web interface provides:
+
+- Live job queue monitoring with automatic updates
+- Overview of indexed libraries and their versions
+- Responsive layout with dark mode support
 
 ## Using the CLI
 

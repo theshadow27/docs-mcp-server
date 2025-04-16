@@ -8,6 +8,7 @@
 - When importing a relative path, avoid using file extensions like ".js" and ".ts".
 - ALWAYS add and update TSDoc for all classes, methods and functions. Focus on functionality and reasoning.
 - NEVER document individual parameters or return values if their use can easily be derived from their name.
+- ALWAYS ensure correct JSX/TSX syntax for @kitajs/html: use `class` and `safe`
 
 ## Architecture Documentation Guidelines
 

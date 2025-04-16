@@ -292,6 +292,77 @@ The document storage and retrieval system is divided into two main services:
 
 This separation of concerns improves the modularity, maintainability, and testability of the system.
 
+### Web Interface
+
+The web interface provides a GUI for interacting with the server, monitoring jobs, and viewing indexed libraries. It follows a simple server-side rendered architecture using modern web technologies.
+
+#### Technology Stack
+
+- **Fastify:** Web server framework
+- **`@kitajs/html`:** Server-side JSX rendering
+- **HTMX:** Dynamic content updates without full page reloads
+- **Tailwind/Flowbite:** Styling via CDN
+
+#### Component Structure
+
+The web interface is organized into three main parts:
+
+- Entry point (`src/web.ts`): Server initialization and environment setup
+- Core server (`src/web/web.ts`): Route configuration and static file serving
+- Route handlers (`src/web/routes/*.tsx`): JSX components that render HTML for each route
+
+#### Integration Flow
+
+```mermaid
+graph TD
+    subgraph "User Interfaces"
+        CLI("CLI: src/cli.ts")
+        MCP("MCP Server: src/server.ts")
+        WEB("Web Interface: src/web.ts")
+    end
+
+    subgraph "Core Tools"
+        T_Scrape("Scrape Tool")
+        T_Search("Search Tool")
+        T_Jobs("Job Tools")
+        T_Libs("Library Tools")
+        T_Remove("Remove Tool")
+        T_Fetch("Fetch URL Tool")
+        T_Find("Find Version Tool")
+    end
+
+    subgraph "Core Services"
+        Pipeline("Pipeline Manager")
+        Scraper("Scraper Service")
+        Store("Document Mgmt Service")
+        Retriever("Document Retriever Service")
+    end
+
+    CLI --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+    MCP --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+
+    subgraph "Web Server (src/web/web.ts)"
+        Routes("Route Handlers: src/web/routes/*.tsx")
+    end
+
+    WEB --> Routes
+    Routes -- "Calls Tools" --> T_Jobs & T_Libs
+
+    T_Scrape --> Pipeline
+    T_Jobs --> Pipeline
+    T_Libs --> Store
+    T_Search --> Retriever
+    T_Remove --> Store
+    T_Fetch --> Scraper
+    T_Find --> Store
+
+    Pipeline --> Scraper
+    Pipeline --> Store
+    Retriever --> Store
+```
+
+The web interface leverages HTMX for dynamic updates, allowing partial page refreshes for job status and library list changes without full page reloads. Static assets are served from the `public` directory with `index: false` to prevent interference with dynamic routes.
+
 ### Interface-Specific Adapters
 
 #### CLI (cli.ts)
