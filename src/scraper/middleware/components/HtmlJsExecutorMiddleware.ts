@@ -1,3 +1,4 @@
+import { JSDOM } from "jsdom";
 import { logger } from "../../../utils/logger";
 import type { FetchOptions, RawContent } from "../../fetcher/types";
 import { executeJsInSandbox } from "../../utils/sandbox";
@@ -5,11 +6,22 @@ import type { ContentProcessingContext, ContentProcessorMiddleware } from "../ty
 
 /**
  * Middleware to parse HTML content and execute embedded JavaScript within a secure sandbox.
- * It uses the `executeJsInSandbox` utility (Node.js `vm` + JSDOM) to run scripts.
+ * It uses the `executeJsInSandbox` utility (Node.js `vm` + JSDOM) to run scripts,
+ * including fetching external scripts.
  *
  * This middleware updates `context.content` with the HTML *after* script execution.
  * It may also populate `context.dom` with the final JSDOM window object, although
  * subsequent standard middleware should rely on the updated `context.content`.
+ *
+ * @remarks
+ * **WARNING:** This middleware provides a basic sandboxed JavaScript execution
+ * environment but is **not suitable for general production use** on arbitrary
+ * web pages. The JSDOM + Node VM environment lacks many Web APIs found in
+ * real browsers (e.g., `MutationObserver`, `IntersectionObserver`, layout-dependent APIs)
+ * and does not fully replicate browser script execution order (e.g., `async`, `defer`,
+ * dynamic script loading). Use with caution and primarily for pages with
+ * simple, known JavaScript dependencies. For robust rendering of complex pages,
+ * consider using a headless browser solution.
  */
 export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
   async process(
@@ -63,7 +75,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
             "application/x-javascript",
           ];
           // Allow common JS types or be lenient if type is generic/unknown
-          const mimeTypeLower = rawContent.mimeType.toLowerCase();
+          const mimeTypeLower = rawContent.mimeType.toLowerCase().split(";")[0].trim();
           if (
             !allowedMimeTypes.includes(mimeTypeLower) &&
             !["application/octet-stream", "unknown/unknown", ""].includes(mimeTypeLower) // Allow empty MIME type as well
@@ -133,7 +145,9 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       context.content = result.finalHtml;
 
       // Optionally, update the DOM object as well for potential custom middleware use
-      context.dom = result.window;
+      context.dom = new JSDOM(result.finalHtml, {
+        url: context.source,
+      }).window;
 
       // Add any errors encountered during script execution to the context
       if (result.errors.length > 0) {

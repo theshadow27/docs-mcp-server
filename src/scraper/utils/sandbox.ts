@@ -22,8 +22,6 @@ export interface SandboxExecutionOptions {
 export interface SandboxExecutionResult {
   /** The final HTML content after script execution. */
   finalHtml: string;
-  /** The JSDOM window object after script execution. */
-  window: DOMWindow;
   /** Any errors encountered during script execution. */
   errors: Error[];
 }
@@ -84,6 +82,8 @@ export async function executeJsInSandbox(
 
     for (const script of scripts) {
       const scriptSrc = script.src;
+      const scriptType =
+        script.type?.toLowerCase().split(";")[0].trim() || "text/javascript"; // Default to JavaScript if type is not specified
       let scriptContentToExecute: string | null = null;
       let scriptSourceDescription = "inline script"; // For logging
 
@@ -151,7 +151,12 @@ export async function executeJsInSandbox(
       }
 
       // Execute the script (either inline or fetched external)
-      if (scriptContentToExecute !== null) {
+      const allowedMimeTypes = [
+        "application/javascript",
+        "text/javascript",
+        "application/x-javascript",
+      ];
+      if (allowedMimeTypes.includes(scriptType) && scriptContentToExecute !== null) {
         logger.debug(`Executing ${scriptSourceDescription} in sandbox for ${url}`);
         try {
           runInContext(scriptContentToExecute, context, {
@@ -183,7 +188,6 @@ export async function executeJsInSandbox(
 
     return {
       finalHtml,
-      window,
       errors,
     };
   } catch (error) {
@@ -202,7 +206,6 @@ export async function executeJsInSandbox(
     // If setup fails, return the original HTML and any errors
     return {
       finalHtml: html,
-      window: jsdom?.window ?? ({} as DOMWindow), // Provide an empty object if window creation failed
       errors,
     };
   } finally {

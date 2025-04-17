@@ -61,7 +61,6 @@ describe("HtmlJsExecutorMiddleware", () => {
     // Default mock result for the sandbox
     mockSandboxResult = {
       finalHtml: "<p>Default Final HTML</p>",
-      window: { document: { title: "Mock Window" } } as unknown as DOMWindow,
       errors: [],
     };
     (executeJsInSandbox as Mock).mockResolvedValue(mockSandboxResult);
@@ -93,21 +92,6 @@ describe("HtmlJsExecutorMiddleware", () => {
     await middleware.process(mockContext, mockNext);
 
     expect(mockContext.content).toBe("<p>Modified HTML</p>");
-  });
-
-  it("should update context.dom with window from sandbox result", async () => {
-    mockContext.content = "<p>Initial</p>";
-    const mockWindow = {
-      document: { body: {} },
-      close: vi.fn(),
-    } as unknown as DOMWindow;
-    mockSandboxResult.window = mockWindow;
-    (executeJsInSandbox as Mock).mockResolvedValue(mockSandboxResult);
-    const middleware = new HtmlJsExecutorMiddleware();
-
-    await middleware.process(mockContext, mockNext);
-
-    expect(mockContext.dom).toBe(mockWindow);
   });
 
   it("should add sandbox errors to context.errors", async () => {

@@ -5,7 +5,6 @@ import type {
   RawContent,
 } from "../scraper/fetcher";
 import { ContentProcessingPipeline } from "../scraper/middleware/Pipeline";
-// Import new and updated middleware from index
 import {
   HtmlDomParserMiddleware,
   HtmlMetadataExtractorMiddleware,
@@ -14,7 +13,7 @@ import {
   MarkdownMetadataExtractorMiddleware,
 } from "../scraper/middleware/components";
 import type { ContentProcessingContext } from "../scraper/middleware/types";
-import type { ScraperOptions } from "../scraper/types"; // Import ScraperOptions
+import type { ScraperOptions } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { ToolError } from "./errors";
@@ -91,6 +90,7 @@ export class FetchUrlTool {
         metadata: {},
         links: [], // Links not needed for this tool's output
         errors: [],
+        fetcher,
         // Create a minimal ScraperOptions object for the context
         options: {
           url: url, // Use the input URL
