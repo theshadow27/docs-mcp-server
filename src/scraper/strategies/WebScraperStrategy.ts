@@ -91,7 +91,8 @@ export class WebScraperStrategy extends BaseScraperStrategy {
         metadata: {},
         links: [],
         errors: [],
-        options: options, // Pass the full options object
+        options,
+        fetcher: this.httpFetcher,
       };
 
       let pipeline: ContentProcessingPipeline;
