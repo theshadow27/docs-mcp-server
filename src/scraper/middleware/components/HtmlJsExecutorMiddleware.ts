@@ -1,5 +1,6 @@
 import { logger } from "../../../utils/logger";
-import { executeJsInSandbox } from "../../utils/sandbox"; // Updated import path
+import type { FetchOptions, RawContent } from "../../fetcher/types";
+import { executeJsInSandbox } from "../../utils/sandbox";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
 /**
@@ -32,10 +33,97 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
         `Executing JavaScript in sandbox for HTML content from ${context.source}`,
       );
 
+      // Define the callback for fetching external scripts
+      const fetchScriptContentCallback = async (
+        scriptUrl: string,
+      ): Promise<string | null> => {
+        if (!context.fetcher) {
+          logger.warn(
+            `No fetcher available in context to fetch external script: ${scriptUrl}`,
+          );
+          return null;
+        }
+        try {
+          logger.debug(`Fetching external script via context fetcher: ${scriptUrl}`);
+          // Pass relevant options, especially the signal for cancellation
+          const fetchOptions: FetchOptions = {
+            signal: context.options?.signal, // Pass signal from context if available
+            followRedirects: true, // Generally want to follow redirects for scripts
+            // timeout: context.options?.fetchTimeout // Add if timeout is configurable at context level
+          };
+          const rawContent: RawContent = await context.fetcher.fetch(
+            scriptUrl,
+            fetchOptions,
+          );
+
+          // Optional: Check MIME type to be reasonably sure it's JavaScript
+          const allowedMimeTypes = [
+            "application/javascript",
+            "text/javascript",
+            "application/x-javascript",
+          ];
+          // Allow common JS types or be lenient if type is generic/unknown
+          const mimeTypeLower = rawContent.mimeType.toLowerCase();
+          if (
+            !allowedMimeTypes.includes(mimeTypeLower) &&
+            !["application/octet-stream", "unknown/unknown", ""].includes(mimeTypeLower) // Allow empty MIME type as well
+          ) {
+            logger.warn(
+              `Skipping execution of external script ${scriptUrl} due to unexpected MIME type: ${rawContent.mimeType}`,
+            );
+            context.errors.push(
+              new Error(
+                `Skipping execution of external script ${scriptUrl} due to unexpected MIME type: ${rawContent.mimeType}`,
+              ),
+            );
+            return null;
+          }
+
+          // Convert content to string using provided encoding or default to utf-8
+          const contentBuffer = Buffer.isBuffer(rawContent.content)
+            ? rawContent.content
+            : Buffer.from(rawContent.content);
+
+          // Validate encoding before using it
+          const validEncodings: BufferEncoding[] = [
+            "ascii",
+            "utf8",
+            "utf-8",
+            "utf16le",
+            "ucs2",
+            "ucs-2",
+            "base64",
+            "base64url",
+            "latin1",
+            "binary",
+            "hex",
+          ];
+          const encoding =
+            rawContent.encoding &&
+            validEncodings.includes(rawContent.encoding.toLowerCase() as BufferEncoding)
+              ? (rawContent.encoding.toLowerCase() as BufferEncoding)
+              : "utf-8";
+
+          return contentBuffer.toString(encoding);
+        } catch (fetchError) {
+          // fetcher.fetch is expected to throw on error (e.g., 404, network error)
+          const message =
+            fetchError instanceof Error ? fetchError.message : String(fetchError);
+          logger.warn(`Failed to fetch external script ${scriptUrl}: ${message}`); // Use warn for fetch failures like 404
+          context.errors.push(
+            new Error(`Failed to fetch external script ${scriptUrl}: ${message}`, {
+              cause: fetchError,
+            }),
+          );
+          return null; // Indicate failure to the sandbox runner
+        }
+      };
+
       // TODO: Plumb timeout options from context.options if available
       const sandboxOptions = {
         html: initialHtml,
         url: context.source,
+        fetchScriptContent: fetchScriptContentCallback, // Pass the callback
         // timeout: context.options?.scriptTimeout // Example for future enhancement
       };
 

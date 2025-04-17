@@ -39,6 +39,8 @@ export interface ScraperOptions {
   ignoreErrors?: boolean;
   /** CSS selectors for elements to exclude during HTML processing */
   excludeSelectors?: string[];
+  /** Optional AbortSignal for cancellation */
+  signal?: AbortSignal;
 }
 
 /**

@@ -12,6 +12,8 @@ export interface SandboxExecutionOptions {
   timeout?: number;
   /** Initial HTML content. */
   html: string;
+  /** Optional callback to fetch external script content. */
+  fetchScriptContent?: (url: string) => Promise<string | null>; // Returns null on fetch failure
 }
 
 /**
@@ -81,41 +83,97 @@ export async function executeJsInSandbox(
     logger.debug(`Found ${scripts.length} script(s) to execute in sandbox for ${url}`);
 
     for (const script of scripts) {
-      const scriptContent = script.textContent || "";
       const scriptSrc = script.src;
+      let scriptContentToExecute: string | null = null;
+      let scriptSourceDescription = "inline script"; // For logging
 
       if (scriptSrc) {
-        // TODO (#18): Implement fetching and executing external scripts securely.
-        // This requires careful consideration of security (CORS, resource limits).
-        // For now, we'll skip external scripts.
-        logger.warn(
-          `Skipping external script execution (src=${scriptSrc}) in sandbox for ${url}. Feature not yet implemented.`,
-        );
-        continue;
+        scriptSourceDescription = `external script (src=${scriptSrc})`;
+        if (!options.fetchScriptContent) {
+          logger.warn(
+            `Skipping ${scriptSourceDescription} in sandbox for ${url}: No fetchScriptContent callback provided.`,
+          );
+          continue;
+        }
+
+        let resolvedUrl: string;
+        try {
+          resolvedUrl = new URL(scriptSrc, url).toString();
+          logger.debug(
+            `Attempting to fetch ${scriptSourceDescription} from ${resolvedUrl}`,
+          );
+        } catch (urlError) {
+          const message = urlError instanceof Error ? urlError.message : String(urlError);
+          logger.warn(
+            `Skipping ${scriptSourceDescription}: Invalid URL format - ${message}`,
+          );
+          errors.push(
+            new Error(`Invalid script URL ${scriptSrc} on page ${url}: ${message}`, {
+              cause: urlError,
+            }),
+          );
+          continue;
+        }
+
+        try {
+          scriptContentToExecute = await options.fetchScriptContent(resolvedUrl);
+          if (scriptContentToExecute === null) {
+            // Fetch callback already logged the specific error and added to context.errors
+            logger.warn(
+              `Skipping execution of ${scriptSourceDescription} from ${resolvedUrl} due to fetch failure or invalid content.`,
+            );
+            // Error should have been added by the callback, no need to add again here.
+            continue;
+          }
+          logger.debug(
+            `Successfully fetched ${scriptSourceDescription} from ${resolvedUrl}`,
+          );
+        } catch (fetchError) {
+          // Catch errors from the fetchScriptContent callback itself
+          const message =
+            fetchError instanceof Error ? fetchError.message : String(fetchError);
+          logger.error(
+            `Error during fetch callback for ${scriptSourceDescription} from ${resolvedUrl}: ${message}`,
+          );
+          errors.push(
+            new Error(`Fetch callback failed for script ${resolvedUrl}: ${message}`, {
+              cause: fetchError,
+            }),
+          );
+          continue; // Skip execution if fetch callback throws
+        }
+      } else {
+        // Inline script
+        scriptContentToExecute = script.textContent || "";
+        if (!scriptContentToExecute.trim()) {
+          continue; // Skip empty inline scripts
+        }
       }
 
-      if (!scriptContent.trim()) {
-        continue; // Skip empty inline scripts
-      }
-
-      logger.debug(`Executing inline script in sandbox for ${url}`);
-      try {
-        // Execute the script content within the VM context
-        runInContext(scriptContent, context, {
-          timeout,
-          displayErrors: true, // Let VM handle basic error formatting
-        });
-      } catch (error) {
-        const executionError =
-          error instanceof Error
-            ? error
-            : new Error(`Script execution failed: ${String(error)}`);
-        logger.error(
-          `Error executing script in sandbox for ${url}: ${executionError.message}`,
-        );
-        errors.push(executionError);
-        // Decide whether to continue with other scripts or stop on first error
-        // For now, let's continue
+      // Execute the script (either inline or fetched external)
+      if (scriptContentToExecute !== null) {
+        logger.debug(`Executing ${scriptSourceDescription} in sandbox for ${url}`);
+        try {
+          runInContext(scriptContentToExecute, context, {
+            timeout,
+            displayErrors: true,
+          });
+        } catch (error) {
+          const executionError =
+            error instanceof Error
+              ? error
+              : new Error(`Script execution failed: ${String(error)}`);
+          logger.error(
+            `Error executing ${scriptSourceDescription} in sandbox for ${url}: ${executionError.message}`,
+          );
+          // Add context about which script failed
+          const errorWithContext = new Error(
+            `Error executing ${scriptSourceDescription} from ${scriptSrc || "inline"}: ${executionError.message}`,
+            { cause: executionError },
+          );
+          errors.push(errorWithContext);
+          // Continue with other scripts even if one fails
+        }
       }
     }
 

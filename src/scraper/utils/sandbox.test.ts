@@ -137,10 +137,9 @@ describe("executeJsInSandbox", () => {
     // The error message comes from the vm execution, not the mock directly
     expect(result.errors[0].message).toContain("Test script error");
     expect(result.finalHtml).toContain("<p>Should still exist</p>");
+    // Updated expectation to match exact error format logged by the sandbox
     expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Error executing script in sandbox for http://example.com/error: Script execution failed: Error: Test script error",
-      ),
+      "Error executing inline script in sandbox for http://example.com/error: Script execution failed: Error: Test script error",
     );
   });
 
@@ -189,14 +188,13 @@ describe("executeJsInSandbox", () => {
 
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].message).toMatch(/Script execution timed out/i);
+    // Updated expectation to match exact error format logged by the sandbox
     expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Error executing script in sandbox for http://example.com/timeout: Script execution failed: Error: Script execution timed out after 50ms",
-      ),
+      "Error executing inline script in sandbox for http://example.com/timeout: Script execution failed: Error: Script execution timed out after 50ms",
     );
   });
 
-  it("should skip external scripts and log a warning", async () => {
+  it("should skip external scripts and log a warning if fetchScriptContent is not provided", async () => {
     const initialHtml = `
       <!DOCTYPE html>
       <html>
@@ -232,9 +230,9 @@ describe("executeJsInSandbox", () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.finalHtml).toContain("<p>Content</p>");
+    // Verify the new warning message when fetchScriptContent is missing
     expect(logger.warn).toHaveBeenCalledWith(
-      // Corrected expectation (does NOT include base URL, uses original src)
-      "Skipping external script execution (src=external.js) in sandbox for http://example.com/external. Feature not yet implemented.",
+      "Skipping external script (src=external.js) in sandbox for http://example.com/external: No fetchScriptContent callback provided.",
     );
   });
 
@@ -312,5 +310,227 @@ describe("executeJsInSandbox", () => {
     expect(logger.debug).toHaveBeenCalledWith('Sandbox log: ["Info message",123]');
     expect(logger.debug).toHaveBeenCalledWith('Sandbox warn: ["Warning message"]');
     expect(logger.debug).toHaveBeenCalledWith('Sandbox error: ["Error message"]');
+  });
+
+  // --- Tests for fetchScriptContent ---
+
+  it("should fetch and execute external script via fetchScriptContent callback", async () => {
+    const initialHtml = `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script src="external.js"></script>
+          <p id="target">Initial</p>
+        </body>
+      </html>
+    `;
+    const externalScriptContent =
+      "document.getElementById('target').textContent = 'Modified by external';";
+    const mockFetch = vi.fn().mockResolvedValue(externalScriptContent);
+
+    // Mock JSDOM to find the script tag
+    const mockWindow = {
+      document: {
+        querySelectorAll: vi.fn(() => [{ textContent: "", src: "external.js" }]),
+        getElementById: vi.fn(() => ({ textContent: "Initial" })), // Mock element access
+      },
+      close: vi.fn(),
+      setTimeout: global.setTimeout,
+      clearTimeout: global.clearTimeout,
+      setInterval: global.setInterval,
+      clearInterval: global.clearInterval,
+    };
+    vi.mocked(JSDOM).mockImplementation(
+      () =>
+        ({
+          window: mockWindow,
+          // Simulate serialization after modification by external script
+          serialize: vi.fn(() => initialHtml.replace("Initial", "Modified by external")),
+        }) as unknown as JSDOM,
+    );
+
+    const result = await executeJsInSandbox({
+      html: initialHtml,
+      url: "http://example.com/fetch-success",
+      fetchScriptContent: mockFetch,
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith("http://example.com/external.js");
+    expect(result.errors).toHaveLength(0);
+    expect(result.finalHtml).toContain("Modified by external");
+    expect(logger.debug).toHaveBeenCalledWith(
+      "Attempting to fetch external script (src=external.js) from http://example.com/external.js",
+    );
+    expect(logger.debug).toHaveBeenCalledWith(
+      "Successfully fetched external script (src=external.js) from http://example.com/external.js",
+    );
+    expect(logger.debug).toHaveBeenCalledWith(
+      "Executing external script (src=external.js) in sandbox for http://example.com/fetch-success",
+    );
+  });
+
+  it("should handle fetch failure when fetchScriptContent returns null", async () => {
+    const initialHtml = `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script src="fetch-fail.js"></script>
+          <p>Content</p>
+        </body>
+      </html>
+    `;
+    const mockFetch = vi.fn().mockResolvedValue(null); // Simulate fetch failure
+
+    // Mock JSDOM to find the script tag
+    vi.mocked(JSDOM).mockImplementation(
+      () =>
+        ({
+          window: {
+            document: {
+              querySelectorAll: vi.fn(() => [{ textContent: "", src: "fetch-fail.js" }]),
+            },
+            close: vi.fn(),
+            setTimeout: global.setTimeout,
+            clearTimeout: global.clearTimeout,
+            setInterval: global.setInterval,
+            clearInterval: global.clearInterval,
+          },
+          serialize: vi.fn(() => initialHtml), // HTML remains unchanged
+        }) as unknown as JSDOM,
+    );
+
+    const result = await executeJsInSandbox({
+      html: initialHtml,
+      url: "http://example.com/fetch-null",
+      fetchScriptContent: mockFetch,
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith("http://example.com/fetch-fail.js");
+    // Error should be added by the *caller* (HtmlJsExecutorMiddleware) based on null return,
+    // so sandbox itself reports 0 errors directly from execution.
+    // expect(result.errors).toHaveLength(1); // This depends on whether the callback adds the error
+    expect(result.finalHtml).toContain("<p>Content</p>"); // Content unchanged
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Skipping execution of external script (src=fetch-fail.js) from http://example.com/fetch-fail.js due to fetch failure or invalid content.",
+    );
+    // Verify script execution was NOT attempted
+    expect(logger.debug).not.toHaveBeenCalledWith(
+      expect.stringContaining("Executing external script (src=fetch-fail.js)"),
+    );
+  });
+
+  it("should handle fetch error when fetchScriptContent throws", async () => {
+    const initialHtml = `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script src="fetch-throw.js"></script>
+          <p>Content</p>
+        </body>
+      </html>
+    `;
+    const fetchError = new Error("Network Error");
+    const mockFetch = vi.fn().mockRejectedValue(fetchError); // Simulate fetch throwing
+
+    // Mock JSDOM to find the script tag
+    vi.mocked(JSDOM).mockImplementation(
+      () =>
+        ({
+          window: {
+            document: {
+              querySelectorAll: vi.fn(() => [{ textContent: "", src: "fetch-throw.js" }]),
+            },
+            close: vi.fn(),
+            setTimeout: global.setTimeout,
+            clearTimeout: global.clearTimeout,
+            setInterval: global.setInterval,
+            clearInterval: global.clearInterval,
+          },
+          serialize: vi.fn(() => initialHtml), // HTML remains unchanged
+        }) as unknown as JSDOM,
+    );
+
+    const result = await executeJsInSandbox({
+      html: initialHtml,
+      url: "http://example.com/fetch-throw",
+      fetchScriptContent: mockFetch,
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith("http://example.com/fetch-throw.js");
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain(
+      "Fetch callback failed for script http://example.com/fetch-throw.js: Network Error",
+    );
+    expect(result.errors[0].cause).toBe(fetchError);
+    expect(result.finalHtml).toContain("<p>Content</p>"); // Content unchanged
+    expect(logger.error).toHaveBeenCalledWith(
+      "Error during fetch callback for external script (src=fetch-throw.js) from http://example.com/fetch-throw.js: Network Error",
+    );
+    // Verify script execution was NOT attempted
+    expect(logger.debug).not.toHaveBeenCalledWith(
+      expect.stringContaining("Executing external script (src=fetch-throw.js)"),
+    );
+  });
+
+  it("should handle invalid script URLs", async () => {
+    const initialHtml = `
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <script src="http://invalid-url"></script>
+          <p>Content</p>
+        </body>
+      </html>
+    `;
+    // Simulate fetch failing for the resolved (but invalid) URL
+    const fetchError = new Error("Fetch failed for invalid URL");
+    const mockFetch = vi.fn().mockRejectedValue(fetchError);
+
+    // Mock JSDOM to find the script tag
+    vi.mocked(JSDOM).mockImplementation(
+      () =>
+        ({
+          window: {
+            document: {
+              querySelectorAll: vi.fn(() => [
+                { textContent: "", src: "http://invalid-url" },
+              ]),
+            },
+            close: vi.fn(),
+            setTimeout: global.setTimeout,
+            clearTimeout: global.clearTimeout,
+            setInterval: global.setInterval,
+            clearInterval: global.clearInterval,
+          },
+          serialize: vi.fn(() => initialHtml), // HTML remains unchanged
+        }) as unknown as JSDOM,
+    );
+
+    const result = await executeJsInSandbox({
+      html: initialHtml,
+      url: "http://example.com/invalid-script-url",
+      fetchScriptContent: mockFetch,
+    });
+
+    // Expect fetch to be called with the resolved URL
+    const resolvedUrl = "http://invalid-url/"; // How '://invalid-url' resolves against the base
+    expect(mockFetch).toHaveBeenCalledWith(resolvedUrl);
+
+    // Expect the error to be the one from the fetch callback throwing
+    expect(result.errors).toHaveLength(1); // Check that an error was added
+    // Verify the cause of the error is the original fetchError
+    expect(result.errors[0].cause).toBe(fetchError);
+    // Optionally, check if the message contains the original error message
+    expect(result.errors[0].message).toContain("Fetch failed for invalid URL");
+
+    expect(result.finalHtml).toContain("<p>Content</p>"); // Content unchanged
+    // Expect the error log from the fetch callback failure
+    expect(logger.error).toHaveBeenCalledWith(
+      `Error during fetch callback for external script (src=http://invalid-url) from ${resolvedUrl}: Fetch failed for invalid URL`,
+    );
+    // Ensure no warning about URL format was logged, as URL parsing succeeded
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("Invalid URL format"),
+    );
   });
 });
