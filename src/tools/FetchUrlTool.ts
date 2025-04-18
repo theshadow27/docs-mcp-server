@@ -4,7 +4,7 @@ import type {
   HttpFetcher,
   RawContent,
 } from "../scraper/fetcher";
-import { ContentProcessingPipeline } from "../scraper/middleware/Pipeline";
+import { ContentProcessingPipeline } from "../scraper/middleware/ContentProcessorPipeline";
 import {
   HtmlDomParserMiddleware,
   HtmlMetadataExtractorMiddleware,

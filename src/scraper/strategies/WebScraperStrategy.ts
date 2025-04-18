@@ -4,7 +4,7 @@ import type { UrlNormalizerOptions } from "../../utils/url";
 import { hasSameDomain, hasSameHostname, isSubpath } from "../../utils/url";
 import { HttpFetcher } from "../fetcher";
 import type { RawContent } from "../fetcher/types";
-import { ContentProcessingPipeline } from "../middleware/Pipeline";
+import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
   HtmlDomParserMiddleware,

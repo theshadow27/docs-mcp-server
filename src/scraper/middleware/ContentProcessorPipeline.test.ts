@@ -1,7 +1,6 @@
-import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 import type { ScraperOptions } from "../types";
-import { ContentProcessingPipeline } from "./Pipeline";
+import { ContentProcessingPipeline } from "./ContentProcessorPipeline";
 import {
   HtmlDomParserMiddleware,
   HtmlLinkExtractorMiddleware,

@@ -4,7 +4,7 @@ import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import { FileFetcher } from "../fetcher";
 import type { RawContent } from "../fetcher/types";
-import { ContentProcessingPipeline } from "../middleware/Pipeline";
+import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
   HtmlDomParserMiddleware,
