@@ -11,7 +11,7 @@ import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
  * - 'auto': Currently defaults to using `HtmlPlaywrightMiddleware`. Future implementations
  *   might add more sophisticated logic for 'auto' mode.
  */
-export class HtmlSmartProcessorMiddleware implements ContentProcessorMiddleware {
+export class HtmlSelectProcessorMiddleware implements ContentProcessorMiddleware {
   private readonly domProcessor: HtmlDomParserMiddleware;
   private readonly playwrightProcessor: HtmlPlaywrightMiddleware;
 

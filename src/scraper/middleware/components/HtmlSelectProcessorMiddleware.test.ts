@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContentProcessingContext } from "../types";
 import { HtmlDomParserMiddleware } from "./HtmlDomParserMiddleware";
 import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
-import { HtmlSmartProcessorMiddleware } from "./HtmlSmartProcessorMiddleware";
+import { HtmlSelectProcessorMiddleware } from "./HtmlSelectProcessorMiddleware";
 
 // Mock the underlying processors
 vi.mock("./HtmlDomParserMiddleware");
@@ -12,7 +12,7 @@ vi.mock("./HtmlPlaywrightMiddleware");
 const MockedHtmlDomParserMiddleware = vi.mocked(HtmlDomParserMiddleware);
 const MockedHtmlPlaywrightMiddleware = vi.mocked(HtmlPlaywrightMiddleware);
 
-describe("HtmlSmartProcessorMiddleware", () => {
+describe("HtmlSelectProcessorMiddleware", () => {
   const mockNext = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe("HtmlSmartProcessorMiddleware", () => {
 
   it("should use HtmlDomParserMiddleware when scrapeMode is 'fetch'", async () => {
     const context = createContext("fetch");
-    const middleware = new HtmlSmartProcessorMiddleware();
+    const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
 
@@ -65,7 +65,7 @@ describe("HtmlSmartProcessorMiddleware", () => {
 
   it("should use HtmlPlaywrightMiddleware when scrapeMode is 'playwright'", async () => {
     const context = createContext("playwright");
-    const middleware = new HtmlSmartProcessorMiddleware();
+    const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
 
@@ -85,7 +85,7 @@ describe("HtmlSmartProcessorMiddleware", () => {
 
   it("should use HtmlPlaywrightMiddleware when scrapeMode is 'auto'", async () => {
     const context = createContext("auto");
-    const middleware = new HtmlSmartProcessorMiddleware();
+    const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
 
@@ -105,7 +105,7 @@ describe("HtmlSmartProcessorMiddleware", () => {
 
   it("should default to 'auto' (Playwright) when scrapeMode is undefined", async () => {
     const context = createContext(undefined); // Explicitly undefined
-    const middleware = new HtmlSmartProcessorMiddleware();
+    const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
 

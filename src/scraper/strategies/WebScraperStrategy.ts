@@ -10,7 +10,7 @@ import {
   HtmlLinkExtractorMiddleware,
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
-  HtmlSmartProcessorMiddleware, // Import the new middleware
+  HtmlSelectProcessorMiddleware, // Import the new middleware
   HtmlToMarkdownMiddleware,
   MarkdownLinkExtractorMiddleware,
   MarkdownMetadataExtractorMiddleware,
@@ -99,7 +99,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       if (initialContext.contentType.startsWith("text/html")) {
         // Updated HTML pipeline order
         pipeline = new ContentProcessingPipeline([
-          new HtmlSmartProcessorMiddleware(), // Use the smart processor
+          new HtmlSelectProcessorMiddleware(), // Use the smart processor
           new HtmlMetadataExtractorMiddleware(),
           new HtmlLinkExtractorMiddleware(), // Extract links before cleaning
           new HtmlSanitizerMiddleware(),
