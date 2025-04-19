@@ -44,6 +44,8 @@ jobs:
         run: npm ci
 
       - name: Run tests
+        env:
+          PLAYWRIGHT_LAUNCH_ARGS: '--no-sandbox' # Add args needed for CI
         run: npm run test
 
   build:
