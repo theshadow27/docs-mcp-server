@@ -228,10 +228,26 @@ async function main() {
         "--no-follow-redirects",
         "Disable following HTTP redirects (default: follow redirects)",
       )
+      .option(
+        "--scrape-mode <mode>",
+        "HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default)",
+        (value) => {
+          const validModes = ["fetch", "playwright", "auto"];
+          if (!validModes.includes(value)) {
+            console.warn(
+              `Warning: Invalid scrape mode '${value}'. Using default 'auto'.`,
+            );
+            return "auto";
+          }
+          return value;
+        },
+        "auto",
+      )
       .action(async (url, options) => {
         const content = await tools.fetchUrl.execute({
           url,
           followRedirects: options.followRedirects,
+          scrapeMode: options.scrapeMode, // Pass the scrapeMode option
         });
         console.log(content);
       });

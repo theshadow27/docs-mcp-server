@@ -267,7 +267,8 @@ docs-cli fetch-url <url> [options]
 
 **Options:**
 
-- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects)
+- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects).
+- `--scrape-mode <mode>`: HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default).
 
 **Examples:**
 
