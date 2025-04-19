@@ -48,6 +48,7 @@ describe("WebScraperStrategy", () => {
       scope: "subpages",
       // Ensure followRedirects has a default for tests if needed by fetch mock checks
       followRedirects: true,
+      scrapeMode: "fetch", // fastest mode for testing
     };
 
     // No need to mock prototype anymore

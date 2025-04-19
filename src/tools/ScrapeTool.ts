@@ -29,6 +29,14 @@ export interface ScrapeToolOptions {
     followRedirects?: boolean;
     maxConcurrency?: number; // Note: Concurrency is now set when PipelineManager is created
     ignoreErrors?: boolean;
+    /**
+     * Determines the HTML processing strategy.
+     * - 'fetch': Use a simple DOM parser (faster, less JS support).
+     * - 'playwright': Use a headless browser (slower, full JS support).
+     * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
+     * @default 'auto'
+     */
+    scrapeMode?: "fetch" | "playwright" | "auto";
   };
   /** If false, returns jobId immediately without waiting. Defaults to true. */
   waitForCompletion?: boolean;
@@ -120,6 +128,7 @@ export class ScrapeTool {
       maxDepth: scraperOptions?.maxDepth ?? DEFAULT_MAX_DEPTH,
       maxConcurrency: scraperOptions?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
+      scrapeMode: scraperOptions?.scrapeMode ?? "auto", // Pass scrapeMode
     });
 
     logger.info(`🚀 Job ${jobId} enqueued for scraping.`);

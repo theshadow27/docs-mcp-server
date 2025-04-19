@@ -92,6 +92,21 @@ async function main() {
         "--no-follow-redirects",
         "Disable following HTTP redirects (default: follow redirects)",
       )
+      .option(
+        "--scrape-mode <mode>",
+        "HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default)",
+        (value) => {
+          const validModes = ["fetch", "playwright", "auto"];
+          if (!validModes.includes(value)) {
+            console.warn(
+              `Warning: Invalid scrape mode '${value}'. Using default 'auto'.`,
+            );
+            return "auto";
+          }
+          return value;
+        },
+        "auto",
+      )
       .action(async (library, url, options) => {
         // Update action parameters
         const result = await tools.scrape.execute({
@@ -105,6 +120,7 @@ async function main() {
             ignoreErrors: options.ignoreErrors,
             scope: options.scope,
             followRedirects: options.followRedirects, // This will be `true` by default, or `false` if --no-follow-redirects is used
+            scrapeMode: options.scrapeMode, // Pass the new scrapeMode option
           },
           // CLI always waits for completion (default behavior)
         });

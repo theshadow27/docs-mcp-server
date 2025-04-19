@@ -39,6 +39,14 @@ export interface ScraperOptions {
   ignoreErrors?: boolean;
   /** CSS selectors for elements to exclude during HTML processing */
   excludeSelectors?: string[];
+  /**
+   * Determines the HTML processing strategy.
+   * - 'fetch': Use a simple DOM parser (faster, less JS support).
+   * - 'playwright': Use a headless browser (slower, full JS support).
+   * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
+   * @default 'auto'
+   */
+  scrapeMode?: "fetch" | "playwright" | "auto";
   /** Optional AbortSignal for cancellation */
   signal?: AbortSignal;
 }

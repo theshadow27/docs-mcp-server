@@ -7,10 +7,10 @@ import type { RawContent } from "../fetcher/types";
 import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
-  HtmlDomParserMiddleware,
   HtmlLinkExtractorMiddleware,
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
+  HtmlSmartProcessorMiddleware, // Import the new middleware
   HtmlToMarkdownMiddleware,
   MarkdownLinkExtractorMiddleware,
   MarkdownMetadataExtractorMiddleware,
@@ -99,7 +99,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       if (initialContext.contentType.startsWith("text/html")) {
         // Updated HTML pipeline order
         pipeline = new ContentProcessingPipeline([
-          new HtmlDomParserMiddleware(),
+          new HtmlSmartProcessorMiddleware(), // Use the smart processor
           new HtmlMetadataExtractorMiddleware(),
           new HtmlLinkExtractorMiddleware(), // Extract links before cleaning
           new HtmlSanitizerMiddleware(),

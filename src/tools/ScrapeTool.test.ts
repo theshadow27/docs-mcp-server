@@ -143,6 +143,7 @@ describe("ScrapeTool", () => {
         maxDepth: 2, // Overridden
         maxConcurrency: 5, // Test override
         ignoreErrors: false, // Overridden
+        scrapeMode: "auto", // Add expected scrapeMode
       },
     );
     expect(mockManagerInstance.waitForJobCompletion).toHaveBeenCalledWith(MOCK_JOB_ID);
