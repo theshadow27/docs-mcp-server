@@ -1,3 +1,4 @@
+import { ScrapeMode } from "../../types";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 import { HtmlDomParserMiddleware } from "./HtmlDomParserMiddleware";
 import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
@@ -30,15 +31,15 @@ export class HtmlSelectProcessorMiddleware implements ContentProcessorMiddleware
     context: ContentProcessingContext,
     next: () => Promise<void>,
   ): Promise<void> {
-    // Default to 'auto' if scrapeMode is not provided
-    const mode = context.options?.scrapeMode ?? "auto";
+    // Default to Auto if scrapeMode is not provided
+    const mode = context.options?.scrapeMode ?? ScrapeMode.Auto;
 
     let selectedProcessor: ContentProcessorMiddleware;
 
-    if (mode === "fetch") {
+    if (mode === ScrapeMode.Fetch) {
       selectedProcessor = this.domProcessor;
     } else {
-      // Default to Playwright for 'playwright' and 'auto' modes
+      // Default to Playwright for Playwright and Auto modes
       selectedProcessor = this.playwrightProcessor;
     }
 

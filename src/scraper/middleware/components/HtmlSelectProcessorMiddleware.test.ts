@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ScrapeMode } from "../../types";
 import type { ContentProcessingContext } from "../types";
 import { HtmlDomParserMiddleware } from "./HtmlDomParserMiddleware";
 import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
@@ -26,9 +27,7 @@ describe("HtmlSelectProcessorMiddleware", () => {
   });
 
   // Helper to create a basic context
-  const createContext = (
-    scrapeMode?: "fetch" | "playwright" | "auto",
-  ): ContentProcessingContext => ({
+  const createContext = (scrapeMode?: ScrapeMode): ContentProcessingContext => ({
     content: "<html><body>Test</body></html>",
     contentType: "text/html",
     source: "http://example.com",
@@ -43,8 +42,8 @@ describe("HtmlSelectProcessorMiddleware", () => {
     },
   });
 
-  it("should use HtmlDomParserMiddleware when scrapeMode is 'fetch'", async () => {
-    const context = createContext("fetch");
+  it("should use HtmlDomParserMiddleware when scrapeMode is Fetch", async () => {
+    const context = createContext(ScrapeMode.Fetch);
     const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
@@ -63,8 +62,8 @@ describe("HtmlSelectProcessorMiddleware", () => {
     expect(playwrightInstance.process).not.toHaveBeenCalled();
   });
 
-  it("should use HtmlPlaywrightMiddleware when scrapeMode is 'playwright'", async () => {
-    const context = createContext("playwright");
+  it("should use HtmlPlaywrightMiddleware when scrapeMode is Playwright", async () => {
+    const context = createContext(ScrapeMode.Playwright);
     const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);
@@ -83,8 +82,8 @@ describe("HtmlSelectProcessorMiddleware", () => {
     expect(domInstance.process).not.toHaveBeenCalled();
   });
 
-  it("should use HtmlPlaywrightMiddleware when scrapeMode is 'auto'", async () => {
-    const context = createContext("auto");
+  it("should use HtmlPlaywrightMiddleware when scrapeMode is Auto", async () => {
+    const context = createContext(ScrapeMode.Auto);
     const middleware = new HtmlSelectProcessorMiddleware();
 
     await middleware.process(context, mockNext);

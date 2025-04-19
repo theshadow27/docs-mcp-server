@@ -5,6 +5,7 @@ import packageJson from "../package.json";
 import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "./config";
 import { PipelineManager } from "./pipeline/PipelineManager";
 import { FileFetcher, HttpFetcher } from "./scraper/fetcher";
+import { ScrapeMode } from "./scraper/types"; // Import ScrapeMode enum
 import { DocumentManagementService } from "./store/DocumentManagementService";
 import {
   FetchUrlTool,
@@ -94,18 +95,18 @@ async function main() {
       )
       .option(
         "--scrape-mode <mode>",
-        "HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default)",
-        (value) => {
-          const validModes = ["fetch", "playwright", "auto"];
-          if (!validModes.includes(value)) {
+        `HTML processing strategy: '${ScrapeMode.Fetch}', '${ScrapeMode.Playwright}', '${ScrapeMode.Auto}' (default)`,
+        (value: string): ScrapeMode => {
+          const validModes = Object.values(ScrapeMode);
+          if (!validModes.includes(value as ScrapeMode)) {
             console.warn(
-              `Warning: Invalid scrape mode '${value}'. Using default 'auto'.`,
+              `Warning: Invalid scrape mode '${value}'. Using default '${ScrapeMode.Auto}'.`,
             );
-            return "auto";
+            return ScrapeMode.Auto;
           }
-          return value;
+          return value as ScrapeMode; // Cast to enum type
         },
-        "auto",
+        ScrapeMode.Auto, // Use enum default
       )
       .action(async (library, url, options) => {
         // Update action parameters
@@ -230,18 +231,18 @@ async function main() {
       )
       .option(
         "--scrape-mode <mode>",
-        "HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default)",
-        (value) => {
-          const validModes = ["fetch", "playwright", "auto"];
-          if (!validModes.includes(value)) {
+        `HTML processing strategy: '${ScrapeMode.Fetch}', '${ScrapeMode.Playwright}', '${ScrapeMode.Auto}' (default)`,
+        (value: string): ScrapeMode => {
+          const validModes = Object.values(ScrapeMode);
+          if (!validModes.includes(value as ScrapeMode)) {
             console.warn(
-              `Warning: Invalid scrape mode '${value}'. Using default 'auto'.`,
+              `Warning: Invalid scrape mode '${value}'. Using default '${ScrapeMode.Auto}'.`,
             );
-            return "auto";
+            return ScrapeMode.Auto;
           }
-          return value;
+          return value as ScrapeMode; // Cast to enum type
         },
-        "auto",
+        ScrapeMode.Auto, // Use enum default
       )
       .action(async (url, options) => {
         const content = await tools.fetchUrl.execute({

@@ -1,8 +1,9 @@
 import * as semver from "semver";
 import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../config";
 import type { PipelineManager } from "../pipeline/PipelineManager";
+import { ScrapeMode } from "../scraper/types";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
-import type { ProgressResponse } from "../types"; // Keep for options interface, though onProgress is removed from internal logic
+import type { ProgressResponse } from "../types";
 import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {
@@ -34,9 +35,9 @@ export interface ScrapeToolOptions {
      * - 'fetch': Use a simple DOM parser (faster, less JS support).
      * - 'playwright': Use a headless browser (slower, full JS support).
      * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
-     * @default 'auto'
+     * @default ScrapeMode.Auto
      */
-    scrapeMode?: "fetch" | "playwright" | "auto";
+    scrapeMode?: ScrapeMode;
   };
   /** If false, returns jobId immediately without waiting. Defaults to true. */
   waitForCompletion?: boolean;
@@ -128,7 +129,7 @@ export class ScrapeTool {
       maxDepth: scraperOptions?.maxDepth ?? DEFAULT_MAX_DEPTH,
       maxConcurrency: scraperOptions?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
-      scrapeMode: scraperOptions?.scrapeMode ?? "auto", // Pass scrapeMode
+      scrapeMode: scraperOptions?.scrapeMode ?? ScrapeMode.Auto, // Pass scrapeMode enum
     });
 
     logger.info(`🚀 Job ${jobId} enqueued for scraping.`);

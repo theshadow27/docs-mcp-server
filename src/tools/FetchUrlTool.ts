@@ -8,12 +8,12 @@ import { ContentProcessingPipeline } from "../scraper/middleware/ContentProcesso
 import {
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
-  HtmlSelectProcessorMiddleware, // Import the new middleware
+  HtmlSelectProcessorMiddleware,
   HtmlToMarkdownMiddleware,
   MarkdownMetadataExtractorMiddleware,
 } from "../scraper/middleware/components";
 import type { ContentProcessingContext } from "../scraper/middleware/types";
-import type { ScraperOptions } from "../scraper/types";
+import { ScrapeMode, type ScraperOptions } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { ToolError } from "./errors";
@@ -36,9 +36,9 @@ export interface FetchUrlToolOptions {
    * - 'fetch': Use a simple DOM parser (faster, less JS support).
    * - 'playwright': Use a headless browser (slower, full JS support).
    * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
-   * @default 'auto'
+   * @default ScrapeMode.Auto
    */
-  scrapeMode?: "fetch" | "playwright" | "auto";
+  scrapeMode?: ScrapeMode;
 }
 
 /**
@@ -66,7 +66,7 @@ export class FetchUrlTool {
    * @throws {ToolError} If fetching or processing fails
    */
   async execute(options: FetchUrlToolOptions): Promise<string> {
-    const { url, scrapeMode = "auto" } = options; // Destructure scrapeMode with default
+    const { url, scrapeMode = ScrapeMode.Auto } = options; // Destructure scrapeMode with enum default
 
     // Check all fetchers first (helpful for testing and future extensions)
     const canFetchResults = this.fetchers.map((f) => f.canFetch(url));

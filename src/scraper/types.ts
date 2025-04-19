@@ -1,5 +1,13 @@
-import type { Document } from "../types";
-import type { ProgressCallback } from "../types";
+import type { Document, ProgressCallback } from "../types";
+
+/**
+ * Enum defining the available HTML processing strategies.
+ */
+export enum ScrapeMode {
+  Fetch = "fetch",
+  Playwright = "playwright",
+  Auto = "auto",
+}
 
 /**
  * Strategy interface for implementing different scraping behaviors
@@ -44,9 +52,9 @@ export interface ScraperOptions {
    * - 'fetch': Use a simple DOM parser (faster, less JS support).
    * - 'playwright': Use a headless browser (slower, full JS support).
    * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
-   * @default 'auto'
+   * @default ScrapeMode.Auto
    */
-  scrapeMode?: "fetch" | "playwright" | "auto";
+  scrapeMode?: ScrapeMode;
   /** Optional AbortSignal for cancellation */
   signal?: AbortSignal;
 }
