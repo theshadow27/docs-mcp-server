@@ -1,3 +1,4 @@
+import { logger } from "../../utils/logger";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "./types";
 
 /**
@@ -46,7 +47,7 @@ export class ContentProcessingPipeline {
           error instanceof Error ? error : new Error(String(error)),
         );
         // Depending on desired behavior, you might re-throw or just log
-        console.error("Error in middleware pipeline:", error);
+        logger.warn(`Error in middleware pipeline: ${error}`);
         // Decide if pipeline should stop on error. For now, let's continue.
         // If stopping is desired, uncomment the next line:
         // throw error;

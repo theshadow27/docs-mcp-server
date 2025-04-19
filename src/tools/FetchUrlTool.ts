@@ -6,14 +6,14 @@ import type {
 } from "../scraper/fetcher";
 import { ContentProcessingPipeline } from "../scraper/middleware/ContentProcessorPipeline";
 import {
-  HtmlDomParserMiddleware,
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
+  HtmlSelectProcessorMiddleware,
   HtmlToMarkdownMiddleware,
   MarkdownMetadataExtractorMiddleware,
 } from "../scraper/middleware/components";
 import type { ContentProcessingContext } from "../scraper/middleware/types";
-import type { ScraperOptions } from "../scraper/types";
+import { ScrapeMode, type ScraperOptions } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { ToolError } from "./errors";
@@ -30,6 +30,15 @@ export interface FetchUrlToolOptions {
    * @default true
    */
   followRedirects?: boolean;
+
+  /**
+   * Determines the HTML processing strategy.
+   * - 'fetch': Use a simple DOM parser (faster, less JS support).
+   * - 'playwright': Use a headless browser (slower, full JS support).
+   * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
+   * @default ScrapeMode.Auto
+   */
+  scrapeMode?: ScrapeMode;
 }
 
 /**
@@ -57,7 +66,7 @@ export class FetchUrlTool {
    * @throws {ToolError} If fetching or processing fails
    */
   async execute(options: FetchUrlToolOptions): Promise<string> {
-    const { url } = options;
+    const { url, scrapeMode = ScrapeMode.Auto } = options; // Destructure scrapeMode with enum default
 
     // Check all fetchers first (helpful for testing and future extensions)
     const canFetchResults = this.fetchers.map((f) => f.canFetch(url));
@@ -104,6 +113,7 @@ export class FetchUrlTool {
           followRedirects: options.followRedirects ?? true,
           excludeSelectors: undefined, // Not currently configurable via this tool
           ignoreErrors: false,
+          scrapeMode: scrapeMode, // Pass the scrapeMode
         } satisfies ScraperOptions,
       };
 
@@ -111,10 +121,10 @@ export class FetchUrlTool {
       if (initialContext.contentType.startsWith("text/html")) {
         // Updated HTML pipeline for FetchUrlTool
         pipeline = new ContentProcessingPipeline([
-          new HtmlDomParserMiddleware(),
+          new HtmlSelectProcessorMiddleware(), // Use the selector middleware
           new HtmlMetadataExtractorMiddleware(), // Keep for potential future use, though title isn't returned
           // No Link Extractor needed
-          new HtmlSanitizerMiddleware(), // Renamed instantiation, use default selectors
+          new HtmlSanitizerMiddleware(), // Use default selectors
           new HtmlToMarkdownMiddleware(),
         ]);
       } else if (
