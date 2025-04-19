@@ -43,10 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        # FIXME: Why is this needed? Where does the version conflict come from?
+        run: ln -s /home/runner/.cache/ms-playwright/chromium-1161 /home/runner/.cache/ms-playwright/chromium-1169
+
       - name: Run tests
-        env:
-          PLAYWRIGHT_LAUNCH_ARGS: '--no-sandbox' # Add args needed for CI
-        run: npm run test
+        # run: npm run test
+        run: npx vitest run
 
   build:
     name: Build

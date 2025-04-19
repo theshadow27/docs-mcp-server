@@ -196,7 +196,6 @@ describe("HtmlPlaywrightMiddleware", () => {
     } as MockedObject<Page>;
     const browserSpy = {
       newPage: vi.fn().mockImplementation(() => {
-        console.log("Mocked newPage called");
         return pageSpy;
       }),
       // newPage: vi.fn().mockResolvedValue(pageSpy),
@@ -207,7 +206,6 @@ describe("HtmlPlaywrightMiddleware", () => {
 
     // const launchSpy = vi.spyOn(chromium, "launch").mockResolvedValue(browserSpy); // Use unknown cast
     const launchSpy = vi.spyOn(chromium, "launch").mockImplementation(() => {
-      console.log("Mocked launch called");
       return Promise.resolve(browserSpy as unknown as Browser);
     });
 

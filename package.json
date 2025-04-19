@@ -33,7 +33,7 @@
     "format": "biome format . --write",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "postinstall": "npx playwright install --with-deps chromium"
+    "postinstall": "npx playwright install --no-shell --with-deps chromium"
   },
   "dependencies": {
     "@joplin/turndown-plugin-gfm": "^1.0.61",

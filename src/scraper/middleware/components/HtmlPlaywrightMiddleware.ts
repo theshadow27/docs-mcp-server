@@ -21,7 +21,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       logger.debug(
         `Launching new Playwright browser instance (Chromium) with args: ${launchArgs.join(" ") || "none"}...`,
       );
-      this.browser = await chromium.launch({ args: launchArgs });
+      this.browser = await chromium.launch({ channel: "chromium", args: launchArgs });
       this.browser.on("disconnected", () => {
         logger.debug("Playwright browser instance disconnected.");
         this.browser = null;
