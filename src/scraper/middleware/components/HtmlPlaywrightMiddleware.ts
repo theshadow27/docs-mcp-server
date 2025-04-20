@@ -86,7 +86,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       // Use 'domcontentloaded' as scripts might need the initial DOM structure
       // Use 'networkidle' if waiting for async data fetches is critical, but slower.
       await page.goto(context.source, {
-        waitUntil: "domcontentloaded",
+        waitUntil: "load",
       });
 
       // Optionally, add a small delay or wait for a specific element if needed
