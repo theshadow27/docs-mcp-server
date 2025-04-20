@@ -1,4 +1,5 @@
-import { type DOMWindow, JSDOM } from "jsdom";
+import type { DOMWindow } from "jsdom";
+import { createJSDOM } from "../../../utils/dom";
 import { logger } from "../../../utils/logger";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
@@ -26,7 +27,8 @@ export class HtmlDomParserMiddleware implements ContentProcessorMiddleware {
     let domWindow: DOMWindow | undefined;
     try {
       logger.debug(`Parsing HTML content from ${context.source}`);
-      domWindow = new JSDOM(htmlString, {
+      // Use createJSDOM factory
+      domWindow = createJSDOM(htmlString, {
         url: context.source, // Provide the source URL to JSDOM
         // Consider adding other JSDOM options if needed, e.g., runScripts: "dangerously"
       }).window;

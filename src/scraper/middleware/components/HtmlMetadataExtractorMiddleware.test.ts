@@ -39,7 +39,7 @@ const createMockContext = (
     options: { ...createMockScraperOptions(source), ...options },
   };
   if (htmlContent && contentType.startsWith("text/html")) {
-    context.dom = new JSDOM(htmlContent).window;
+    context.dom = new JSDOM(htmlContent, { url: source }).window;
   }
   return context;
 };

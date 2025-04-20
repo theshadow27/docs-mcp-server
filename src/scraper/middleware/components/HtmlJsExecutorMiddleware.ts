@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import { createJSDOM } from "../../../utils/dom"; // Replace JSDOM import with createJSDOM
 import { logger } from "../../../utils/logger";
 import type { FetchOptions, RawContent } from "../../fetcher/types";
 import { executeJsInSandbox } from "../../utils/sandbox";
@@ -145,7 +145,8 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       context.content = result.finalHtml;
 
       // Optionally, update the DOM object as well for potential custom middleware use
-      context.dom = new JSDOM(result.finalHtml, {
+      // Use createJSDOM factory
+      context.dom = createJSDOM(result.finalHtml, {
         url: context.source,
       }).window;
 
