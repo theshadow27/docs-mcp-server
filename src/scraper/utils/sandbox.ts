@@ -1,5 +1,6 @@
 import { createContext, runInContext } from "node:vm";
-import { type DOMWindow, JSDOM } from "jsdom";
+import type { JSDOM } from "jsdom";
+import { createJSDOM } from "../../utils/dom";
 import { logger } from "../../utils/logger";
 
 /**
@@ -44,8 +45,8 @@ export async function executeJsInSandbox(
 
   try {
     logger.debug(`Creating JSDOM sandbox for ${url}`);
-    // Create JSDOM instance *without* running scripts immediately
-    jsdom = new JSDOM(html, {
+    // Create JSDOM instance using the factory, which includes default virtualConsole
+    jsdom = createJSDOM(html, {
       url,
       runScripts: "outside-only", // We'll run scripts manually in the VM
       pretendToBeVisual: true, // Helps with some scripts expecting a visual environment

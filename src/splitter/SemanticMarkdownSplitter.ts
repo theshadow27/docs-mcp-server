@@ -5,6 +5,7 @@ import remarkHtml from "remark-html";
 import remarkParse from "remark-parse";
 import TurndownService from "turndown";
 import { unified } from "unified";
+import { createJSDOM } from "../utils/dom";
 import { logger } from "../utils/logger";
 import { fullTrim } from "../utils/string";
 import { ContentSplitterError, MinimumChunkSizeError } from "./errors";
@@ -335,7 +336,8 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
    * Parse HTML
    */
   private async parseHtml(html: string): Promise<Document> {
-    const { window } = new JSDOM(html);
+    // Use createJSDOM which includes default options like virtualConsole
+    const { window } = createJSDOM(html);
     return window.document;
   }
 }

@@ -1,5 +1,5 @@
-import { JSDOM } from "jsdom";
 import { type Browser, type Page, chromium } from "playwright";
+import { createJSDOM } from "../../../utils/dom";
 import { logger } from "../../../utils/logger";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
@@ -113,7 +113,9 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
 
       try {
         logger.debug(`Parsing Playwright-rendered HTML with JSDOM for ${context.source}`);
-        const domWindow = new JSDOM(renderedHtml, {
+        // Remove manual VirtualConsole setup
+        // Use createJSDOM factory
+        const domWindow = createJSDOM(renderedHtml, {
           url: context.source, // Provide the source URL to JSDOM
         }).window;
 
