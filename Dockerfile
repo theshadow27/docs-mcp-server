@@ -25,6 +25,8 @@ COPY package*.json ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
+# FIXME: Why is this needed? Where does the version conflict come from?
+RUN ln -s /root/.cache/ms-playwright/chromium-1161 /root/.cache/ms-playwright/chromium-1169
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
