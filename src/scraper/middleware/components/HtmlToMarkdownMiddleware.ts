@@ -53,15 +53,26 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
           }
         }
 
-        const brElements = element.querySelectorAll("br");
-        if (brElements.length > 0) {
-          for (const br of brElements) {
-            br.replaceWith("\n");
-          }
+        const brElements = Array.from(element.querySelectorAll("br"));
+        for (const br of brElements) {
+          br.replaceWith("\n");
         }
         const text = element.textContent || "";
 
         return `\n\`\`\`${language}\n${text.replace(/^\n+|\n+$/g, "")}\n\`\`\`\n`;
+      },
+    });
+    this.turndownService.addRule("anchor", {
+      filter: ["a"],
+      replacement: (content, node) => {
+        const href = (node as HTMLElement).getAttribute("href");
+        if (!content || content === "#") {
+          return ""; // Remove if content is # or empty
+        }
+        if (!href) {
+          return content; // Preserve content if href is missing or empty
+        }
+        return `[${content}](${href})`; // Standard link conversion
       },
     });
   }
