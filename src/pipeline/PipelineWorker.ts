@@ -29,7 +29,7 @@ export class PipelineWorker {
     const { id: jobId, library, version, options, abortController } = job;
     const signal = abortController.signal;
 
-    logger.info(`[${jobId}] Worker starting job for ${library}@${version}`);
+    logger.debug(`[${jobId}] Worker starting job for ${library}@${version}`);
 
     try {
       // --- Core Job Logic ---

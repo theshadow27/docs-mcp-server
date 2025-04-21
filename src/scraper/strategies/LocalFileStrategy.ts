@@ -7,7 +7,7 @@ import type { RawContent } from "../fetcher/types";
 import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
-  HtmlDomParserMiddleware,
+  HtmlCheerioParserMiddleware,
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
   HtmlToMarkdownMiddleware,
@@ -63,7 +63,7 @@ export class LocalFileStrategy extends BaseScraperStrategy {
     if (initialContext.contentType.startsWith("text/html")) {
       // Updated HTML pipeline for local files (no link extraction from content)
       pipeline = new ContentProcessingPipeline([
-        new HtmlDomParserMiddleware(),
+        new HtmlCheerioParserMiddleware(),
         new HtmlMetadataExtractorMiddleware(),
         // No HtmlLinkExtractorMiddleware needed for local files
         new HtmlSanitizerMiddleware(),

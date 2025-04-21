@@ -1,10 +1,10 @@
-import { logger } from "../../../utils/logger"; // Added logger
+import { logger } from "../../../utils/logger";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
-// Removed JSDOM and DOMWindow imports as parsing is done upstream
 
 /**
- * Middleware to extract the title from HTML content.
- * Assumes context.dom is populated by a preceding middleware (e.g., HtmlDomParserMiddleware).
+ * Middleware to extract the title from HTML content using Cheerio.
+ * Assumes context.dom (Cheerio API object) is populated by a preceding middleware
+ * (e.g., HtmlCheerioParserMiddleware).
  */
 export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddleware {
   /**
@@ -16,12 +16,13 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
     context: ContentProcessingContext,
     next: () => Promise<void>,
   ): Promise<void> {
-    // Check if DOM window exists from previous middleware
-    if (!context.dom) {
+    // Check if Cheerio DOM exists from previous middleware
+    const $ = context.dom;
+    if (!$) {
       // Log a warning if running on HTML content without a DOM
       if (context.contentType.startsWith("text/html")) {
         logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure HtmlDomParserMiddleware runs before this.`,
+          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure HtmlCheerioParserMiddleware runs before this.`,
         );
       }
       // Otherwise, just proceed (might be non-HTML content)
@@ -29,16 +30,20 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
       return;
     }
 
-    // Only process if we have a DOM (implicitly means it's HTML)
+    // Only process if we have a Cheerio object (implicitly means it's HTML)
     try {
-      const { document } = context.dom; // Use the DOM from context
+      // Extract title (using title tag, fallback to h1 if title is empty/missing)
+      let title = $("title").first().text().trim();
 
-      // Extract title (using h1 as primary, title as fallback)
-      let title =
-        // document.querySelector("h1")?.textContent?.trim() ||
-        document.querySelector("title")?.textContent?.trim() || "Untitled"; // Default to Untitled
+      if (!title) {
+        // Fallback to the first H1 if title is empty
+        title = $("h1").first().text().trim();
+      }
 
-      // Basic cleanup
+      // Default to "Untitled" if both are empty
+      title = title || "Untitled";
+
+      // Basic cleanup (replace multiple spaces with single space)
       title = title.replace(/\s+/g, " ").trim();
 
       context.metadata.title = title;
@@ -56,6 +61,6 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
     // Call the next middleware in the chain
     await next();
 
-    // No cleanup needed here as the parser middleware handles closing the window
+    // No cleanup needed for Cheerio
   }
 }

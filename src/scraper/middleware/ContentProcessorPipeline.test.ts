@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ScraperOptions } from "../types";
 import { ContentProcessingPipeline } from "./ContentProcessorPipeline";
 import {
-  HtmlDomParserMiddleware,
+  HtmlCheerioParserMiddleware, // Updated import
   HtmlLinkExtractorMiddleware,
   HtmlMetadataExtractorMiddleware,
   HtmlSanitizerMiddleware,
@@ -55,10 +55,10 @@ const createPipelineTestContext = (
 
 // Define the standard HTML pipeline for tests
 const htmlPipeline = new ContentProcessingPipeline([
-  new HtmlDomParserMiddleware(),
+  new HtmlCheerioParserMiddleware(),
   new HtmlMetadataExtractorMiddleware(),
   new HtmlLinkExtractorMiddleware(),
-  new HtmlSanitizerMiddleware(), // Uses default selectors if none provided in context.options
+  new HtmlSanitizerMiddleware(),
   new HtmlToMarkdownMiddleware(),
 ]);
 

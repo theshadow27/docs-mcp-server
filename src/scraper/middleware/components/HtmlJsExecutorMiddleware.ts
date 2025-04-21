@@ -10,8 +10,7 @@ import type { ContentProcessingContext, ContentProcessorMiddleware } from "../ty
  * including fetching external scripts.
  *
  * This middleware updates `context.content` with the HTML *after* script execution.
- * It may also populate `context.dom` with the final JSDOM window object, although
- * subsequent standard middleware should rely on the updated `context.content`.
+ * Subsequent middleware (e.g., HtmlCheerioParserMiddleware) should handle parsing this content.
  *
  * @remarks
  * **WARNING:** This middleware provides a basic sandboxed JavaScript execution
@@ -144,11 +143,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       // Update context content with the HTML after script execution
       context.content = result.finalHtml;
 
-      // Optionally, update the DOM object as well for potential custom middleware use
-      // Use createJSDOM factory
-      context.dom = createJSDOM(result.finalHtml, {
-        url: context.source,
-      }).window;
+      // DO NOT update context.dom here. The subsequent HtmlCheerioParserMiddleware will handle parsing.
 
       // Add any errors encountered during script execution to the context
       if (result.errors.length > 0) {

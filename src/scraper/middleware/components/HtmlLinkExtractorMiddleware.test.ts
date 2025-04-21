@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio"; // Import cheerio
 import { describe, expect, it, vi } from "vitest";
 import { logger } from "../../../utils/logger";
 import type { ScraperOptions } from "../../types";
@@ -39,8 +39,8 @@ const createMockContext = (
     options: { ...createMockScraperOptions(source), ...options },
   };
   if (htmlContent && contentType.startsWith("text/html")) {
-    // Pass the source URL to JSDOM for correct relative URL resolution
-    context.dom = new JSDOM(htmlContent, { url: source }).window;
+    // Load HTML using Cheerio
+    context.dom = cheerio.load(htmlContent);
   }
   return context;
 };
@@ -72,8 +72,6 @@ describe("HtmlLinkExtractorMiddleware", () => {
     );
     expect(context.links).toHaveLength(4);
     expect(context.errors).toHaveLength(0);
-
-    context.dom?.close();
   });
 
   it("should filter out invalid and empty links", async () => {
@@ -94,8 +92,6 @@ describe("HtmlLinkExtractorMiddleware", () => {
     expect(next).toHaveBeenCalledOnce();
     expect(context.links).toEqual(["http://valid.com/"]); // URL resolves against base
     expect(context.errors).toHaveLength(0);
-
-    context.dom?.close();
   });
 
   it("should handle duplicate links, storing only unique ones", async () => {
@@ -123,8 +119,6 @@ describe("HtmlLinkExtractorMiddleware", () => {
     // Using Set internally ensures uniqueness
     expect(context.links).toHaveLength(2);
     expect(context.errors).toHaveLength(0);
-
-    context.dom?.close();
   });
 
   it("should skip processing and warn if context.dom is missing for HTML content", async () => {
@@ -167,26 +161,21 @@ describe("HtmlLinkExtractorMiddleware", () => {
     const context = createMockContext("text/html", html);
     const next = vi.fn().mockResolvedValue(undefined);
     const errorMsg = "Query failed";
+    const mockError = new Error(errorMsg);
 
-    // Mock querySelectorAll to throw an error
-    const originalQuerySelectorAll = context.dom?.document.querySelectorAll;
-    if (context.dom) {
-      context.dom.document.querySelectorAll = vi.fn().mockImplementation(() => {
-        throw new Error(errorMsg);
-      });
-    }
+    // Mock the Cheerio object to throw an error when selecting 'a[href]'
+    const mockDom = vi.fn(() => {
+      throw mockError;
+    }) as unknown as cheerio.CheerioAPI; // Cast to satisfy type, though it's a mock function
+    context.dom = mockDom;
 
     await middleware.process(context, next);
 
     expect(next).toHaveBeenCalledOnce(); // Should still call next
     expect(context.links).toEqual([]);
     expect(context.errors).toHaveLength(1);
+    // Check if the error message includes the original error's message
+    expect(context.errors[0].message).toContain("Failed to extract links from HTML");
     expect(context.errors[0].message).toContain(errorMsg);
-
-    // Restore if mocked
-    if (context.dom && originalQuerySelectorAll) {
-      context.dom.document.querySelectorAll = originalQuerySelectorAll;
-    }
-    context.dom?.close();
   });
 });

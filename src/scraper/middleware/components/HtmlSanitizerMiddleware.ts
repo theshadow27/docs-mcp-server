@@ -1,4 +1,3 @@
-import createDOMPurify, { type DOMPurify, type WindowLike } from "dompurify";
 import { logger } from "../../../utils/logger";
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
@@ -11,14 +10,13 @@ export interface HtmlSanitizerOptions {
 }
 
 /**
- * Middleware to sanitize HTML content using DOMPurify and remove unwanted elements.
- * It expects the JSDOM window object (`context.dom`) to be populated by a preceding middleware.
+ * Middleware to remove unwanted elements from parsed HTML content using Cheerio.
+ * It expects the Cheerio API object (`context.dom`) to be populated by a preceding middleware
+ * (e.g., HtmlCheerioParserMiddleware).
  * It modifies the `context.dom` object in place.
  */
 export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
-  private purify: DOMPurify | null = null;
-
-  // Default selectors to remove (combined from original HtmlElementRemoverMiddleware)
+  // Default selectors to remove
   private readonly defaultSelectorsToRemove = [
     "nav",
     "footer",
@@ -83,11 +81,12 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
     context: ContentProcessingContext,
     next: () => Promise<void>,
   ): Promise<void> {
-    // Check if DOM window exists
-    if (!context.dom) {
+    // Check if Cheerio DOM exists
+    const $ = context.dom;
+    if (!$) {
       if (context.contentType.startsWith("text/html")) {
         logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlDomParserMiddleware runs before this.`,
+          `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
         );
       }
       await next();
@@ -95,23 +94,7 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
     }
 
     try {
-      const { window } = context.dom;
-      const { document } = window;
-
-      // 1. Sanitize using DOMPurify
-      logger.debug(`Sanitizing HTML content for ${context.source}`);
-      this.purify = createDOMPurify(window as unknown as WindowLike);
-      // Sanitize the document's body in place.
-      // DOMPurify modifies the node directly when RETURN_DOM=true and RETURN_DOM_FRAGMENT=false.
-      this.purify.sanitize(document.body, {
-        WHOLE_DOCUMENT: false,
-        RETURN_DOM_FRAGMENT: false,
-        RETURN_DOM: true,
-        IN_PLACE: true, // Explicitly use in-place modification
-      });
-      logger.debug(`Sanitization complete for ${context.source}`);
-
-      // 2. Remove unwanted elements
+      // Remove unwanted elements using Cheerio
       const selectorsToRemove = [
         ...(context.options.excludeSelectors || []), // Use options from the context
         ...this.defaultSelectorsToRemove,
@@ -122,15 +105,17 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
       let removedCount = 0;
       for (const selector of selectorsToRemove) {
         try {
-          const elements = document.body.querySelectorAll(selector);
-          for (const el of elements) {
-            el.remove();
-            removedCount++;
+          const elements = $(selector); // Use Cheerio selector
+          const count = elements.length;
+          if (count > 0) {
+            elements.remove(); // Use Cheerio remove
+            removedCount += count;
           }
         } catch (selectorError) {
           // Log invalid selectors but continue with others
+          // Cheerio is generally more tolerant of invalid selectors than querySelectorAll
           logger.warn(
-            `Invalid selector "${selector}" during element removal: ${selectorError}`,
+            `Potentially invalid selector "${selector}" during element removal: ${selectorError}`,
           );
           context.errors.push(
             new Error(`Invalid selector "${selector}": ${selectorError}`),
@@ -139,20 +124,15 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
       }
       logger.debug(`Removed ${removedCount} elements for ${context.source}`);
 
-      // The context.dom.document has been modified in place.
+      // The context.dom object ($) has been modified in place.
     } catch (error) {
-      logger.error(
-        `Error during HTML sanitization/cleaning for ${context.source}: ${error}`,
-      );
+      logger.error(`Error during HTML element removal for ${context.source}: ${error}`);
       context.errors.push(
         error instanceof Error
           ? error
-          : new Error(`HTML sanitization/cleaning failed: ${String(error)}`),
+          : new Error(`HTML element removal failed: ${String(error)}`),
       );
       // Decide if pipeline should stop? For now, continue.
-    } finally {
-      // Release DOMPurify instance
-      this.purify = null;
     }
 
     // Proceed to the next middleware

@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio"; // Import cheerio
 import TurndownService from "turndown"; // Import for mocking if needed
 import { describe, expect, it, vi } from "vitest";
 import { logger } from "../../../utils/logger";
@@ -41,7 +41,8 @@ const createMockContext = (
     options: { ...createMockScraperOptions(source), ...options },
   };
   if (htmlContent && contentType.startsWith("text/html")) {
-    context.dom = new JSDOM(htmlContent, { url: source }).window;
+    // Load HTML using Cheerio
+    context.dom = cheerio.load(htmlContent);
   }
   return context;
 };
@@ -68,7 +69,7 @@ describe("HtmlToMarkdownMiddleware", () => {
     expect(context.contentType).toBe("text/markdown");
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should apply custom code block rule", async () => {
@@ -88,7 +89,29 @@ describe("HtmlToMarkdownMiddleware", () => {
     expect(context.contentType).toBe("text/markdown");
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
+  });
+
+  it("should preserve newlines within code blocks using <br>", async () => {
+    const middleware = new HtmlToMarkdownMiddleware();
+    const html = `
+      <html><body>
+        <pre><code class="language-text">Line 1<br>Line 2<br><br>Line 4</code></pre>
+      </body></html>`;
+    const context = createMockContext("text/html", html);
+    const next = vi.fn().mockResolvedValue(undefined);
+
+    await middleware.process(context, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    const expectedMarkdown = "```text\nLine 1\nLine 2\n\nLine 4\n```";
+    // Normalize whitespace within the actual content for comparison
+    const actualContentNormalized = (context.content as string)
+      .replace(/\r\n/g, "\n") // Normalize line endings
+      .trim(); // Trim leading/trailing whitespace from the whole block
+    expect(actualContentNormalized).toBe(expectedMarkdown);
+    expect(context.contentType).toBe("text/markdown");
+    expect(context.errors).toHaveLength(0);
   });
 
   it("should apply custom table rule", async () => {
@@ -113,7 +136,7 @@ describe("HtmlToMarkdownMiddleware", () => {
     expect(context.contentType).toBe("text/markdown");
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should return empty string and markdown type if conversion results in empty markdown", async () => {
@@ -130,7 +153,7 @@ describe("HtmlToMarkdownMiddleware", () => {
     expect(context.contentType).toBe("text/markdown"); // ContentType SHOULD change
     expect(context.errors).toHaveLength(0); // No error should be added
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should skip processing and warn if context.dom is missing for HTML content", async () => {
@@ -192,6 +215,6 @@ describe("HtmlToMarkdownMiddleware", () => {
     expect(context.errors[0].message).toContain(errorMsg);
 
     turndownSpy.mockRestore();
-    context.dom?.close();
+    // No close needed
   });
 });

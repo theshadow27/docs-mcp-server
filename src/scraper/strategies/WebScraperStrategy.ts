@@ -7,14 +7,16 @@ import type { RawContent } from "../fetcher/types";
 import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
+  HtmlCheerioParserMiddleware, // Use the new Cheerio parser
   HtmlLinkExtractorMiddleware,
   HtmlMetadataExtractorMiddleware,
-  HtmlSanitizerMiddleware,
-  HtmlSelectProcessorMiddleware, // Import the new middleware
+  HtmlPlaywrightMiddleware, // Keep Playwright for rendering
+  HtmlSanitizerMiddleware, // Keep Sanitizer (element remover)
   HtmlToMarkdownMiddleware,
   MarkdownLinkExtractorMiddleware,
   MarkdownMetadataExtractorMiddleware,
 } from "../middleware/components";
+import type { ContentProcessorMiddleware } from "../middleware/types";
 import type { ContentProcessingContext } from "../middleware/types";
 import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
@@ -97,14 +99,17 @@ export class WebScraperStrategy extends BaseScraperStrategy {
 
       let pipeline: ContentProcessingPipeline;
       if (initialContext.contentType.startsWith("text/html")) {
-        // Updated HTML pipeline order
-        pipeline = new ContentProcessingPipeline([
-          new HtmlSelectProcessorMiddleware(), // Use the smart processor
+        // Construct the new HTML pipeline order
+        const htmlPipelineSteps: ContentProcessorMiddleware[] = [
+          new HtmlPlaywrightMiddleware(), // Runs conditionally inside based on scrapeMode
+          // TODO: Add HtmlJsExecutorMiddleware here if needed based on options
+          new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
           new HtmlMetadataExtractorMiddleware(),
-          new HtmlLinkExtractorMiddleware(), // Extract links before cleaning
-          new HtmlSanitizerMiddleware(),
+          new HtmlLinkExtractorMiddleware(),
+          new HtmlSanitizerMiddleware(), // Element remover
           new HtmlToMarkdownMiddleware(),
-        ]);
+        ];
+        pipeline = new ContentProcessingPipeline(htmlPipelineSteps);
       } else if (
         initialContext.contentType === "text/markdown" ||
         initialContext.contentType === "text/plain" // Treat plain text as markdown

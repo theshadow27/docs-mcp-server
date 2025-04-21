@@ -5,7 +5,7 @@ import { logger } from "../../../utils/logger"; // Added logger
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
 /**
- * Middleware to convert the final processed HTML DOM (expected in context.dom)
+ * Middleware to convert the final processed HTML content (from Cheerio object in context.dom)
  * into Markdown using Turndown, applying custom rules.
  */
 export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
@@ -53,16 +53,15 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
           }
         }
 
-        const text = (() => {
-          const clone = element.cloneNode(true) as HTMLElement;
-          const brElements = clone.querySelectorAll("br");
+        const brElements = element.querySelectorAll("br");
+        if (brElements.length > 0) {
           for (const br of brElements) {
             br.replaceWith("\n");
           }
-          return clone.textContent || ""; // Ensure string return
-        })();
+        }
+        const text = element.textContent || "";
 
-        return `\n\`\`\`${language}\n${text}\n\`\`\`\n`;
+        return `\n\`\`\`${language}\n${text.replace(/^\n+|\n+$/g, "")}\n\`\`\`\n`;
       },
     });
   }
@@ -76,12 +75,13 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
     context: ContentProcessingContext,
     next: () => Promise<void>,
   ): Promise<void> {
-    // Check if we have a DOM window from a previous step
-    if (!context.dom) {
+    // Check if we have a Cheerio object from a previous step
+    const $ = context.dom;
+    if (!$) {
       // Log a warning if running on HTML content without a DOM
       if (context.contentType.startsWith("text/html")) {
         logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure preceding HTML middleware ran correctly.`,
+          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure HtmlCheerioParserMiddleware ran correctly.`,
         );
       }
       // Otherwise, just proceed (might be non-HTML content or error state)
@@ -89,11 +89,13 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
       return;
     }
 
-    // Only process if we have a DOM (implicitly means it's HTML)
+    // Only process if we have a Cheerio object (implicitly means it's HTML)
     try {
-      logger.debug(`Converting HTML body to Markdown for ${context.source}`);
-      // Turndown can directly take an HTMLElement
-      const markdown = this.turndownService.turndown(context.dom.document.body).trim();
+      logger.debug(`Converting HTML content to Markdown for ${context.source}`);
+      // Provide Turndown with the HTML string content from the Cheerio object's body,
+      // or the whole document if body is empty/unavailable.
+      const htmlToConvert = $("body").html() || $.html();
+      const markdown = this.turndownService.turndown(htmlToConvert).trim();
 
       if (!markdown) {
         // If conversion results in empty markdown, log a warning but treat as valid empty markdown
@@ -121,6 +123,7 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
     // Call the next middleware in the chain regardless of whether conversion happened
     await next();
 
-    // No cleanup needed specifically for this middleware
+    // No need to close/free Cheerio object explicitly
+    // context.dom = undefined; // Optionally clear the dom property if no longer needed downstream
   }
 }

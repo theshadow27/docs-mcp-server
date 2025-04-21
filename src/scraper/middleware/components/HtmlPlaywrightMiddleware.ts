@@ -1,12 +1,13 @@
 import { type Browser, type Page, chromium } from "playwright";
-import { createJSDOM } from "../../../utils/dom";
 import { logger } from "../../../utils/logger";
+import { ScrapeMode } from "../../types"; // Import ScrapeMode
 import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
 
 /**
  * Middleware to process HTML content using Playwright for rendering dynamic content,
- * then parse the result with JSDOM for subsequent processing.
- * It updates `context.content` with the rendered HTML and `context.dom`.
+ * *if* the scrapeMode option requires it ('playwright' or 'auto').
+ * It updates `context.content` with the rendered HTML if Playwright runs.
+ * Subsequent middleware (e.g., HtmlCheerioParserMiddleware) should handle parsing this content.
  */
 export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
   private browser: Browser | null = null;
@@ -27,6 +28,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
         this.browser = null;
       });
     }
+
     return this.browser;
   }
 
@@ -52,6 +54,23 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       return;
     }
 
+    // Determine if Playwright should run based on scrapeMode
+    const scrapeMode = context.options?.scrapeMode ?? ScrapeMode.Auto; // Default to Auto
+    const shouldRunPlaywright =
+      scrapeMode === ScrapeMode.Playwright || scrapeMode === ScrapeMode.Auto;
+
+    if (!shouldRunPlaywright) {
+      logger.debug(
+        `Skipping Playwright rendering for ${context.source} as scrapeMode is '${scrapeMode}'.`,
+      );
+      await next();
+      return;
+    }
+
+    // --- Playwright Execution Logic ---
+    logger.debug(
+      `Running Playwright rendering for ${context.source} (scrapeMode: '${scrapeMode}')`,
+    );
     // Ensure content is a string
     const initialHtmlString =
       typeof context.content === "string"
@@ -104,44 +123,24 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       );
     } finally {
       // Ensure page is closed even if subsequent steps fail
-      if (page) await page.close();
+      await page?.close();
     }
+    // --- End Playwright Execution Logic ---
 
-    // If rendering succeeded, update context and parse with JSDOM
+    // Update context content *only if* Playwright ran and succeeded
     if (renderedHtml !== null) {
-      context.content = renderedHtml; // Update content with rendered HTML
-
-      try {
-        logger.debug(`Parsing Playwright-rendered HTML with JSDOM for ${context.source}`);
-        // Remove manual VirtualConsole setup
-        // Use createJSDOM factory
-        const domWindow = createJSDOM(renderedHtml, {
-          url: context.source, // Provide the source URL to JSDOM
-        }).window;
-
-        // Update the DOM in the context for subsequent middleware
-        context.dom = domWindow;
-
-        // Proceed to the next middleware
-        await next();
-      } catch (error) {
-        logger.error(
-          `Failed to parse Playwright-rendered HTML with JSDOM for ${context.source}: ${error}`,
-        );
-        context.errors.push(
-          error instanceof Error
-            ? error
-            : new Error(`JSDOM parsing failed after Playwright: ${String(error)}`),
-        );
-        // Stop processing if JSDOM parsing fails
-        return;
-      }
-    } else {
-      // This case should ideally not be reached if error handling is correct
-      logger.warn(
-        `Playwright rendering resulted in null content for ${context.source}, skipping JSDOM parsing.`,
+      context.content = renderedHtml;
+      logger.debug(
+        `Playwright middleware updated content for ${context.source}. Proceeding.`,
       );
-      await next(); // Or decide to stop pipeline?
+    } else {
+      // Log if Playwright ran but failed to render
+      logger.warn(
+        `Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
+      );
     }
+
+    // Proceed to the next middleware regardless of Playwright success/failure
+    await next();
   }
 }

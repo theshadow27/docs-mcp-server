@@ -6,12 +6,14 @@ import type {
 } from "../scraper/fetcher";
 import { ContentProcessingPipeline } from "../scraper/middleware/ContentProcessorPipeline";
 import {
+  HtmlCheerioParserMiddleware,
   HtmlMetadataExtractorMiddleware,
+  HtmlPlaywrightMiddleware,
   HtmlSanitizerMiddleware,
-  HtmlSelectProcessorMiddleware,
   HtmlToMarkdownMiddleware,
   MarkdownMetadataExtractorMiddleware,
 } from "../scraper/middleware/components";
+import type { ContentProcessorMiddleware } from "../scraper/middleware/types";
 import type { ContentProcessingContext } from "../scraper/middleware/types";
 import { ScrapeMode, type ScraperOptions } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
@@ -119,14 +121,16 @@ export class FetchUrlTool {
 
       let pipeline: ContentProcessingPipeline;
       if (initialContext.contentType.startsWith("text/html")) {
-        // Updated HTML pipeline for FetchUrlTool
-        pipeline = new ContentProcessingPipeline([
-          new HtmlSelectProcessorMiddleware(), // Use the selector middleware
-          new HtmlMetadataExtractorMiddleware(), // Keep for potential future use, though title isn't returned
-          // No Link Extractor needed
-          new HtmlSanitizerMiddleware(), // Use default selectors
+        // Construct HTML pipeline similar to WebScraperStrategy
+        const htmlPipelineSteps: ContentProcessorMiddleware[] = [
+          new HtmlPlaywrightMiddleware(), // Runs conditionally inside based on scrapeMode
+          new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
+          new HtmlMetadataExtractorMiddleware(), // Keep for potential future use
+          // No Link Extractor needed for this tool
+          new HtmlSanitizerMiddleware(), // Element remover
           new HtmlToMarkdownMiddleware(),
-        ]);
+        ];
+        pipeline = new ContentProcessingPipeline(htmlPipelineSteps);
       } else if (
         initialContext.contentType === "text/markdown" ||
         initialContext.contentType === "text/plain"
