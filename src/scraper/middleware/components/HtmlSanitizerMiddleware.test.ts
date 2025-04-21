@@ -1,5 +1,5 @@
-import { JSDOM } from "jsdom";
-import { describe, expect, it, vi } from "vitest";
+import * as cheerio from "cheerio"; // Import cheerio
+import { type Mock, describe, expect, it, vi } from "vitest";
 import { logger } from "../../../utils/logger";
 import type { ScraperOptions } from "../../types";
 import type { ContentProcessingContext } from "../types";
@@ -43,36 +43,13 @@ const createMockContext = (
     options: fullOptions,
   };
   if (htmlContent && contentType.startsWith("text/html")) {
-    context.dom = new JSDOM(htmlContent, { url: source }).window;
+    // Load HTML using Cheerio
+    context.dom = cheerio.load(htmlContent);
   }
   return context;
 };
 
 describe("HtmlSanitizerMiddleware", () => {
-  it("should sanitize HTML content (remove script, onclick)", async () => {
-    const middleware = new HtmlSanitizerMiddleware();
-    const html = `
-      <html><body>
-        <p>Safe content</p>
-        <script>alert('XSS')</script>
-        <button onclick="alert('danger')">Click Me</button>
-      </body></html>`;
-    const context = createMockContext("text/html", html);
-    const next = vi.fn().mockResolvedValue(undefined);
-
-    await middleware.process(context, next);
-
-    expect(next).toHaveBeenCalledOnce();
-    expect(context.dom?.document.body.innerHTML).not.toContain("<script");
-    expect(context.dom?.document.body.innerHTML).not.toContain("onclick");
-    expect(context.dom?.document.body.querySelector("p")?.textContent).toBe(
-      "Safe content",
-    );
-    expect(context.errors).toHaveLength(0);
-
-    context.dom?.close();
-  });
-
   it("should remove default unwanted elements (nav, footer)", async () => {
     const middleware = new HtmlSanitizerMiddleware();
     const html = `
@@ -87,12 +64,15 @@ describe("HtmlSanitizerMiddleware", () => {
     await middleware.process(context, next);
 
     expect(next).toHaveBeenCalledOnce();
-    expect(context.dom?.document.querySelector("nav")).toBeNull();
-    expect(context.dom?.document.querySelector("footer")).toBeNull();
-    expect(context.dom?.document.querySelector("main")?.textContent).toBe("Main content");
+    // Use Cheerio syntax for assertions
+    expect(context.dom).toBeDefined();
+    if (!context.dom) throw new Error("DOM not defined"); // Type guard
+    expect(context.dom("nav").length).toBe(0); // Check element doesn't exist
+    expect(context.dom("footer").length).toBe(0);
+    expect(context.dom("main").text()).toBe("Main content");
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should remove custom unwanted elements via excludeSelectors", async () => {
@@ -114,13 +94,16 @@ describe("HtmlSanitizerMiddleware", () => {
     await middleware.process(context, next);
 
     expect(next).toHaveBeenCalledOnce();
-    expect(context.dom?.document.querySelector(".remove-me")).toBeNull();
-    expect(context.dom?.document.querySelector("#specific-id")).toBeNull();
-    expect(context.dom?.document.querySelector(".keep-me")).not.toBeNull();
-    expect(context.dom?.document.querySelector("#keep-id")).not.toBeNull();
+    // Use Cheerio syntax for assertions
+    expect(context.dom).toBeDefined();
+    if (!context.dom) throw new Error("DOM not defined"); // Type guard
+    expect(context.dom(".remove-me").length).toBe(0);
+    expect(context.dom("#specific-id").length).toBe(0);
+    expect(context.dom(".keep-me").length).toBe(1);
+    expect(context.dom("#keep-id").length).toBe(1);
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should combine default and custom selectors for removal", async () => {
@@ -143,12 +126,15 @@ describe("HtmlSanitizerMiddleware", () => {
     await middleware.process(context, next);
 
     expect(next).toHaveBeenCalledOnce();
-    expect(context.dom?.document.querySelector("nav")).toBeNull();
-    expect(context.dom?.document.querySelector(".remove-custom")).toBeNull();
-    expect(context.dom?.document.querySelector("p")?.textContent).toBe("Keep");
+    // Use Cheerio syntax for assertions
+    expect(context.dom).toBeDefined();
+    if (!context.dom) throw new Error("DOM not defined"); // Type guard
+    expect(context.dom("nav").length).toBe(0);
+    expect(context.dom(".remove-custom").length).toBe(0);
+    expect(context.dom("p").text()).toBe("Keep");
     expect(context.errors).toHaveLength(0);
 
-    context.dom?.close();
+    // No close needed
   });
 
   it("should skip processing and warn if context.dom is missing for HTML content", async () => {
@@ -184,45 +170,44 @@ describe("HtmlSanitizerMiddleware", () => {
     warnSpy.mockRestore();
   });
 
-  it("should handle errors during sanitization/removal", async () => {
+  it("should handle errors during element removal processing", async () => {
     const middleware = new HtmlSanitizerMiddleware();
-    const html = "<html><body><p>Content</p></body></html>";
+    // Include an element that will be selected for removal (e.g., nav)
+    const html = "<html><body><nav>Navigation</nav><p>Content</p></body></html>";
     const context = createMockContext("text/html", html);
     const next = vi.fn().mockResolvedValue(undefined);
-    const errorMsg = "Invalid selector";
-    const invalidSelector = "[invalid-selector]"; // Use a specific invalid selector for the mock
+    const errorMsg = "Failed to remove element";
+    const mockError = new Error(errorMsg);
 
-    // Mock querySelectorAll to throw only for the specific invalid selector
-    const originalQuerySelectorAll = context.dom?.document.body.querySelectorAll;
-    if (context.dom) {
-      context.dom.document.body.querySelectorAll = vi
-        .fn()
-        .mockImplementation((selector: string) => {
-          if (selector === invalidSelector) {
-            throw new Error(errorMsg); // Throw only for the bad selector
-          }
-          // For other selectors, return an empty NodeList (or mock actual elements if needed)
-          return context.dom?.document
-            .createDocumentFragment()
-            .querySelectorAll(selector);
-        });
-    }
+    // Ensure the DOM is defined
+    expect(context.dom).toBeDefined();
+    if (!context.dom) throw new Error("DOM not defined");
 
-    // Add the invalid selector to the context options to ensure it's processed
-    context.options.excludeSelectors = [invalidSelector];
+    // Spy on the original Cheerio function and mock the 'remove' method
+    // on the object returned for the 'nav' selector
+    const originalSelectorFn = context.dom;
+    const selectSpy = (vi.spyOn(context, "dom") as Mock).mockImplementation(
+      (selector: string) => {
+        const result = originalSelectorFn(selector); // Call original selector
+        if (selector === "nav") {
+          // Mock the remove method on the selected 'nav' element(s)
+          result.remove = vi.fn().mockImplementation(() => {
+            throw mockError;
+          });
+        }
+        return result;
+      },
+    );
 
     await middleware.process(context, next);
 
     expect(next).toHaveBeenCalledOnce(); // Should still call next
     expect(context.errors).toHaveLength(1);
-    // Check that the error message includes the specific invalid selector
-    expect(context.errors[0].message).toContain(`Invalid selector "${invalidSelector}"`);
-    expect(context.errors[0].message).toContain(errorMsg);
+    // Check that the error message includes the specific invalid selector and the original error
+    expect(context.errors[0].message).toContain('Invalid selector "nav"'); // Check for the specific selector from the inner catch
+    expect(context.errors[0].message).toContain(errorMsg); // Check for the original error message
 
-    // Restore the original querySelectorAll if mocked
-    if (context.dom && originalQuerySelectorAll) {
-      context.dom.document.body.querySelectorAll = originalQuerySelectorAll;
-    }
-    context.dom?.close();
+    // Restore the spy
+    selectSpy.mockRestore();
   });
 });

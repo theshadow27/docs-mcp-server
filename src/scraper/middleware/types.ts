@@ -1,4 +1,4 @@
-import type { DOMWindow } from "jsdom";
+import type * as cheerio from "cheerio";
 import type { ContentFetcher } from "../fetcher/types";
 import type { ScraperOptions } from "../types";
 
@@ -21,8 +21,8 @@ export interface ContentProcessingContext {
   /** Job-specific options influencing processing. */
   readonly options: ScraperOptions;
 
-  /** Optional JSDOM window object for HTML processing. */
-  dom?: DOMWindow;
+  /** Optional Cheerio root object for HTML processing. */
+  dom?: cheerio.CheerioAPI;
 
   /** Optional fetcher instance for resolving resources relative to the source. */
   fetcher?: ContentFetcher;

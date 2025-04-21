@@ -52,7 +52,7 @@ const createPipelineTestContext = (
     links: [],
     errors: [],
     options: fullOptions,
-    // dom is added by the parser middleware or playwright middleware
+    // dom is added by the parser middleware (HtmlCheerioParserMiddleware)
   };
   return context;
 };
@@ -95,14 +95,8 @@ describe("HtmlPlaywrightMiddleware", () => {
     expect(context.errors).toHaveLength(0);
     // Check if content was updated by Playwright rendering the script's effect
     expect(context.content).toContain("<p>Hello Playwright!</p>");
-    // Check if JSDOM parsing succeeded and populated the dom property
-    expect(context.dom).toBeDefined();
-    expect(context.dom?.window).toBeDefined();
-    expect(context.dom?.window.document.querySelector("p")?.textContent).toBe(
-      "Hello Playwright!",
-    );
-    // Title should still be extractable by JSDOM from the rendered content
-    expect(context.dom?.window.document.title).toBe("Initial");
+    // Remove checks for context.dom as this middleware no longer parses
+    expect(context.dom).toBeUndefined();
     // Ensure next was called if processing was successful
     expect(next).toHaveBeenCalled();
   });
@@ -121,10 +115,10 @@ describe("HtmlPlaywrightMiddleware", () => {
     // Playwright/Browser might tolerate some errors, JSDOM might too.
     // We expect the middleware to complete, potentially with errors in the context.
     // We primarily check that *our* middleware code doesn't crash and calls next.
-    expect(context.errors.length).toBeGreaterThanOrEqual(0); // Allow for parsing errors from JSDOM or warnings
-    // Check if some content processing still happened
-    expect(context.dom).toBeDefined(); // JSDOM likely still parsed something
-    // Ensure next was called even if there were parsing errors
+    expect(context.errors.length).toBeGreaterThanOrEqual(0); // Allow for Playwright rendering errors
+    // Remove check for context.dom as this middleware no longer parses
+    expect(context.dom).toBeUndefined();
+    // Ensure next was called even if there were rendering errors
     expect(next).toHaveBeenCalled();
   });
 
@@ -153,6 +147,7 @@ describe("HtmlPlaywrightMiddleware", () => {
     // Spy on page.goto and make it throw
     const pageSpy = {
       route: vi.fn().mockResolvedValue(undefined),
+      unroute: vi.fn().mockResolvedValue(undefined),
       goto: vi.fn().mockRejectedValue(new Error("Simulated navigation failure")),
       content: vi.fn(), // Doesn't matter as goto fails
       close: vi.fn().mockResolvedValue(undefined),
@@ -175,54 +170,5 @@ describe("HtmlPlaywrightMiddleware", () => {
     expect(next).toHaveBeenCalled(); // Next should still be called
 
     launchSpy.mockRestore(); // Restore the launch spy
-  });
-
-  it("should add error to context if JSDOM parsing fails after Playwright and not call next", async () => {
-    const html = "<html><body><p>Rendered</p></body></html>";
-    const renderedHtml = "<html><body>Rendered by Playwright</body></html>";
-    const context = createPipelineTestContext(
-      html,
-      "text/html",
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/jsdom-fail",
-    );
-    const next = vi.fn();
-
-    // Spy on page.content to return successfully, but spy on JSDOM to fail
-    const pageSpy = {
-      route: vi.fn().mockResolvedValue(undefined),
-      goto: vi.fn().mockResolvedValue(null),
-      content: vi.fn().mockResolvedValue(renderedHtml),
-      close: vi.fn().mockResolvedValue(undefined),
-    } as MockedObject<Page>;
-    const browserSpy = {
-      newPage: vi.fn().mockImplementation(() => {
-        return pageSpy;
-      }),
-      // newPage: vi.fn().mockResolvedValue(pageSpy),
-      isConnected: vi.fn().mockReturnValue(true),
-      on: vi.fn(),
-      close: vi.fn().mockResolvedValue(undefined),
-    } as MockedObject<Browser>;
-
-    // const launchSpy = vi.spyOn(chromium, "launch").mockResolvedValue(browserSpy); // Use unknown cast
-    const launchSpy = vi.spyOn(chromium, "launch").mockImplementation(() => {
-      return Promise.resolve(browserSpy as unknown as Browser);
-    });
-
-    // Spy on JSDOM constructor to throw
-    const jsdomSpy = vi.spyOn(await import("jsdom"), "JSDOM").mockImplementation(() => {
-      throw new Error("Simulated JSDOM parsing error");
-    });
-
-    await playwrightMiddleware.process(context, next);
-
-    expect(context.errors.length).toBeGreaterThan(0);
-    expect(context.errors[0].message).toContain("Simulated JSDOM parsing error");
-    expect(context.dom).toBeUndefined(); // DOM should not be set
-    expect(next).not.toHaveBeenCalled(); // Next should NOT be called
-
-    // Restore spies
-    launchSpy.mockRestore();
-    jsdomSpy.mockRestore();
   });
 });

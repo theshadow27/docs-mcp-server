@@ -7,14 +7,16 @@ import type { RawContent } from "../fetcher/types";
 import { ContentProcessingPipeline } from "../middleware/ContentProcessorPipeline";
 // Import new and updated middleware from index
 import {
+  HtmlCheerioParserMiddleware, // Use the new Cheerio parser
   HtmlLinkExtractorMiddleware,
   HtmlMetadataExtractorMiddleware,
-  HtmlSanitizerMiddleware,
-  HtmlSelectProcessorMiddleware, // Import the new middleware
+  HtmlPlaywrightMiddleware, // Keep Playwright for rendering
+  HtmlSanitizerMiddleware, // Keep Sanitizer (element remover)
   HtmlToMarkdownMiddleware,
   MarkdownLinkExtractorMiddleware,
   MarkdownMetadataExtractorMiddleware,
 } from "../middleware/components";
+import type { ContentProcessorMiddleware } from "../middleware/types";
 import type { ContentProcessingContext } from "../middleware/types";
 import type { ScraperOptions, ScraperProgress } from "../types";
 import { BaseScraperStrategy, type QueueItem } from "./BaseScraperStrategy";
@@ -27,10 +29,12 @@ export interface WebScraperStrategyOptions {
 export class WebScraperStrategy extends BaseScraperStrategy {
   private readonly httpFetcher = new HttpFetcher();
   private readonly shouldFollowLinkFn?: (baseUrl: URL, targetUrl: URL) => boolean;
+  private readonly playwrightMiddleware: HtmlPlaywrightMiddleware; // Add member
 
   constructor(options: WebScraperStrategyOptions = {}) {
     super({ urlNormalizerOptions: options.urlNormalizerOptions });
     this.shouldFollowLinkFn = options.shouldFollowLink;
+    this.playwrightMiddleware = new HtmlPlaywrightMiddleware(); // Instantiate here
   }
 
   canHandle(url: string): boolean {
@@ -65,7 +69,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     }
   }
 
-  protected async processItem(
+  protected override async processItem(
     item: QueueItem,
     options: ScraperOptions,
     _progressCallback?: ProgressCallback<ScraperProgress>, // Base class passes it, but not used here
@@ -97,14 +101,17 @@ export class WebScraperStrategy extends BaseScraperStrategy {
 
       let pipeline: ContentProcessingPipeline;
       if (initialContext.contentType.startsWith("text/html")) {
-        // Updated HTML pipeline order
-        pipeline = new ContentProcessingPipeline([
-          new HtmlSelectProcessorMiddleware(), // Use the smart processor
+        // Construct the new HTML pipeline order
+        const htmlPipelineSteps: ContentProcessorMiddleware[] = [
+          this.playwrightMiddleware, // Use the instance member
+          // TODO: Add HtmlJsExecutorMiddleware here if needed based on options
+          new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
           new HtmlMetadataExtractorMiddleware(),
-          new HtmlLinkExtractorMiddleware(), // Extract links before cleaning
-          new HtmlSanitizerMiddleware(),
+          new HtmlLinkExtractorMiddleware(),
+          new HtmlSanitizerMiddleware(), // Element remover
           new HtmlToMarkdownMiddleware(),
-        ]);
+        ];
+        pipeline = new ContentProcessingPipeline(htmlPipelineSteps);
       } else if (
         initialContext.contentType === "text/markdown" ||
         initialContext.contentType === "text/plain" // Treat plain text as markdown
@@ -173,6 +180,24 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       // Log fetch errors or pipeline execution errors (if run throws)
       logger.error(`Failed processing page ${url}: ${error}`);
       throw error;
+    }
+  }
+
+  /**
+   * Overrides the base scrape method to ensure the Playwright browser is closed
+   * after the scraping process completes or errors out.
+   */
+  override async scrape(
+    options: ScraperOptions,
+    progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    try {
+      // Call the base class scrape method
+      await super.scrape(options, progressCallback, signal);
+    } finally {
+      // Ensure the browser instance is closed
+      await this.playwrightMiddleware.closeBrowser();
     }
   }
 }
