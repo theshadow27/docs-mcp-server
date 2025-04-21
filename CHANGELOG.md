@@ -1,3 +1,25 @@
+# [1.10.0](https://github.com/arabold/docs-mcp-server/compare/v1.9.0...v1.10.0) (2025-04-21)
+
+
+### Bug Fixes
+
+* **ci:** set PLAYWRIGHT_LAUNCH_ARGS for tests ([55ea901](https://github.com/arabold/docs-mcp-server/commit/55ea90165fc5552e6a3a63f0ab6a7666532bbe89))
+* correct Playwright dependencies in Dockerfile ([6f19fc0](https://github.com/arabold/docs-mcp-server/commit/6f19fc0da4820e6a1493054d82b03cdc1f838bb3))
+* **deps:** remove drizzle dependencies ([ad6a09a](https://github.com/arabold/docs-mcp-server/commit/ad6a09af93eb4d4732fd32b7d15286ae055c1144)), closes [#57](https://github.com/arabold/docs-mcp-server/issues/57)
+* **scraper:** replace domcontentloaded with load event in Playwright ([9345152](https://github.com/arabold/docs-mcp-server/commit/9345152c4b1bb96dd37655337d6adb8fbe7b82e4)), closes [#62](https://github.com/arabold/docs-mcp-server/issues/62)
+* silence JSDOM virtual console output ([61e41be](https://github.com/arabold/docs-mcp-server/commit/61e41bec2059ff95150d4f3720fffeacfe883198)), closes [#53](https://github.com/arabold/docs-mcp-server/issues/53)
+
+
+### Features
+
+* add initial JS sandbox utility and executor middleware ([#18](https://github.com/arabold/docs-mcp-server/issues/18)) ([19dea10](https://github.com/arabold/docs-mcp-server/commit/19dea109e6e52aeab8fc71bf4ca7de81eadfd4ff))
+* **cli:** add --scrape-mode option and update README ([e8e4beb](https://github.com/arabold/docs-mcp-server/commit/e8e4beb57170baf3f509b8fd3c16dbaa1f5ae7e6))
+* **cli:** add --scrape-mode option to fetch-url command ([cc6465a](https://github.com/arabold/docs-mcp-server/commit/cc6465a8bc6d99384fa8f15115f13a25f5045906))
+* refactor content processing to middleware pipeline ([00f9a2f](https://github.com/arabold/docs-mcp-server/commit/00f9a2f28151639547d6435652fae919d46122c6)), closes [#17](https://github.com/arabold/docs-mcp-server/issues/17)
+* **scraper:** add HtmlPlaywrightMiddleware for dynamic content rendering ([ee3118f](https://github.com/arabold/docs-mcp-server/commit/ee3118fb645bbde4fc879ae1058227507ead703a)), closes [#19](https://github.com/arabold/docs-mcp-server/issues/19)
+* **scraper:** enable external script fetching in sandbox ([88b7e7a](https://github.com/arabold/docs-mcp-server/commit/88b7e7a430b89f735e6852937e5ab24debf8fa5d))
+* **scraper:** replace JSDOM with Cheerio for HTML parsing ([5dd624a](https://github.com/arabold/docs-mcp-server/commit/5dd624ae965a221bcc6a9f18c72a7cbed7dc0eb5))
+
 # [1.9.0](https://github.com/arabold/docs-mcp-server/compare/v1.8.0...v1.9.0) (2025-04-14)
 
 
