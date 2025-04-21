@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type {
   LibraryInfo,
   LibraryVersion,
+  ListLibrariesTool, // Import the tool type
 } from "../../tools/ListLibrariesTool";
 
 const VersionBadge = ({ version }: { version: LibraryVersion }) => (
@@ -40,27 +41,15 @@ const LibraryList = ({ libraries }: { libraries: LibraryInfo[] }) => (
 /**
  * Registers the API routes for library management.
  * @param server - The Fastify instance.
+ * @param listLibrariesTool - The tool instance for listing libraries.
  */
-export function registerLibrariesRoutes(server: FastifyInstance) {
+export function registerLibrariesRoutes(
+  server: FastifyInstance,
+  listLibrariesTool: ListLibrariesTool // Add the tool parameter
+) {
   server.get("/api/libraries", async () => {
-    // Placeholder data - replace with actual library fetching logic
-    const libraries: LibraryInfo[] = [
-      {
-        name: "React",
-        versions: [
-          { version: "18.0.0", indexed: true },
-          { version: "17.0.2", indexed: false },
-        ],
-      },
-      {
-        name: "TypeScript",
-        versions: [
-          { version: "5.0.0", indexed: true },
-          { version: "4.9.5", indexed: true },
-        ],
-      },
-    ];
-
-    return <LibraryList libraries={libraries} />;
+    // Fetch actual library data using the tool
+    const result = await listLibrariesTool.execute();
+    return <LibraryList libraries={result.libraries} />;
   });
 }

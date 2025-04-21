@@ -331,15 +331,19 @@ export class DocumentManagementService {
     }>
   > {
     const libraryMap = await this.store.queryLibraryVersions();
-    return Array.from(libraryMap.entries()).map(([library, versions]) => ({
-      library,
-      // Filter out the internal empty string version before mapping
-      versions: Array.from(versions)
-        .filter((v) => v !== "")
-        .map((version) => ({
+    return Array.from(libraryMap.entries()).map(([library, versionSet]) => {
+      // Filter out the internal empty string version and sort semantically
+      const sortedVersions = Array.from(versionSet)
+        .filter((v) => v !== "") // Exclude the internal empty string placeholder
+        .sort(semver.compare); // Sort versions using semver
+
+      return {
+        library,
+        versions: sortedVersions.map((version) => ({
           version,
-          indexed: true,
+          indexed: true, // Assume all listed versions are indexed
         })),
-    }));
+      };
+    });
   }
 }

@@ -31,9 +31,24 @@ const IndexPage = () => (
             <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
               Job Queue
             </h2>
-            <div id="jobQueue" hx-get="/api/jobs" hx-trigger="load, every 5s">
+            {/* Container for the job list, loaded via HTMX */}
+            <div id="jobQueue" hx-get="/api/jobs" hx-trigger="load, every 1s">
+              {/* Initial loading state */}
               <div class="animate-pulse">
                 <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" />
+                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+              </div>
+            </div>
+          </section>
+
+          {/* Add New Job Section */}
+          <section class="mb-8">
+            {/* Container for the add job form, loaded via HTMX */}
+            <div id="addJobForm" hx-get="/api/jobs/new" hx-trigger="load">
+              {/* Initial loading state (optional, could just be empty) */}
+              <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 animate-pulse">
+                <div class="h-6 bg-gray-200 rounded-full dark:bg-gray-700 w-1/3 mb-4" />
                 <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
                 <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
               </div>

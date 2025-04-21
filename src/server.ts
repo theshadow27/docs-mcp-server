@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { program } from "commander";
 import { startServer } from "./mcp/index.js";
 import { DEFAULT_HTTP_PORT, DEFAULT_PROTOCOL } from "./utils/config.js";
