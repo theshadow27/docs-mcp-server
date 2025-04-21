@@ -147,6 +147,7 @@ describe("HtmlPlaywrightMiddleware", () => {
     // Spy on page.goto and make it throw
     const pageSpy = {
       route: vi.fn().mockResolvedValue(undefined),
+      unroute: vi.fn().mockResolvedValue(undefined),
       goto: vi.fn().mockRejectedValue(new Error("Simulated navigation failure")),
       content: vi.fn(), // Doesn't matter as goto fails
       close: vi.fn().mockResolvedValue(undefined),

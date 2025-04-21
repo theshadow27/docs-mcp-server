@@ -84,6 +84,9 @@ export class FetchUrlTool {
 
     const fetcher = this.fetchers[fetcherIndex];
 
+    // Instantiate Playwright middleware locally for this execution
+    const playwrightMiddleware = new HtmlPlaywrightMiddleware();
+
     try {
       // Fetch the content
       logger.info(`📡 Fetching ${url}...`);
@@ -123,7 +126,7 @@ export class FetchUrlTool {
       if (initialContext.contentType.startsWith("text/html")) {
         // Construct HTML pipeline similar to WebScraperStrategy
         const htmlPipelineSteps: ContentProcessorMiddleware[] = [
-          new HtmlPlaywrightMiddleware(), // Runs conditionally inside based on scrapeMode
+          playwrightMiddleware, // Use the instantiated middleware
           new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
           new HtmlMetadataExtractorMiddleware(), // Keep for potential future use
           // No Link Extractor needed for this tool
@@ -180,6 +183,9 @@ export class FetchUrlTool {
         `Failed to fetch or process URL: ${error instanceof Error ? error.message : String(error)}`,
         this.constructor.name,
       );
+    } finally {
+      // Ensure the browser is closed after execution
+      await playwrightMiddleware.closeBrowser();
     }
   }
 }

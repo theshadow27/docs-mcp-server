@@ -29,10 +29,12 @@ export interface WebScraperStrategyOptions {
 export class WebScraperStrategy extends BaseScraperStrategy {
   private readonly httpFetcher = new HttpFetcher();
   private readonly shouldFollowLinkFn?: (baseUrl: URL, targetUrl: URL) => boolean;
+  private readonly playwrightMiddleware: HtmlPlaywrightMiddleware; // Add member
 
   constructor(options: WebScraperStrategyOptions = {}) {
     super({ urlNormalizerOptions: options.urlNormalizerOptions });
     this.shouldFollowLinkFn = options.shouldFollowLink;
+    this.playwrightMiddleware = new HtmlPlaywrightMiddleware(); // Instantiate here
   }
 
   canHandle(url: string): boolean {
@@ -67,7 +69,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     }
   }
 
-  protected async processItem(
+  protected override async processItem(
     item: QueueItem,
     options: ScraperOptions,
     _progressCallback?: ProgressCallback<ScraperProgress>, // Base class passes it, but not used here
@@ -101,7 +103,7 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       if (initialContext.contentType.startsWith("text/html")) {
         // Construct the new HTML pipeline order
         const htmlPipelineSteps: ContentProcessorMiddleware[] = [
-          new HtmlPlaywrightMiddleware(), // Runs conditionally inside based on scrapeMode
+          this.playwrightMiddleware, // Use the instance member
           // TODO: Add HtmlJsExecutorMiddleware here if needed based on options
           new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
           new HtmlMetadataExtractorMiddleware(),
@@ -178,6 +180,24 @@ export class WebScraperStrategy extends BaseScraperStrategy {
       // Log fetch errors or pipeline execution errors (if run throws)
       logger.error(`Failed processing page ${url}: ${error}`);
       throw error;
+    }
+  }
+
+  /**
+   * Overrides the base scrape method to ensure the Playwright browser is closed
+   * after the scraping process completes or errors out.
+   */
+  override async scrape(
+    options: ScraperOptions,
+    progressCallback: ProgressCallback<ScraperProgress>,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    try {
+      // Call the base class scrape method
+      await super.scrape(options, progressCallback, signal);
+    } finally {
+      // Ensure the browser instance is closed
+      await this.playwrightMiddleware.closeBrowser();
     }
   }
 }

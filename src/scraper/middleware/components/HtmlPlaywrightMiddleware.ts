@@ -71,11 +71,6 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
     logger.debug(
       `Running Playwright rendering for ${context.source} (scrapeMode: '${scrapeMode}')`,
     );
-    // Ensure content is a string
-    const initialHtmlString =
-      typeof context.content === "string"
-        ? context.content
-        : Buffer.from(context.content).toString("utf-8");
 
     let page: Page | null = null;
     let renderedHtml: string | null = null;
@@ -87,14 +82,15 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
 
       // Block unnecessary resources
       await page.route("**/*", (route) => {
-        const resourceType = route.request().resourceType();
         if (route.request().url() === context.source) {
           return route.fulfill({
             status: 200,
             contentType: context.contentType,
-            body: initialHtmlString,
+            body: context.content,
           });
         }
+
+        const resourceType = route.request().resourceType();
         if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
           return route.abort();
         }
@@ -123,7 +119,10 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       );
     } finally {
       // Ensure page is closed even if subsequent steps fail
-      await page?.close();
+      if (page) {
+        await page.unroute("**/*");
+        await page.close();
+      }
     }
     // --- End Playwright Execution Logic ---
 
