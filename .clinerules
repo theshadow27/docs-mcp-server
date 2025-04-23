@@ -25,6 +25,6 @@ Keep `ARCHITECTURE.md` high-level:
 - The repository owner and name is `arabold/docs-mcp-server` on GitHub.
 - AWLAYS create new branches locally first before pushing them to the GitHub repository.
 - ALWAYS format Git commit messages as markdown.
-- ALWAYS adhere to the Conventional Commits specification for all Git commit messages
+- ALWAYS adhere to the Conventional Commits specification for all Git commit messages.
 - ALWAYS prefix branch names with the type of work being done, such as `feature/`, `bugfix/`, `chore/`, etc.
 - ALWAYS include the issue number in the branch name, such as `feature/1234-issue-name`.

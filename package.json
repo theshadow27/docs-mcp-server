@@ -16,6 +16,7 @@
   "files": [
     "dist",
     "public",
+    "db",
     "README.md",
     "LICENSE",
     "package.json"

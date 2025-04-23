@@ -1,11 +1,18 @@
 import type { Document } from "@langchain/core/documents";
 import type { Embeddings } from "@langchain/core/embeddings";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
+import semver from "semver";
 import * as sqliteVec from "sqlite-vec";
 import type { DocumentMetadata } from "../types";
+import { applyMigrations } from "./applyMigrations";
 import { ConnectionError, DimensionError, StoreError } from "./errors";
-import { VECTOR_DIMENSION, createTablesSQL } from "./schema";
-import { type DbDocument, type DbQueryResult, mapDbDocumentToDocument } from "./types";
+import { VECTOR_DIMENSION } from "./types";
+import {
+  type DbDocument,
+  type DbQueryResult,
+  type LibraryVersionDetails,
+  mapDbDocumentToDocument,
+} from "./types";
 
 interface RawSearchResult extends DbDocument {
   vec_score?: number;
@@ -36,7 +43,7 @@ export class DocumentStore {
     deleteDocuments: Database.Statement;
     queryVersions: Database.Statement;
     checkExists: Database.Statement;
-    queryLibraryVersions: Database.Statement;
+    queryLibraryVersions: Database.Statement<[]>; // Updated type
     getChildChunks: Database.Statement;
     getPrecedingSiblings: Database.Statement;
     getSubsequentSiblings: Database.Statement;
@@ -109,7 +116,7 @@ export class DocumentStore {
     const statements = {
       getById: this.db.prepare("SELECT * FROM documents WHERE id = ?"),
       insertDocument: this.db.prepare(
-        "INSERT INTO documents (library, version, url, content, metadata, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO documents (library, version, url, content, metadata, sort_order, indexed_at) VALUES (?, ?, ?, ?, ?, ?, ?)", // Added indexed_at
       ),
       insertEmbedding: this.db.prepare<[number, string]>(
         "INSERT INTO documents_vec (rowid, library, version, embedding) VALUES (?, ?, ?, ?)",
@@ -124,10 +131,18 @@ export class DocumentStore {
         "SELECT id FROM documents WHERE library = ? AND version = ? LIMIT 1",
       ),
       queryLibraryVersions: this.db.prepare(
-        "SELECT DISTINCT library, version FROM documents ORDER BY library, version",
+        `SELECT
+          library,
+          version,
+          COUNT(*) as documentCount,
+          COUNT(DISTINCT url) as uniqueUrlCount,
+          MIN(indexed_at) as indexedAt
+        FROM documents
+        GROUP BY library, version
+        ORDER BY library, version`,
       ),
       getChildChunks: this.db.prepare(`
-        SELECT * FROM documents 
+        SELECT * FROM documents
         WHERE library = ? 
         AND version = ? 
         AND url = ?
@@ -229,13 +244,13 @@ export class DocumentStore {
    */
   async initialize(): Promise<void> {
     try {
-      // 1. Load extensions
+      // 1. Apply migrations (must happen after connection, before schema/statements)
+      applyMigrations(this.db);
+
+      // 2. Load extensions
       sqliteVec.load(this.db);
 
-      // 2. Create schema
-      this.db.exec(createTablesSQL);
-
-      // 3. Initialize prepared statements
+      // 3. Initialize prepared statements (Schema creation is now handled by migrations)
       this.prepareStatements();
 
       // 4. Initialize embeddings client (await to catch errors)
@@ -286,20 +301,57 @@ export class DocumentStore {
   }
 
   /**
-   * Retrieves a mapping of all libraries to their available versions
+   * Retrieves a mapping of all libraries to their available versions with details.
    */
-  async queryLibraryVersions(): Promise<Map<string, Set<string>>> {
+  async queryLibraryVersions(): Promise<Map<string, LibraryVersionDetails[]>> {
     try {
-      const rows = this.statements.queryLibraryVersions.all();
-      const libraryMap = new Map<string, Set<string>>();
-      for (const row of rows as { library: string; version: string }[]) {
-        const library = row.library;
-        const version = row.version;
-        if (!libraryMap.has(library)) {
-          libraryMap.set(library, new Set());
-        }
-        libraryMap.get(library)?.add(version);
+      // Define the expected row structure from the GROUP BY query
+      interface LibraryVersionRow {
+        library: string;
+        version: string;
+        documentCount: number;
+        uniqueUrlCount: number;
+        indexedAt: string | null; // SQLite MIN might return string or null
       }
+
+      const rows = this.statements.queryLibraryVersions.all() as LibraryVersionRow[];
+      const libraryMap = new Map<string, LibraryVersionDetails[]>();
+
+      for (const row of rows) {
+        // Process all rows, including those where version is "" (unversioned)
+        const library = row.library;
+        if (!libraryMap.has(library)) {
+          libraryMap.set(library, []);
+        }
+
+        // Format indexedAt to ISO string if available
+        const indexedAtISO = row.indexedAt ? new Date(row.indexedAt).toISOString() : null;
+
+        libraryMap.get(library)?.push({
+          version: row.version,
+          documentCount: row.documentCount,
+          uniqueUrlCount: row.uniqueUrlCount,
+          indexedAt: indexedAtISO,
+        });
+      }
+
+      // Sort versions within each library: unversioned first, then semantically
+      for (const versions of libraryMap.values()) {
+        versions.sort((a, b) => {
+          if (a.version === "" && b.version !== "") {
+            return -1; // a (unversioned) comes first
+          }
+          if (a.version !== "" && b.version === "") {
+            return 1; // b (unversioned) comes first
+          }
+          if (a.version === "" && b.version === "") {
+            return 0; // Should not happen with GROUP BY, but handle anyway
+          }
+          // Both are non-empty, use semver compare
+          return semver.compare(a.version, b.version);
+        });
+      }
+
       return libraryMap;
     } catch (error) {
       throw new ConnectionError("Failed to query library versions", error);
@@ -341,6 +393,7 @@ export class DocumentStore {
             doc.pageContent,
             JSON.stringify(doc.metadata),
             i,
+            new Date().toISOString(), // Pass current timestamp for indexed_at
           );
           const rowId = result.lastInsertRowid;
 

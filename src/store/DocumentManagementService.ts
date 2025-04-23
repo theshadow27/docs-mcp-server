@@ -11,7 +11,12 @@ import { logger } from "../utils/logger";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
 import { StoreError } from "./errors";
-import type { FindVersionResult, LibraryVersion, StoreSearchResult } from "./types";
+import type {
+  FindVersionResult,
+  LibraryVersion,
+  LibraryVersionDetails,
+  StoreSearchResult,
+} from "./types";
 
 /**
  * Provides semantic search capabilities across different versions of library documentation.
@@ -145,12 +150,7 @@ export class DocumentManagementService {
    */
   async listVersions(library: string): Promise<LibraryVersion[]> {
     const versions = await this.store.queryUniqueVersions(library);
-    return versions
-      .filter((v) => semver.valid(v))
-      .map((version) => ({
-        version,
-        indexed: true,
-      }));
+    return versions.filter((v) => semver.valid(v)).map((version) => ({ version }));
   }
 
   /**
@@ -185,10 +185,7 @@ export class DocumentManagementService {
 
     // Check if unversioned documents exist *before* filtering for valid semver
     const hasUnversioned = await this.store.checkDocumentExists(library, "");
-
-    const validSemverVersions = (await this.listVersions(library)).filter(
-      (v) => v.indexed,
-    ); // listVersions already filters for semver
+    const validSemverVersions = await this.listVersions(library);
 
     if (validSemverVersions.length === 0) {
       if (hasUnversioned) {
@@ -325,25 +322,15 @@ export class DocumentManagementService {
   }
 
   async listLibraries(): Promise<
-    Array<{
-      library: string;
-      versions: Array<{ version: string; indexed: boolean }>;
-    }>
+    Array<{ library: string; versions: LibraryVersionDetails[] }>
   > {
+    // queryLibraryVersions now returns the detailed map directly
     const libraryMap = await this.store.queryLibraryVersions();
-    return Array.from(libraryMap.entries()).map(([library, versionSet]) => {
-      // Filter out the internal empty string version and sort semantically
-      const sortedVersions = Array.from(versionSet)
-        .filter((v) => v !== "") // Exclude the internal empty string placeholder
-        .sort(semver.compare); // Sort versions using semver
 
-      return {
-        library,
-        versions: sortedVersions.map((version) => ({
-          version,
-          indexed: true, // Assume all listed versions are indexed
-        })),
-      };
-    });
+    // Transform the map into the desired array structure
+    return Array.from(libraryMap.entries()).map(([library, versions]) => ({
+      library,
+      versions, // The versions array already contains LibraryVersionDetails
+    }));
   }
 }

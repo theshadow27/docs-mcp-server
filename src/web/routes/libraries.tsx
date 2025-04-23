@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import type {
   LibraryInfo,
-  LibraryVersion,
-  ListLibrariesTool, // Import the tool type
+  ListLibrariesTool,
 } from "../../tools/ListLibrariesTool";
+import { LibraryVersionDetails } from "../../store/types";
 
-const VersionBadge = ({ version }: { version: LibraryVersion }) => (
+const VersionBadge = ({ version }: { version: LibraryVersionDetails }) => (
   <span
     class={`inline-flex items-center px-2 py-1 mr-2 text-xs font-medium rounded-full ${
-      version.indexed
+      version.documentCount > 0
         ? "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-800"
         : "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800"
     }`}
