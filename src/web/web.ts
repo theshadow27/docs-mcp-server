@@ -34,7 +34,7 @@ export async function startWebServer() {
   const docService = new DocumentManagementService();
   await docService.initialize();
   const pipelineManager = new PipelineManager(docService);
-  // Note: We don't call pipelineManager.start() here as the web server only reads job data
+  await pipelineManager.start(); // Start the manager to process jobs enqueued via web
   const listLibrariesTool = new ListLibrariesTool(docService);
   const listJobsTool = new ListJobsTool(pipelineManager);
   const scrapeTool = new ScrapeTool(docService, pipelineManager);
