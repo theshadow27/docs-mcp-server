@@ -213,7 +213,6 @@ export class PipelineManager {
       this.activeWorkers.add(jobId);
       job.status = PipelineJobStatus.RUNNING;
       job.startedAt = new Date();
-      logger.info(`🚀 Starting job: ${jobId}`);
       this.callbacks.onJobStatusChange?.(job); // Fire and forget status update
 
       // Start the actual job execution asynchronously
@@ -261,7 +260,6 @@ export class PipelineManager {
       // Mark as completed
       job.status = PipelineJobStatus.COMPLETED;
       job.finishedAt = new Date();
-      logger.info(`✅ Manager: Job completed: ${jobId}`);
       await this.callbacks.onJobStatusChange?.(job);
       job.resolveCompletion();
     } catch (error) {

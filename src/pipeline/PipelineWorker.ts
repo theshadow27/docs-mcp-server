@@ -81,7 +81,7 @@ export class PipelineWorker {
       }
 
       // If successful and not cancelled, the manager will handle status update
-      logger.info(`[${jobId}] Worker finished job successfully.`);
+      logger.debug(`[${jobId}] Worker finished job successfully.`);
     } catch (error) {
       // Re-throw error to be caught by the manager in _runJob
       logger.warn(`[${jobId}] Worker encountered error: ${error}`);
