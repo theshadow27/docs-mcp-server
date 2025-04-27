@@ -1,17 +1,18 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import formBody from "@fastify/formbody"; // Import formbody plugin
+import formBody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { PipelineManager } from "../pipeline/PipelineManager";
 import { DocumentManagementService } from "../store/DocumentManagementService";
 import { ListJobsTool } from "../tools/ListJobsTool";
 import { ListLibrariesTool } from "../tools/ListLibrariesTool";
+import { RemoveTool } from "../tools/RemoveTool";
 import { ScrapeTool } from "../tools/ScrapeTool";
 import { logger } from "../utils/logger";
 import { registerIndexRoute } from "./routes/index";
-import { registerJobListRoutes } from "./routes/jobs/list"; // Import from new list file
-import { registerNewJobRoutes } from "./routes/jobs/new"; // Import from new form file
+import { registerJobListRoutes } from "./routes/jobs/list";
+import { registerNewJobRoutes } from "./routes/jobs/new";
 import { registerLibrariesRoutes } from "./routes/libraries";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +37,8 @@ export async function startWebServer() {
   // Note: We don't call pipelineManager.start() here as the web server only reads job data
   const listLibrariesTool = new ListLibrariesTool(docService);
   const listJobsTool = new ListJobsTool(pipelineManager);
-  const scrapeTool = new ScrapeTool(docService, pipelineManager); // Instantiate ScrapeTool
+  const scrapeTool = new ScrapeTool(docService, pipelineManager);
+  const removeTool = new RemoveTool(docService);
 
   // Register static file serving
   await server.register(fastifyStatic, {
@@ -48,9 +50,9 @@ export async function startWebServer() {
 
   // Register routes
   registerIndexRoute(server); // Register the root route first
-  registerJobListRoutes(server, listJobsTool); // Register job list route
-  registerNewJobRoutes(server, scrapeTool); // Register new job form routes
-  registerLibrariesRoutes(server, listLibrariesTool); // Pass the ListLibrariesTool instance
+  registerJobListRoutes(server, listJobsTool);
+  registerNewJobRoutes(server, scrapeTool);
+  registerLibrariesRoutes(server, listLibrariesTool, removeTool);
 
   // Graceful shutdown
   server.addHook("onClose", async () => {

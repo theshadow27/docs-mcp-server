@@ -77,8 +77,20 @@ const IndexPage = () => (
 
       {/* HTMX */}
       <script src="https://unpkg.com/htmx.org@2.0.4" />
+      {/* AlpineJS (defer recommended) */}
+      <script
+        defer
+        src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      ></script>
       {/* Flowbite JavaScript */}
-      <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js" />
+      <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+      {/* Global Flowbite Initializer */}
+      <script>
+        {`
+          // Initial load initialization
+          initFlowbite();
+        `}
+      </script>
     </body>
   </html>
 );
