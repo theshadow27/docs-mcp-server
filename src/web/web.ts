@@ -14,8 +14,8 @@ import { logger } from "../utils/logger";
 import { registerIndexRoute } from "./routes/index";
 import { registerJobListRoutes } from "./routes/jobs/list";
 import { registerNewJobRoutes } from "./routes/jobs/new";
-import { registerLibrariesRoutes } from "./routes/libraries";
-import { registerLibraryDetailRoutes } from "./routes/library-detail";
+import { registerLibraryDetailRoutes } from "./routes/libraries/detail";
+import { registerLibrariesRoutes } from "./routes/libraries/list";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,15 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type {
-  LibraryInfo,
-  ListLibrariesTool,
-} from "../../tools/ListLibrariesTool";
-import { SearchTool } from "../../tools/SearchTool";
-import { StoreSearchResult } from "../../store/types";
-import Layout from "../components/Layout"; // Import base layout
-import LibraryDetailCard from "../components/LibraryDetailCard"; // Import detail card
-import LibrarySearchCard from "../components/LibrarySearchCard"; // Import search card
-import SearchResultList from "../components/SearchResultList"; // Import results list
-import SearchResultSkeletonItem from "../components/SearchResultSkeletonItem"; // Import skeleton
+import type { ListLibrariesTool } from "../../../tools/ListLibrariesTool";
+import { SearchTool } from "../../../tools/SearchTool";
+import Layout from "../../components/Layout";
+import LibraryDetailCard from "../../components/LibraryDetailCard";
+import LibrarySearchCard from "../../components/LibrarySearchCard";
+import SearchResultList from "../../components/SearchResultList";
+import SearchResultSkeletonItem from "../../components/SearchResultSkeletonItem";
 
 /**
  * Registers the route for displaying library details.

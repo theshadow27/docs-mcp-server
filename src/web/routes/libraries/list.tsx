@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import type { ListLibrariesTool } from "../../tools/ListLibrariesTool";
-import { RemoveTool } from "../../tools";
-import LibraryList from "../components/LibraryList"; // Import the extracted component
+import type { ListLibrariesTool } from "../../../tools/ListLibrariesTool";
+import { RemoveTool } from "../../../tools";
+import LibraryList from "../../components/LibraryList";
 
 /**
  * Registers the API routes for library management.
