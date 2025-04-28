@@ -18,17 +18,8 @@ const Layout = ({ title, children }: LayoutProps) => (
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title safe>{title}</title>
-      {/* Flowbite CSS */}
-      <link
-        href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css"
-        rel="stylesheet"
-      />
-      <link
-        href="https://cdn.jsdelivr.net/npm/flowbite-typography@1.0.5/dist/typography.min.css"
-        rel="stylesheet"
-      />
-      {/* Tailwind CSS */}
-      <script src="https://cdn.tailwindcss.com" />
+      {/* Bundled CSS (includes Tailwind and Flowbite) */}
+      <link rel="stylesheet" href="/assets/main.css" />
       {/* Add style for htmx-indicator behavior (needed globally) */}
       <style>
         {`
@@ -67,23 +58,8 @@ const Layout = ({ title, children }: LayoutProps) => (
         <main>{children}</main>
       </div>
 
-      {/* HTMX */}
-      <script src="https://unpkg.com/htmx.org@2.0.4" />
-      {/* AlpineJS (defer recommended) */}
-      <script
-        defer
-        src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
-      ></script>
-      {/* Flowbite JavaScript */}
-      <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/flowbite-typography@1.0.5/src/index.min.js"></script>
-      {/* Global Flowbite Initializer */}
-      <script>
-        {`
-          // Initial load initialization
-          initFlowbite();
-        `}
-      </script>
+      {/* Bundled JS (includes Flowbite, HTMX, AlpineJS, and initialization) */}
+      <script type="module" src="/assets/main.js"></script>
     </body>
   </html>
 );
