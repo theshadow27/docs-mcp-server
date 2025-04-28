@@ -241,18 +241,6 @@ export class DocumentManagementService {
   }
 
   /**
-   * Deletes all documents for a specific library and optional version.
-   * If version is omitted, deletes documents without a specific version.
-   * @deprecated Use removeAllDocuments instead.
-   */
-  async deleteStore(library: string, version?: string | null): Promise<void> {
-    const normalizedVersion = this.normalizeVersion(version);
-    logger.info(`🗑️ Deleting store for ${library}@${normalizedVersion || "[no version]"}`);
-    const count = await this.store.deleteDocuments(library, normalizedVersion);
-    logger.info(`📊 Deleted ${count} documents`);
-  }
-
-  /**
    * Removes all documents for a specific library and optional version.
    * If version is omitted, removes documents without a specific version.
    */
