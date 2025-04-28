@@ -151,9 +151,7 @@ ${formattedResults.join("")}`,
           );
         }
         if (error instanceof VersionNotFoundError) {
-          const indexedVersions = error.availableVersions
-            .filter((v): v is { version: string; indexed: true } => v.indexed)
-            .map((v) => v.version);
+          const indexedVersions = error.availableVersions.map((v) => v.version);
           return createResponse(
             [
               `Version "${version}" not found.`,

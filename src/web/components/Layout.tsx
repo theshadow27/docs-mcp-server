@@ -48,10 +48,12 @@ const Layout = ({ title, children }: LayoutProps) => (
       </style>
     </head>
     <body class="bg-gray-50 dark:bg-gray-900">
-      <div class="container mx-auto px-4 py-4">
+      <div class="container max-w-2xl mx-auto px-4 py-4">
         <header class="mb-4">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            MCP Documentation Server
+            <a href="/" class="hover:underline" safe>
+              MCP Docs
+            </a>
           </h1>
         </header>
 

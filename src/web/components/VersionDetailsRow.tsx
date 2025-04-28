@@ -94,7 +94,8 @@ const VersionDetailsRow = ({
               clearTimeout(timeoutId);
               timeoutId = null;
               isDeleting = true; // Set deleting state directly
-              htmx.trigger($el, 'confirmedDelete'); // Trigger HTMX
+              // Dispatch a standard browser event instead of calling htmx directly
+              $el.dispatchEvent(new CustomEvent('confirmed-delete', { bubbles: true }));
             } else {
               confirming = true;
               timeoutId = setTimeout(() => { confirming = false; timeoutId = null; }, 3000);
@@ -103,7 +104,7 @@ const VersionDetailsRow = ({
           hx-delete={`/api/libraries/${libraryName}/versions/${versionParam}`}
           hx-target={`#${rowId}`}
           hx-swap="outerHTML"
-          hx-trigger="confirmedDelete" // Use custom trigger from Alpine
+          hx-trigger="confirmed-delete" // Listen for the standard browser event
         >
           {/* Default State: Trash Icon */}
           <span x-show="!confirming && !isDeleting">

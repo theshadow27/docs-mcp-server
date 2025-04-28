@@ -4,18 +4,19 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
 import { createMcpServerInstance } from "./mcpServer";
-import { shutdownServices } from "./services";
 import type { McpServerTools } from "./tools";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**
  * Starts the MCP server using the Streamable HTTP and SSE transports.
  * @param tools The shared tool instances.
  * @param port The port to listen on.
+ * @returns The created McpServer instance.
  */
 export async function startHttpServer(
   tools: McpServerTools,
   port: number,
-): Promise<void> {
+): Promise<McpServer> {
   setLogLevel(LogLevel.INFO);
 
   const server = createMcpServerInstance(tools);
@@ -99,21 +100,6 @@ export async function startHttpServer(
     logger.info(`Documentation MCP server running on http://0.0.0.0:${port}`);
   });
 
-  // Remove all existing SIGINT listeners
-  process.removeAllListeners("SIGINT");
-
-  // Handle cleanup for HTTP server
-  process.on("SIGINT", async () => {
-    logger.info("Shutting down HTTP server...");
-    await shutdownServices(); // Shutdown shared services
-    await server.close(); // Close the shared MCP server instance
-    // FIXME: Callback is not called for some reason
-    // httpServer.close(() => {
-    //   logger.info("HTTP server closed.");
-    //   process.exit(0);
-    // });
-    httpServer.close();
-    logger.info("HTTP server closed.");
-    process.exit(0);
-  });
+  // Return the server instance
+  return server;
 }

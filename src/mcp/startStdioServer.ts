@@ -3,12 +3,14 @@ import { LogLevel, logger, setLogLevel } from "../utils/logger";
 import { createMcpServerInstance } from "./mcpServer";
 import { shutdownServices } from "./services";
 import type { McpServerTools } from "./tools";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**
  * Starts the MCP server using the Stdio transport.
  * @param tools The shared tool instances.
+ * @returns The created McpServer instance.
  */
-export async function startStdioServer(tools: McpServerTools): Promise<void> {
+export async function startStdioServer(tools: McpServerTools): Promise<McpServer> {
   setLogLevel(LogLevel.ERROR);
 
   // Create a server instance using the factory and shared tools
@@ -19,15 +21,6 @@ export async function startStdioServer(tools: McpServerTools): Promise<void> {
   await server.connect(transport);
   logger.info("Documentation MCP server running on stdio");
 
-  // Remove all existing SIGINT listeners
-  process.removeAllListeners("SIGINT");
-
-  // Handle cleanup
-  process.on("SIGINT", async () => {
-    logger.info("Shutting down Stdio server...");
-    await shutdownServices(); // Shutdown shared services
-    await server.close();
-    logger.info("Stdio server closed.");
-    process.exit(0);
-  });
+  // Return the server instance
+  return server;
 }

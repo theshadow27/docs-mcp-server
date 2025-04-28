@@ -12,7 +12,7 @@ export function registerIndexRoute(server: FastifyInstance) {
     return (
       "<!DOCTYPE html>" +
       (
-        <Layout title="MCP Documentation Server">
+        <Layout title="MCP Docs">
           {/* Job Queue Section */}
           <section class="mb-4 p-4 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-300 dark:border-gray-600">
             <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">

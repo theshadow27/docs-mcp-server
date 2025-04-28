@@ -6,6 +6,7 @@
 
 /* Import Flowbite plugin */
 @plugin "flowbite/plugin";
+@plugin "flowbite-typography";
 
 /* Configure Flowbite source files */
 @source "../../../node_modules/flowbite"; /* Adjusted path relative to main.css */

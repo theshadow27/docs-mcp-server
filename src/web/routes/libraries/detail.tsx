@@ -43,7 +43,7 @@ export function registerLibraryDetailRoutes(
         return (
           "<!DOCTYPE html>" +
           (
-            <Layout title={`MCP Documentation Server - ${libraryInfo.name}`}>
+            <Layout title={`MCP Docs - ${libraryInfo.name}`}>
               {/* Library Detail Card */}
               <LibraryDetailCard library={libraryInfo} />
 
@@ -107,15 +107,7 @@ export function registerLibraryDetailRoutes(
 
         // Return only the results list or error message
         reply.type("text/html; charset=utf-8");
-        if (searchResult.error) {
-          return (
-            <p class="text-red-500 dark:text-red-400 italic">
-              Error: {searchResult.error.message}
-            </p>
-          );
-        } else {
-          return <SearchResultList results={searchResult.results} />;
-        }
+        return <SearchResultList results={searchResult.results} />;
       } catch (error) {
         server.log.error(error, `Failed to search library ${libraryName}`);
         // Return error message on catch

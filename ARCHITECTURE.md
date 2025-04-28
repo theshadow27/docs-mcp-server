@@ -364,6 +364,30 @@ graph TD
     Retriever --> Store
 ```
 
+#### AlpineJS and HTMX Interaction Pattern
+
+When using AlpineJS for component state management alongside HTMX for dynamic updates, avoid calling the global `htmx` object directly from within Alpine event handlers (`x-on:`, `@`). Due to potential scope limitations in Alpine's expression evaluation, this can lead to "htmx is not defined" errors.
+
+**Recommended Pattern:**
+
+1.  **Alpine Dispatches Event:** Let the Alpine component manage its state. When an action requires triggering an HTMX request, use `$el.dispatchEvent` to dispatch a standard browser `CustomEvent` from the element.
+    ```html
+    <button
+      x-data="{...}"
+      x-on:click="if (confirmed) $el.dispatchEvent(new CustomEvent('confirmed-action'))"
+    >
+      ...
+    </button>
+    ```
+2.  **HTMX Listens for Event:** Configure the `hx-trigger` attribute on the same element to listen for the dispatched custom event name.
+    ```html
+    <button ... hx-post="/do-something" hx-trigger="confirmed-action">
+      ...
+    </button>
+    ```
+
+This approach uses standard browser events as the communication bridge, decoupling Alpine's internal scope from HTMX.
+
 The web interface leverages HTMX for dynamic updates, allowing partial page refreshes for job status and library list changes without full page reloads. Static assets are served from the `public` directory with `index: false` to prevent interference with dynamic routes.
 
 ### Interface-Specific Adapters

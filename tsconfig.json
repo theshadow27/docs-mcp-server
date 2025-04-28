@@ -17,7 +17,7 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "rootDir": "src",
-    "types": ["@kitajs/html/htmx.d.ts"]
+    "types": ["@kitajs/html/htmx.d.ts", "vite/client"]
   },
   "include": ["src/**/*"]
 }

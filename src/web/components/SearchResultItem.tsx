@@ -2,6 +2,8 @@ import { unified } from "unified"; // Import unified
 import remarkParse from "remark-parse"; // Import unified plugins
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
+import DOMPurify from "dompurify"; // Import DOMPurify
+import { createJSDOM } from "../../utils/dom"; // Import JSDOM helper
 import type { StoreSearchResult } from "../../store/types";
 
 /**
@@ -21,7 +23,13 @@ const SearchResultItem = async ({ result }: SearchResultItemProps) => {
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkHtml);
   const file = await processor.process(result.content);
   const rawHtml = String(file);
-  // NOTE: DOMPurify sanitization removed by user
+
+  // Create JSDOM instance and initialize DOMPurify
+  const jsdom = createJSDOM("");
+  const purifier = DOMPurify(jsdom.window);
+
+  // Sanitize the HTML content
+  const sanitizedHtml = purifier.sanitize(rawHtml);
 
   return (
     <div class="block px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-2">
@@ -36,8 +44,10 @@ const SearchResultItem = async ({ result }: SearchResultItemProps) => {
           {result.url}
         </a>
       </div>
-      {/* Render the raw HTML content */}
-      <div class="prose dark:prose-invert max-w-none">{rawHtml as "safe"}</div>
+      {/* Render the sanitized HTML content */}
+      <div class="format lg:format-lg dark:format-invert max-w-none">
+        {sanitizedHtml as "safe"}
+      </div>
     </div>
   );
 };
