@@ -8,6 +8,7 @@ import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
 import type { ContentChunk, DocumentSplitter } from "../splitter/types";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools";
 import { logger } from "../utils/logger";
+import { getProjectRoot } from "../utils/paths";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
 import { StoreError } from "./errors";
@@ -46,7 +47,7 @@ export class DocumentManagementService {
       logger.debug(`💾 Using database directory from DOCS_MCP_STORE_PATH: ${dbDir}`);
     } else {
       // 2. Check Old Local Path
-      const projectRoot = path.resolve(import.meta.dirname, "..");
+      const projectRoot = getProjectRoot();
       const oldDbDir = path.join(projectRoot, ".store");
       const oldDbPath = path.join(oldDbDir, "documents.db");
       const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
@@ -194,7 +195,10 @@ export class DocumentManagementService {
       }
       // Throw error only if NO versions (semver or unversioned) exist
       logger.warn(`⚠️ No valid versions found for ${library}`);
-      throw new VersionNotFoundError(library, targetVersion ?? "", []);
+      // Fetch detailed versions to pass to the error constructor
+      const allLibraryDetails = await this.store.queryLibraryVersions();
+      const libraryDetails = allLibraryDetails.get(library) ?? [];
+      throw new VersionNotFoundError(library, targetVersion ?? "", libraryDetails);
     }
 
     const versionStrings = validSemverVersions.map((v) => v.version);
@@ -234,7 +238,10 @@ export class DocumentManagementService {
     // If a semver match was found, return it along with unversioned status.
     // If no semver match AND no unversioned, throw error.
     if (!bestMatch && !hasUnversioned) {
-      throw new VersionNotFoundError(library, targetVersion ?? "", validSemverVersions);
+      // Fetch detailed versions to pass to the error constructor
+      const allLibraryDetails = await this.store.queryLibraryVersions();
+      const libraryDetails = allLibraryDetails.get(library) ?? [];
+      throw new VersionNotFoundError(library, targetVersion ?? "", libraryDetails);
     }
 
     return { bestMatch, hasUnversioned };

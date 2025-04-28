@@ -1,5 +1,5 @@
 import semver from "semver";
-import type { LibraryVersion } from "../store/types";
+import type { LibraryVersionDetails } from "../store/types"; // Import LibraryVersionDetails
 
 class ToolError extends Error {
   constructor(
@@ -15,7 +15,7 @@ class VersionNotFoundError extends ToolError {
   constructor(
     public readonly library: string,
     public readonly requestedVersion: string,
-    public readonly availableVersions: LibraryVersion[],
+    public readonly availableVersions: LibraryVersionDetails[], // Use LibraryVersionDetails
   ) {
     super(
       `Version ${requestedVersion} not found for ${library}. Available versions: ${availableVersions.map((v) => v.version).join(", ")}`,

@@ -1,5 +1,5 @@
 import type { DocumentManagementService } from "../store";
-import type { StoreSearchResult } from "../store/types";
+import type { LibraryVersionDetails, StoreSearchResult } from "../store/types"; // Import LibraryVersionDetails
 import { logger } from "../utils/logger";
 import { VersionNotFoundError } from "./errors";
 
@@ -13,7 +13,7 @@ export interface SearchToolOptions {
 
 export interface SearchToolResultError {
   message: string;
-  availableVersions?: Array<{ version: string; indexed: boolean }>; // Specific to VersionNotFoundError
+  availableVersions?: LibraryVersionDetails[]; // Use LibraryVersionDetails
   suggestions?: string[]; // Specific to LibraryNotFoundError
 }
 
@@ -38,13 +38,16 @@ export class SearchTool {
 
     // When exactMatch is true, version must be specified and not 'latest'
     if (exactMatch && (!version || version === "latest")) {
-      // Get available versions for error message
+      // Get available *detailed* versions for error message
       await this.docService.validateLibraryExists(library);
-      const versions = await this.docService.listVersions(library);
+      // Fetch detailed versions using listLibraries and find the specific library
+      const allLibraries = await this.docService.listLibraries();
+      const libraryInfo = allLibraries.find((lib) => lib.library === library);
+      const detailedVersions = libraryInfo ? libraryInfo.versions : [];
       throw new VersionNotFoundError(
         library,
-        "latest",
-        versions, // versions already has the correct { version: string, indexed: boolean } format
+        "latest", // Or perhaps the original 'version' if it wasn't 'latest'? Check logic.
+        detailedVersions,
       );
     }
 

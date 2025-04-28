@@ -1,7 +1,57 @@
 import { defineConfig } from "vite";
+import dts from 'vite-plugin-dts';
+import path from 'path';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - This file is not included in the build, so we can ignore the error
+import packageJson from './package.json'; // Import package.json to read dependencies
 
 export default defineConfig({
+  plugins: [
+    dts({
+      insertTypesEntry: true, // Ensures type exports are handled correctly
+      // Optionally specify tsconfig path if not default:
+      // tsconfigPath: './tsconfig.json',
+    }),
+  ],
   resolve: {
+    // Keep existing resolve extensions
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
+  build: {
+    outDir: 'dist', // Output directory
+    sourcemap: true, // Generate sourcemaps
+    emptyOutDir: true, // Clean the output directory before build (replaces tsup clean:true)
+    lib: {
+      // Define entry points using path.resolve for robustness
+      entry: {
+        server: path.resolve(__dirname, 'src/server.ts'),
+        cli: path.resolve(__dirname, 'src/cli.ts'),
+        web: path.resolve(__dirname, 'src/web.ts'),
+      },
+      formats: ['es'], // Output ESM format only
+      // Output filenames will be based on entry keys (server.js, cli.js, web.js)
+      fileName: (format, entryName) => `${entryName}.js`,
+    },
+    rollupOptions: {
+      // Externalize dependencies and node built-ins
+      external: [
+        /^node:/, // Externalize all node built-ins (e.g., 'node:fs', 'node:path')
+        ...Object.keys(packageJson.dependencies || {}),
+        // Explicitly externalize potentially problematic packages if needed
+         'better-sqlite3', // Often needs to be external due to native bindings
+         'playwright', // Playwright should definitely be external
+         'sqlite-vec', // Likely involves native bindings
+      ],
+      output: {
+        // Optional: Configure output further if needed
+        // preserveModules: true, // Uncomment if you need to preserve source file structure
+        // entryFileNames: '[name].js', // Adjust naming if needed
+      },
+    },
+    // Target Node.js environment based on the version running the build
+    target: `node${process.versions.node.split('.')[0]}`,
+    ssr: true, // Explicitly mark this as an SSR/Node build
+  },
+  // If you have Vitest config here, it would remain alongside 'plugins', 'resolve', 'build'
+  // test: { ... }
 });

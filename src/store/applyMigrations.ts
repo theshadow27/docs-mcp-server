@@ -1,15 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url"; // Import fileURLToPath
 import type { Database } from "better-sqlite3";
 import { logger } from "../utils/logger";
+import { getProjectRoot } from "../utils/paths";
 import { StoreError } from "./errors";
 
-// Use import.meta.url to get the directory path in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// Point to the new top-level db/migrations directory, relative to the compiled script location (dist/store)
-const MIGRATIONS_DIR = path.resolve(__dirname, "../db/migrations");
+// Construct the absolute path to the migrations directory using the project root
+const MIGRATIONS_DIR = path.join(getProjectRoot(), "db", "migrations");
 const MIGRATIONS_TABLE = "_schema_migrations";
 
 /**
@@ -51,8 +48,7 @@ export function applyMigrations(db: Database): void {
     const appliedMigrations = getAppliedMigrations(db);
 
     if (!fs.existsSync(MIGRATIONS_DIR)) {
-      logger.debug("Migrations directory not found, skipping.");
-      return;
+      throw new StoreError("Migrations directory not found");
     }
 
     const migrationFiles = fs

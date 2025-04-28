@@ -3,9 +3,19 @@ import { Document } from "@langchain/core/documents";
 import { createFsFromVolume, vol } from "memfs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools/errors";
+import { getProjectRoot } from "../utils/paths";
 import { DocumentManagementService } from "./DocumentManagementService";
 import { StoreError } from "./errors";
 import type { LibraryVersionDetails } from "./types";
+
+// --- Calculate real project root BEFORE mocking fs ---
+// This assumes the test file is somewhere within the project structure.
+// Adjust depth ('../..') if the test file location changes relative to the root.
+const actualProjectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+// ----------------------------------------------------
 
 vi.mock("node:fs", () => ({ default: createFsFromVolume(vol) }));
 vi.mock("../utils/logger");
@@ -30,7 +40,9 @@ const mockStore = {
   shutdown: vi.fn(),
   queryUniqueVersions: vi.fn(),
   checkDocumentExists: vi.fn(),
-  queryLibraryVersions: vi.fn(),
+  queryLibraryVersions: vi
+    .fn()
+    .mockResolvedValue(new Map<string, LibraryVersionDetails[]>()), // Add mock implementation
   addDocuments: vi.fn(),
   deleteDocuments: vi.fn(),
 };
@@ -42,6 +54,7 @@ vi.mock("./DocumentStore", () => {
   return { DocumentStore: MockDocumentStore };
 });
 
+import { fileURLToPath } from "node:url";
 // Import the mocked constructor AFTER vi.mock
 import { DocumentStore } from "./DocumentStore";
 
@@ -59,14 +72,23 @@ vi.mock("./DocumentRetrieverService", () => ({
 describe("DocumentManagementService", () => {
   let docService: DocumentManagementService; // For general tests
 
-  // Define expected paths consistently
-  const projectRoot = path.resolve(import.meta.dirname, "..");
-  const expectedOldDbPath = path.join(projectRoot, ".store", "documents.db");
+  // Define expected paths consistently using the calculated actual root
+  // Note: getProjectRoot() called here will now run *after* fs is mocked,
+  // so it needs the dummy package.json created in beforeEach.
+  const expectedOldDbPath = path.join(actualProjectRoot, ".store", "documents.db");
   const expectedStandardDbPath = path.join(mockEnvPaths.data, "documents.db");
 
   beforeEach(() => {
     vi.clearAllMocks();
     vol.reset(); // Reset memfs
+
+    // --- Create dummy package.json in memfs for getProjectRoot() ---
+    // Ensure the calculated project root directory exists in memfs
+    vol.mkdirSync(actualProjectRoot, { recursive: true });
+    // Create a dummy package.json file there
+    vol.writeFileSync(path.join(actualProjectRoot, "package.json"), "{}");
+    // -------------------------------------------------------------
+
     // Ensure envPaths mock is reset/set for general tests
     mockEnvPathsFn.mockReturnValue(mockEnvPaths);
 

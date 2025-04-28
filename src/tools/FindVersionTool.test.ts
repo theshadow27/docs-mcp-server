@@ -1,5 +1,6 @@
 import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentManagementService } from "../store";
+import type { LibraryVersionDetails } from "../store/types"; // Use import type
 import { logger } from "../utils/logger";
 import { FindVersionTool, type FindVersionToolOptions } from "./FindVersionTool";
 import { VersionNotFoundError } from "./errors";
@@ -66,9 +67,15 @@ describe("FindVersionTool", () => {
       library: "angular",
       targetVersion: "1.0.0",
     };
-    const available = [
-      { version: "15.0.0", indexed: true },
-      { version: "16.1.0", indexed: false },
+    // Update test data to match LibraryVersionDetails
+    const available: LibraryVersionDetails[] = [
+      {
+        version: "15.0.0",
+        documentCount: 10,
+        uniqueUrlCount: 5,
+        indexedAt: "2024-01-01T00:00:00Z",
+      },
+      { version: "16.1.0", documentCount: 20, uniqueUrlCount: 10, indexedAt: null }, // Example with null indexedAt
     ];
     const error = new VersionNotFoundError("angular", "1.0.0", available);
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);
@@ -84,7 +91,8 @@ describe("FindVersionTool", () => {
 
   it("should return message indicating no match when VersionNotFoundError is thrown with no available versions", async () => {
     const options: FindVersionToolOptions = { library: "unknown-lib" };
-    const error = new VersionNotFoundError("unknown-lib", "latest", []); // Assuming default is 'latest' if targetVersion omitted
+    // Pass empty LibraryVersionDetails array
+    const error = new VersionNotFoundError("unknown-lib", "latest", []);
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);
 
     const result = await findVersionTool.execute(options);

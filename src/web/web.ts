@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import formBody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
@@ -11,14 +10,12 @@ import { ListLibrariesTool } from "../tools/ListLibrariesTool";
 import { RemoveTool } from "../tools/RemoveTool";
 import { ScrapeTool } from "../tools/ScrapeTool";
 import { logger } from "../utils/logger";
+import { getProjectRoot } from "../utils/paths";
 import { registerIndexRoute } from "./routes/index";
 import { registerJobListRoutes } from "./routes/jobs/list";
 import { registerNewJobRoutes } from "./routes/jobs/new";
 import { registerLibraryDetailRoutes } from "./routes/libraries/detail";
 import { registerLibrariesRoutes } from "./routes/libraries/list";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Initializes and starts the Fastify web server.
@@ -45,8 +42,8 @@ export async function startWebServer() {
 
   // Register static file serving
   await server.register(fastifyStatic, {
-    // Path relative to the dist/web.js file after build
-    root: path.join(__dirname, "..", "public"),
+    // Use project root to construct absolute path to public directory
+    root: path.join(getProjectRoot(), "public"),
     prefix: "/",
     index: false, // Disable automatic index.html serving
   });
