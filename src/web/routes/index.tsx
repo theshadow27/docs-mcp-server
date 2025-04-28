@@ -14,6 +14,10 @@ const IndexPage = () => (
         href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css"
         rel="stylesheet"
       />
+      <link
+        href="https://cdn.jsdelivr.net/npm/flowbite-typography@1.0.5/dist/typography.min.css"
+        rel="stylesheet"
+      />
       {/* Tailwind CSS */}
       <script src="https://cdn.tailwindcss.com" />
     </head>
@@ -85,6 +89,7 @@ const IndexPage = () => (
       ></script>
       {/* Flowbite JavaScript */}
       <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/flowbite-typography@1.0.5/src/index.min.js"></script>
       {/* Global Flowbite Initializer */}
       <script>
         {`

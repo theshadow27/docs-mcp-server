@@ -5,6 +5,7 @@ import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import { PipelineManager } from "../pipeline/PipelineManager";
 import { DocumentManagementService } from "../store/DocumentManagementService";
+import { SearchTool } from "../tools";
 import { ListJobsTool } from "../tools/ListJobsTool";
 import { ListLibrariesTool } from "../tools/ListLibrariesTool";
 import { RemoveTool } from "../tools/RemoveTool";
@@ -14,6 +15,7 @@ import { registerIndexRoute } from "./routes/index";
 import { registerJobListRoutes } from "./routes/jobs/list";
 import { registerNewJobRoutes } from "./routes/jobs/new";
 import { registerLibrariesRoutes } from "./routes/libraries";
+import { registerLibraryDetailRoutes } from "./routes/library-detail";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +41,7 @@ export async function startWebServer() {
   const listJobsTool = new ListJobsTool(pipelineManager);
   const scrapeTool = new ScrapeTool(docService, pipelineManager);
   const removeTool = new RemoveTool(docService);
+  const searchTool = new SearchTool(docService);
 
   // Register static file serving
   await server.register(fastifyStatic, {
@@ -53,6 +56,7 @@ export async function startWebServer() {
   registerJobListRoutes(server, listJobsTool);
   registerNewJobRoutes(server, scrapeTool);
   registerLibrariesRoutes(server, listLibrariesTool, removeTool);
+  registerLibraryDetailRoutes(server, listLibrariesTool, searchTool);
 
   // Graceful shutdown
   server.addHook("onClose", async () => {
