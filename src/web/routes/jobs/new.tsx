@@ -5,15 +5,15 @@ import { logger } from "../../../utils/logger"; // Adjusted import path
 
 // --- Scrape Form Content Component (The actual form fields) ---
 const ScrapeFormContent = () => (
-  <div class="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+  <div class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-300 dark:border-gray-600">
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
       Queue New Scrape Job
     </h3>
     <form
       hx-post="/api/jobs/scrape"
       hx-target="#job-response"
       hx-swap="innerHTML"
-      class="space-y-4"
+      class="space-y-2"
     >
       <div>
         <label
@@ -27,7 +27,7 @@ const ScrapeFormContent = () => (
           name="url"
           id="url"
           required
-          class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="mt-0.5 block w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
       </div>
       <div>
@@ -42,7 +42,7 @@ const ScrapeFormContent = () => (
           name="library"
           id="library"
           required
-          class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="mt-0.5 block w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
       </div>
       <div>
@@ -56,15 +56,16 @@ const ScrapeFormContent = () => (
           type="text"
           name="version"
           id="version"
-          class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          class="mt-0.5 block w-full max-w-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
       </div>
 
-      <details class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
+      {/* Consider using Flowbite Accordion here */}
+      <details class="bg-gray-50 dark:bg-gray-700 p-2 rounded-md">
         <summary class="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
           Advanced Options
         </summary>
-        <div class="mt-4 space-y-4">
+        <div class="mt-2 space-y-2">
           <div>
             <label
               for="maxPages"
@@ -78,7 +79,7 @@ const ScrapeFormContent = () => (
               id="maxPages"
               min="1"
               placeholder="1000"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="mt-0.5 block w-full max-w-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
           <div>
@@ -94,7 +95,7 @@ const ScrapeFormContent = () => (
               id="maxDepth"
               min="0"
               placeholder="3"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="mt-0.5 block w-full max-w-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
           <div>
@@ -107,7 +108,7 @@ const ScrapeFormContent = () => (
             <select
               name="scope"
               id="scope"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="mt-0.5 block w-full max-w-sm pl-2 pr-10 py-1 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="subpages" selected>
                 Subpages (Default)
@@ -126,7 +127,7 @@ const ScrapeFormContent = () => (
             <select
               name="scrapeMode"
               id="scrapeMode"
-              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="mt-0.5 block w-full max-w-sm pl-2 pr-10 py-1 text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value={ScrapeMode.Auto} selected>
                 Auto (Default)
@@ -145,7 +146,7 @@ const ScrapeFormContent = () => (
             />
             <label
               for="followRedirects"
-              class="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+              class="ml-1 block text-sm text-gray-900 dark:text-gray-300"
             >
               Follow Redirects
             </label>
@@ -160,7 +161,7 @@ const ScrapeFormContent = () => (
             />
             <label
               for="ignoreErrors"
-              class="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+              class="ml-1 block text-sm text-gray-900 dark:text-gray-300"
             >
               Ignore Errors During Scraping
             </label>
@@ -171,14 +172,14 @@ const ScrapeFormContent = () => (
       <div>
         <button
           type="submit"
-          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          class="w-full flex justify-center py-1.5 px-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           Queue Job
         </button>
       </div>
     </form>
     {/* Target div for HTMX response */}
-    <div id="job-response" class="mt-4 text-sm"></div>
+    <div id="job-response" class="mt-2 text-sm"></div>
   </div>
 );
 
@@ -229,8 +230,28 @@ export function registerNewJobRoutes(
         // Basic validation
         if (!body.url || !body.library) {
           reply.status(400);
-          // Return JSX for validation error
-          return <p class="text-red-500">URL and Library Name are required.</p>;
+          // Return JSX for validation error using Flowbite Alert
+          return (
+            <div
+              class="flex items-center p-4 mb-4 text-sm text-red-800 border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800"
+              role="alert"
+            >
+              <svg
+                class="flex-shrink-0 inline w-4 h-4 me-3"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3h-1a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+              </svg>
+              <span class="sr-only">Info</span>
+              <div>
+                <span class="font-medium">Validation Error:</span> URL and
+                Library Name are required.
+              </div>
+            </div>
+          );
         }
 
         // Prepare options for ScrapeTool
@@ -258,13 +279,29 @@ export function registerNewJobRoutes(
         const result = await scrapeTool.execute(scrapeOptions);
 
         if ("jobId" in result) {
-          // Success: Return JSX Fragment with message and OOB swap
+          // Success: Return JSX Fragment with message and OOB swap using Flowbite Alert
           return (
             <>
               {/* Main target response */}
-              <p class="text-green-600">
-                ✅ Job queued successfully! ID: <span safe>{result.jobId}</span>
-              </p>
+              <div
+                class="flex items-center p-4 mb-4 text-sm text-green-800 border border-green-300 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400 dark:border-green-800"
+                role="alert"
+              >
+                <svg
+                  class="flex-shrink-0 inline w-4 h-4 me-3"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm9.5 9.5A9.5 9.5 0 0 1 10 19a9.46 9.46 0 0 1-1.671-.14c-.165-.05-.3-.19-.42-.335l-.165-.165c-.19-.2-.3-.425-.3-.655A4.2 4.2 0 0 1 4.5 10a4.25 4.25 0 0 1 7.462-2.882l1.217 1.217a3.175 3.175 0 0 0 4.5.01l.106-.106a.934.934 0 0 0 .1-.36ZM10 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" />
+                </svg>
+                <span class="sr-only">Info</span>
+                <div>
+                  <span class="font-medium">Success:</span> Job queued
+                  successfully! ID: <span safe>{result.jobId}</span>
+                </div>
+              </div>
               {/* OOB target response - contains only the inner form content */}
               <div id="scrape-form-container" hx-swap-oob="innerHTML">
                 <ScrapeFormContent />
@@ -274,20 +311,54 @@ export function registerNewJobRoutes(
         }
 
         // This case shouldn't happen with waitForCompletion: false, but handle defensively
-        // Return JSX for unexpected success
+        // Return JSX for unexpected success using Flowbite Alert
         return (
-          <p class="text-yellow-600">⚠️ Job finished unexpectedly quickly.</p>
+          <div
+            class="flex items-center p-4 mb-4 text-sm text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300 dark:border-yellow-800"
+            role="alert"
+          >
+            <svg
+              class="flex-shrink-0 inline w-4 h-4 me-3"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3h-1a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+            </svg>
+            <span class="sr-only">Info</span>
+            <div>
+              <span class="font-medium">Warning:</span> Job finished
+              unexpectedly quickly.
+            </div>
+          </div>
         );
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         logger.error(`Scrape job submission failed: ${error}`);
         reply.status(500); // Keep status code for errors
-        // Return JSX for server error
+        // Return JSX for server error using Flowbite Alert
         return (
-          <p class="text-red-600">
-            ❌ Failed to queue job: <span>{errorMessage}</span>
-          </p>
+          <div
+            class="flex items-center p-4 mb-4 text-sm text-red-800 border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800"
+            role="alert"
+          >
+            <svg
+              class="flex-shrink-0 inline w-4 h-4 me-3"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3h-1a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+            </svg>
+            <span class="sr-only">Info</span>
+            <div>
+              <span class="font-medium">Error:</span> Failed to queue job:{" "}
+              <span>{errorMessage}</span>
+            </div>
+          </div>
         );
       }
     }

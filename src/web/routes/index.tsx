@@ -18,8 +18,8 @@ const IndexPage = () => (
       <script src="https://cdn.tailwindcss.com" />
     </head>
     <body class="bg-gray-50 dark:bg-gray-900">
-      <div class="container mx-auto px-4 py-8">
-        <header class="mb-8">
+      <div class="container mx-auto px-4 py-4">
+        <header class="mb-4">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
             MCP Documentation Server
           </h1>
@@ -27,8 +27,8 @@ const IndexPage = () => (
 
         <main>
           {/* Job Queue Section */}
-          <section class="mb-8 p-6 bg-white rounded-lg shadow dark:bg-gray-800">
-            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          <section class="mb-4 p-4 bg-white rounded-lg shadow dark:bg-gray-800 border border-gray-300 dark:border-gray-600">
+            <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
               Job Queue
             </h2>
             {/* Container for the job list, loaded via HTMX */}
@@ -41,7 +41,6 @@ const IndexPage = () => (
               </div>
             </div>
           </section>
-
           {/* Add New Job Section */}
           <section class="mb-8">
             {/* Container for the add job form, loaded via HTMX */}
@@ -54,10 +53,11 @@ const IndexPage = () => (
               </div>
             </div>
           </section>
-
           {/* Indexed Documentation Section */}
-          <section class="p-6 bg-white rounded-lg shadow dark:bg-gray-800">
-            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          <div>
+            {" "}
+            {/* Use a simple div instead of section with card styling */}
+            <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
               Indexed Documentation
             </h2>
             <div
@@ -71,7 +71,8 @@ const IndexPage = () => (
                 <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
               </div>
             </div>
-          </section>
+          </div>{" "}
+          {/* Close the simple div */}
         </main>
       </div>
 
