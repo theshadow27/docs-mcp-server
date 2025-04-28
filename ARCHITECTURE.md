@@ -294,22 +294,25 @@ This separation of concerns improves the modularity, maintainability, and testab
 
 ### Web Interface
 
-The web interface provides a GUI for interacting with the server, monitoring jobs, and viewing indexed libraries. It follows a simple server-side rendered architecture using modern web technologies.
+The web interface provides a GUI for interacting with the server, monitoring jobs, and viewing indexed libraries. It follows a server-side rendered architecture using modern web technologies, emphasizing modularity through reusable components.
 
 #### Technology Stack
 
 - **Fastify:** Web server framework
-- **`@kitajs/html`:** Server-side JSX rendering
+- **`@kitajs/html`:** Server-side JSX rendering for component-based UI
 - **HTMX:** Dynamic content updates without full page reloads
 - **Tailwind/Flowbite:** Styling via CDN
 
 #### Component Structure
 
-The web interface is organized into three main parts:
+The web interface is organized into logical parts:
 
-- Entry point (`src/web.ts`): Server initialization and environment setup
-- Core server (`src/web/web.ts`): Route configuration and static file serving
-- Route handlers (`src/web/routes/*.tsx`): JSX components that render HTML for each route
+- **Entry Point (`src/web.ts`):** Server initialization and environment setup.
+- **Core Server (`src/web/web.ts`):** Configures Fastify, registers plugins, instantiates services/tools, and maps routes to handlers.
+- **Routes (`src/web/routes/`):** Contains route handler modules, organized into subdirectories by feature (e.g., `jobs/`, `libraries/`). These handlers fetch data using the core Tools and compose the UI using components. The root `index.tsx` defines the main page structure.
+- **Components (`src/web/components/`):** Contains reusable JSX components (e.g., Layout, JobItem, LibraryList, Alert) responsible for rendering specific parts of the UI. These components receive data as props from the route handlers.
+
+This structure separates routing and data fetching logic (in `routes/`) from presentation logic (in `components/`), promoting code reuse and maintainability.
 
 #### Integration Flow
 
