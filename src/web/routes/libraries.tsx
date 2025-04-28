@@ -63,19 +63,25 @@ const VersionDetailsRow = ({
 
       {/* Stats Group - Removed documentCount, renamed uniqueUrlCount */}
       <div class="flex space-x-4 text-sm text-gray-600 dark:text-gray-400 w-3/4 justify-end items-center">
-        {/* Removed Docs count */}
         <span title="Number of unique pages indexed">
-          Pages: <span class="font-semibold">{version.uniqueUrlCount}</span>
+          Pages:{" "}
+          <span class="font-semibold" safe>
+            {version.uniqueUrlCount.toLocaleString()}
+          </span>
         </span>
-        <span title="Date first indexed">
-          Indexed:{" "}
+        <span title="Number of indexed snippets">
+          Snippets:{" "}
+          <span class="font-semibold" safe>
+            {version.documentCount.toLocaleString()}
+          </span>
+        </span>
+        <span title="Date last indexed">
+          Last Update:{" "}
           <span class="font-semibold" safe>
             {indexedDate}
           </span>
         </span>
       </div>
-      {/* Remove Button - Enhanced with AlpineJS for confirmation and HTMX for deletion */}
-      {/* Remove Button - Common classes applied directly, state classes toggled by Alpine */}
       <button
         type="button"
         class="ml-4 font-medium rounded-lg text-sm p-1.5 text-center inline-flex items-center transition-colors duration-150 ease-in-out"
