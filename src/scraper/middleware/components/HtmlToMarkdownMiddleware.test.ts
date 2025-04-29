@@ -217,4 +217,38 @@ describe("HtmlToMarkdownMiddleware", () => {
     turndownSpy.mockRestore();
     // No close needed
   });
+
+  it("should apply custom anchor rule to remove empty or invalid links", async () => {
+    const middleware = new HtmlToMarkdownMiddleware();
+    const html = `
+      <html><body>
+        <p>A <a href="http://valid.com">Valid Link</a>.</p>
+        <p>An empty link: <a href="http://empty.com"></a>.</p>
+        <p>A hash link: <a href="http://hash.com">#</a>.</p>
+        <p>A link with no href: <a>No Href</a>.</p>
+        <p>A link with empty href: <a href="">Empty Href</a>.</p>
+        <p>Mixed: <a href="http://another.com">Another Valid</a> and <a href="http://bad.com"></a> bad one.</p>
+      </body></html>`;
+    const context = createMockContext("text/html", html);
+    const next = vi.fn().mockResolvedValue(undefined);
+
+    await middleware.process(context, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    // Note: The content inside removed anchors ('No Href', 'Empty Href') remains as plain text.
+    const expectedMarkdown = `A [Valid Link](http://valid.com).
+
+An empty link: .
+
+A hash link: .
+
+A link with no href: No Href.
+
+A link with empty href: Empty Href.
+
+Mixed: [Another Valid](http://another.com) and bad one.`;
+    expect(context.content).toBe(expectedMarkdown);
+    expect(context.contentType).toBe("text/markdown");
+    expect(context.errors).toHaveLength(0);
+  });
 });
