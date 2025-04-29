@@ -1,26 +1,6 @@
-import type { JSONSchema7 } from "json-schema";
 import type { DocumentManagementService } from "../store";
 import { logger } from "../utils/logger";
-import { ToolError } from "./errors"; // Keep ToolError for potential internal errors
-
-/**
- * Input schema for the remove_docs tool.
- */
-export const RemoveToolInputSchema: JSONSchema7 = {
-  type: "object",
-  properties: {
-    library: {
-      type: "string",
-      description: "Name of the library",
-    },
-    version: {
-      type: "string",
-      description: "Version of the library (optional, removes unversioned if omitted)",
-    },
-  },
-  required: ["library"],
-  additionalProperties: false,
-};
+import { ToolError } from "./errors";
 
 /**
  * Represents the arguments for the remove_docs tool.
@@ -36,10 +16,6 @@ export interface RemoveToolArgs {
  * This class provides the core logic, intended to be called by the McpServer.
  */
 export class RemoveTool {
-  readonly name = "remove_docs";
-  readonly description = "Remove indexed documentation for a library version.";
-  readonly inputSchema = RemoveToolInputSchema;
-
   constructor(private readonly documentManagementService: DocumentManagementService) {}
 
   /**
@@ -51,7 +27,7 @@ export class RemoveTool {
     const { library, version } = args;
 
     logger.info(
-      `Executing ${this.name} for library: ${library}${version ? `, version: ${version}` : " (unversioned)"}`,
+      `Removing library: ${library}${version ? `, version: ${version}` : " (unversioned)"}`,
     );
 
     try {
@@ -64,9 +40,9 @@ export class RemoveTool {
       return { message };
     } catch (error) {
       const errorMessage = `Failed to remove documents for ${library}${version ? `@${version}` : " (unversioned)"}: ${error instanceof Error ? error.message : String(error)}`;
-      logger.error(`Error executing ${this.name}: ${errorMessage}`);
+      logger.error(`Error removing library: ${errorMessage}`);
       // Re-throw the error for the McpServer to handle and format
-      throw new ToolError(errorMessage, this.name);
+      throw new ToolError(errorMessage, this.constructor.name);
     }
   }
 }
