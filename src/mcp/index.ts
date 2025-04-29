@@ -1,9 +1,8 @@
-#!/usr/bin/env node
 import "dotenv/config";
-import { LogLevel, logger, setLogLevel } from "../utils/logger"; // Import LogLevel and setLogLevel
-import { initializeServices, shutdownServices } from "./services";
-import { startHttpServer } from "./startHttpServer"; // Import startHttpServer
-import { startStdioServer } from "./startStdioServer"; // Import startStdioServer
+import { logger } from "../utils/logger";
+import { initializeServices } from "./services";
+import { startHttpServer } from "./startHttpServer";
+import { startStdioServer } from "./startStdioServer";
 import { initializeTools } from "./tools";
 
 export async function startServer(protocol: "stdio" | "http", port?: number) {

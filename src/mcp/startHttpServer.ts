@@ -95,7 +95,7 @@ export async function startHttpServer(
     logger.info("Shutting down HTTP server...");
     await shutdownServices(); // Shutdown shared services
     await server.close(); // Close the shared MCP server instance
-    // FIXME: Callback is not called
+    // FIXME: Callback is not called for some reason
     // httpServer.close(() => {
     //   logger.info("HTTP server closed.");
     //   process.exit(0);

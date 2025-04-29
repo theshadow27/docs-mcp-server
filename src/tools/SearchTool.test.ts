@@ -181,8 +181,9 @@ describe("SearchTool", () => {
     const error = new VersionNotFoundError("test-lib", "nonexistent", available);
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);
 
-    await expect(searchTool.execute(options)).rejects.toThrow(VersionNotFoundError);
-    await expect(searchTool.execute(options)).rejects.toThrow(
+    const executePromise = searchTool.execute(options);
+    await expect(executePromise).rejects.toThrow(VersionNotFoundError);
+    await expect(executePromise).rejects.toThrow(
       expect.objectContaining({
         message: expect.stringContaining("Version nonexistent not found"),
         availableVersions: available,
@@ -210,8 +211,9 @@ describe("SearchTool", () => {
     const error = new LibraryNotFoundError("test-lib", suggestions);
     (mockDocService.validateLibraryExists as Mock).mockRejectedValue(error);
 
-    await expect(searchTool.execute(options)).rejects.toThrow(LibraryNotFoundError);
-    await expect(searchTool.execute(options)).rejects.toThrow(
+    const executePromise = searchTool.execute(options);
+    await expect(executePromise).rejects.toThrow(LibraryNotFoundError);
+    await expect(executePromise).rejects.toThrow(
       expect.objectContaining({
         message: expect.stringContaining("Library 'test-lib' not found."),
         suggestions: suggestions,
