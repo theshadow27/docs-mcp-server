@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import path from "node:path";
+import tailwindcss from '@tailwindcss/vite'
 
 // Vite configuration specifically for building frontend assets (CSS, JS)
 export default defineConfig({
   // No need for dts plugin for frontend assets
-  plugins: [],
+  plugins: [tailwindcss()],
   resolve: {
     // Keep existing resolve extensions
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
@@ -35,11 +36,5 @@ export default defineConfig({
     target: "esnext",
     // This is NOT an SSR build
     ssr: false,
-  },
-  // Ensure Vite processes CSS with PostCSS (Tailwind)
-  // Vite does this automatically if postcss.config.js exists,
-  // but explicitly defining it can help clarity.
-  css: {
-    postcss: path.resolve(__dirname, "postcss.config.cjs"),
   },
 });

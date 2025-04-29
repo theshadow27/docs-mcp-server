@@ -16,7 +16,7 @@ interface LibraryDetailCardProps {
  */
 const LibraryDetailCard = ({ library }: LibraryDetailCardProps) => (
   // Use Flowbite Card structure with updated padding and border, and white background
-  <div class="block px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-4">
+  <div class="block p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-4">
     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">
       <span safe>{library.name}</span>
     </h3>

@@ -22,9 +22,9 @@ export function registerIndexRoute(server: FastifyInstance) {
             <div id="jobQueue" hx-get="/api/jobs" hx-trigger="load, every 1s">
               {/* Initial loading state */}
               <div class="animate-pulse">
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
               </div>
             </div>
           </section>
@@ -35,8 +35,8 @@ export function registerIndexRoute(server: FastifyInstance) {
               {/* Initial loading state (optional, could just be empty) */}
               <div class="p-6 bg-white rounded-lg shadow dark:bg-gray-800 animate-pulse">
                 <div class="h-6 bg-gray-200 rounded-full dark:bg-gray-700 w-1/3 mb-4" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
               </div>
             </div>
           </section>
@@ -51,9 +51,9 @@ export function registerIndexRoute(server: FastifyInstance) {
               hx-trigger="load, every 10s"
             >
               <div class="animate-pulse">
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
-                <div class="h-4 bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
+                <div class="h-[0.8em] bg-gray-200 rounded-full dark:bg-gray-700 w-full mb-2.5" />
               </div>
             </div>
           </div>

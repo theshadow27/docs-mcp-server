@@ -86,6 +86,7 @@
     "@semantic-release/github": "^11.0.1",
     "@semantic-release/npm": "^12.0.1",
     "@tailwindcss/postcss": "^4.1.4",
+    "@tailwindcss/vite": "^4.1.4",
     "@types/alpinejs": "^3.13.11",
     "@types/better-sqlite3": "^7.6.12",
     "@types/jsdom": "~21.1.7",

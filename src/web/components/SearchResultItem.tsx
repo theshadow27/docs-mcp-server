@@ -29,7 +29,7 @@ const SearchResultItem = async ({ result }: SearchResultItemProps) => {
   const purifier = DOMPurify(jsdom.window);
 
   // Sanitize the HTML content
-  const sanitizedHtml = purifier.sanitize(rawHtml);
+  const safeHtml = purifier.sanitize(rawHtml);
 
   return (
     <div class="block px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-2">
@@ -38,16 +38,14 @@ const SearchResultItem = async ({ result }: SearchResultItemProps) => {
           href={result.url}
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:underline"
+          class="underline underline-offset-4"
           safe
         >
           {result.url}
         </a>
       </div>
       {/* Render the sanitized HTML content */}
-      <div class="format lg:format-lg dark:format-invert max-w-none">
-        {sanitizedHtml as "safe"}
-      </div>
+      <div class="format dark:format-invert max-w-none">{safeHtml}</div>
     </div>
   );
 };

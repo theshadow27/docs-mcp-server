@@ -26,7 +26,7 @@ const LibrarySearchCard = ({ library }: LibrarySearchCardProps) => {
   });
 
   return (
-    <div class="block px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-4">
+    <div class="block p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-600 mb-4">
       <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white" safe>
         Search {library.name} Documentation
       </h2>

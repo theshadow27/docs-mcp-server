@@ -51,9 +51,7 @@ const Layout = ({ title, children }: LayoutProps) => (
       <div class="container max-w-2xl mx-auto px-4 py-4">
         <header class="mb-4">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            <a href="/" class="hover:underline" safe>
-              MCP Docs
-            </a>
+            <a href="/">MCP Docs</a>
           </h1>
         </header>
 

@@ -1,8 +1,6 @@
 import { defineConfig } from "vite";
 import dts from 'vite-plugin-dts';
 import path from 'path';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - This file is not included in the build, so we can ignore the error
 import packageJson from './package.json'; // Import package.json to read dependencies
 
 export default defineConfig({
