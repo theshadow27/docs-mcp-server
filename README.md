@@ -390,6 +390,24 @@ This section covers running the server/CLI directly from the source code for dev
 
 This provides an isolated environment and exposes the server via HTTP endpoints.
 
+#### Running with HTTP Protocol
+
+When running from source, you can start the server using the Streamable HTTP protocol instead of the default stdio. This is controlled by the `--protocol` command-line option.
+
+- **`--protocol http`**: Starts the server using the Streamable HTTP protocol.
+- **`--port <number>`**: Specifies the port for the HTTP server to listen on (default: 8000).
+
+When running in HTTP mode, the server exposes the following endpoints:
+
+- **`/mcp`**: The main MCP endpoint for tool and resource interactions.
+- **`/sse`**: An endpoint for Server-Sent Events (SSE), used for streaming job progress and other updates.
+
+Example:
+
+```bash
+npm run start -- --protocol http --port 8080
+```
+
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/arabold/docs-mcp-server.git # Replace with actual URL if different
