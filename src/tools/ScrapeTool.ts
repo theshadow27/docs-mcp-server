@@ -1,9 +1,13 @@
 import * as semver from "semver";
-import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../config";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import { ScrapeMode } from "../scraper/types";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import type { ProgressResponse } from "../types";
+import {
+  DEFAULT_MAX_CONCURRENCY,
+  DEFAULT_MAX_DEPTH,
+  DEFAULT_MAX_PAGES,
+} from "../utils/config";
 import { logger } from "../utils/logger";
 
 export interface ScrapeToolOptions {

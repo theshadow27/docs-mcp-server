@@ -13,6 +13,10 @@ The Documentation MCP Server is designed with a modular architecture that ensure
 - Other files use kebab-case or regular camelCase (e.g., `index.ts`, `scraper-service.ts`)
 - Avoid typecasting where possible. Never use `any` type but prefer `unknown` or `never`.
 
+## Configuration Management
+
+Default configuration values for the server and its components (e.g., pipeline concurrency, scraping limits) should be defined as constants within the `src/utils/config.ts` file. Avoid hardcoding default values directly within component logic; instead, import and use the constants from this central configuration file. This ensures consistency and simplifies future adjustments.
+
 ### Directory Structure
 
 ```

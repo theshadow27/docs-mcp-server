@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 import { program } from "commander";
 import { startServer } from "./mcp/index.js";
+import { DEFAULT_HTTP_PORT, DEFAULT_PROTOCOL } from "./utils/config.js";
 
 program
-  .option("--protocol <type>", "Protocol to use (stdio or http)", "stdio")
-  .option("--port <number>", "Port to listen on for http protocol", "8000")
+  .option("--protocol <type>", "Protocol to use (stdio or http)", DEFAULT_PROTOCOL)
+  .option(
+    "--port <number>",
+    "Port to listen on for http protocol",
+    `${DEFAULT_HTTP_PORT}`,
+  )
   .parse(process.argv);
 
 const options = program.opts();
