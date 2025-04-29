@@ -1,7 +1,7 @@
 import type { DocumentManagementService } from "../store";
 import type { StoreSearchResult } from "../store/types";
 import { logger } from "../utils/logger";
-import { LibraryNotFoundError, VersionNotFoundError } from "./errors";
+import { VersionNotFoundError } from "./errors";
 
 export interface SearchToolOptions {
   library: string;
@@ -19,7 +19,6 @@ export interface SearchToolResultError {
 
 export interface SearchToolResult {
   results: StoreSearchResult[];
-  error?: SearchToolResultError;
 }
 
 /**
@@ -88,27 +87,6 @@ export class SearchTool {
 
       return { results };
     } catch (error) {
-      if (error instanceof LibraryNotFoundError) {
-        logger.info(`ℹ️ Library not found: ${error.message}`);
-        return {
-          results: [],
-          error: {
-            message: error.message,
-            suggestions: error.suggestions,
-          },
-        };
-      }
-      if (error instanceof VersionNotFoundError) {
-        logger.info(`ℹ️ Version not found: ${error.message}`);
-        return {
-          results: [],
-          error: {
-            message: error.message,
-            availableVersions: error.availableVersions,
-          },
-        };
-      }
-
       logger.error(
         `❌ Search failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
