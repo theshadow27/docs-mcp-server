@@ -1,8 +1,8 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../config";
 import { PipelineJobStatus } from "../pipeline/types";
 import { type JobInfo, LibraryNotFoundError, VersionNotFoundError } from "../tools";
+import { DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "../utils/config";
 import { logger } from "../utils/logger";
 import type { McpServerTools } from "./tools";
 import { createError, createResponse } from "./utils";
@@ -176,6 +176,9 @@ ${formattedResults.join("")}`,
   server.tool("list_libraries", "List all indexed libraries", {}, async () => {
     try {
       const result = await tools.listLibraries.execute();
+      if (result.libraries.length === 0) {
+        return createResponse("No libraries indexed yet.");
+      }
 
       return createResponse(
         `Indexed libraries:\n\n${result.libraries.map((lib: { name: string }) => `- ${lib.name}`).join("\n")}`,

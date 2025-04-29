@@ -1,6 +1,6 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
-import { createMcpServerInstance } from "./serverFactory";
+import { createMcpServerInstance } from "./mcpServer";
 import { shutdownServices } from "./services";
 import type { McpServerTools } from "./tools";
 
@@ -18,6 +18,9 @@ export async function startStdioServer(tools: McpServerTools): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   logger.info("Documentation MCP server running on stdio");
+
+  // Remove all existing SIGINT listeners
+  process.removeAllListeners("SIGINT");
 
   // Handle cleanup
   process.on("SIGINT", async () => {

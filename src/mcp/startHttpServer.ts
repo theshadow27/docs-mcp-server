@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import * as http from "node:http";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
-import { createMcpServerInstance } from "./serverFactory";
+import { createMcpServerInstance } from "./mcpServer";
 import { shutdownServices } from "./services";
 import type { McpServerTools } from "./tools";
 
@@ -19,7 +18,7 @@ export async function startHttpServer(
 ): Promise<void> {
   setLogLevel(LogLevel.INFO);
 
-  const sharedServer = createMcpServerInstance(tools);
+  const server = createMcpServerInstance(tools);
   const sseTransports: Record<string, SSEServerTransport> = {};
 
   const httpServer = http.createServer(async (req, res) => {
@@ -36,7 +35,7 @@ export async function startHttpServer(
           transport.close();
         });
 
-        await sharedServer.connect(transport);
+        await server.connect(transport);
       } else if (req.method === "POST" && url.pathname === "/messages") {
         // Handle SSE messages
         const sessionId = url.searchParams.get("sessionId");
@@ -69,7 +68,7 @@ export async function startHttpServer(
           requestTransport.close();
         });
 
-        await sharedServer.connect(requestTransport);
+        await server.connect(requestTransport);
         await requestTransport.handleRequest(req, res, parsedBody);
       }
     } catch (error) {
@@ -88,14 +87,21 @@ export async function startHttpServer(
     logger.info(`Documentation MCP server running on http://0.0.0.0:${port}`);
   });
 
+  // Remove all existing SIGINT listeners
+  process.removeAllListeners("SIGINT");
+
   // Handle cleanup for HTTP server
   process.on("SIGINT", async () => {
     logger.info("Shutting down HTTP server...");
     await shutdownServices(); // Shutdown shared services
-    sharedServer.close(); // Close the shared MCP server instance
-    httpServer.close(() => {
-      logger.info("HTTP server closed.");
-      process.exit(0);
-    });
+    await server.close(); // Close the shared MCP server instance
+    // FIXME: Callback is not called
+    // httpServer.close(() => {
+    //   logger.info("HTTP server closed.");
+    //   process.exit(0);
+    // });
+    httpServer.close();
+    logger.info("HTTP server closed.");
+    process.exit(0);
   });
 }
