@@ -52,24 +52,36 @@ export async function startHttpServer(
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "No transport found for sessionId" }));
         }
-      } else {
-        // Handle Streamable HTTP (default)
+      } else if (url.pathname === "/mcp") {
+        // Handle Streamable HTTP (stateless)
         let body = "";
         for await (const chunk of req) {
           body += chunk;
         }
         const parsedBody = JSON.parse(body);
 
+        // In stateless mode, create a new instance of server and transport for each request
+        const requestServer = createMcpServerInstance(tools);
         const requestTransport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
+          sessionIdGenerator: undefined,
         });
 
         res.on("close", () => {
+          logger.info("Streamable HTTP request closed");
           requestTransport.close();
+          requestServer.close(); // Close the per-request server instance
         });
 
-        await server.connect(requestTransport);
+        await requestServer.connect(requestTransport);
         await requestTransport.handleRequest(req, res, parsedBody);
+      } else {
+        // Handle 404 Not Found
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: `Endpoint ${url.pathname} not found.`,
+          }),
+        );
       }
     } catch (error) {
       logger.error(`Error handling HTTP request: ${error}`);
