@@ -1,9 +1,8 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
 import { createMcpServerInstance } from "./mcpServer";
-import { shutdownServices } from "./services";
 import type { McpServerTools } from "./tools";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**
  * Starts the MCP server using the Stdio transport.

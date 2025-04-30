@@ -1,11 +1,10 @@
-import { randomUUID } from "node:crypto";
 import * as http from "node:http";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
 import { createMcpServerInstance } from "./mcpServer";
 import type { McpServerTools } from "./tools";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**
  * Starts the MCP server using the Streamable HTTP and SSE transports.

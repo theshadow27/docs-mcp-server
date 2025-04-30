@@ -1,12 +1,12 @@
 import "dotenv/config";
-import { logger, setLogLevel, LogLevel } from "../utils/logger";
-import { initializeServices, getDocService, getPipelineManager } from "./services"; // Import get functions
-import { startHttpServer } from "./startHttpServer";
-import { startStdioServer } from "./startStdioServer";
-import { initializeTools, type McpServerTools } from "./tools";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
+import { LogLevel, logger, setLogLevel } from "../utils/logger";
+import { getDocService, getPipelineManager, initializeServices } from "./services"; // Import get functions
+import { startHttpServer } from "./startHttpServer";
+import { startStdioServer } from "./startStdioServer";
+import { type McpServerTools, initializeTools } from "./tools";
 
 // Variables to hold server instances for cleanup
 let runningServer: McpServer | null = null;
