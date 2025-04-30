@@ -182,7 +182,7 @@ async function main() {
       .description("Find the best matching version for a library")
       .option(
         "-v, --version <string>", // Add optional version flag
-        "Target version to match (optional, supports ranges)",
+        "Pattern to match (optional, supports ranges)",
       )
       .action(async (library, options) => {
         // Update action parameters

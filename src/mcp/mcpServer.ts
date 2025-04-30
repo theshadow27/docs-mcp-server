@@ -202,21 +202,21 @@ ${formattedResults.join("")}`,
         .string()
         .optional()
         .describe(
-          "Target version to match (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')",
+          "Pattern to match (supports exact versions like '18.0.0' or X-Range patterns like '5.x', '5.2.x')",
         ),
     },
     async ({ library, targetVersion }) => {
       try {
-        const version = await tools.findVersion.execute({
+        const message = await tools.findVersion.execute({
           library,
           targetVersion,
         });
 
-        if (!version) {
+        if (!message) {
           return createError("No matching version found");
         }
 
-        return createResponse(`Found matching version: ${version}`);
+        return createResponse(message);
       } catch (error) {
         return createError(
           `Failed to find version: ${
@@ -248,9 +248,7 @@ ${formattedResults.join("")}`,
           )
           .join("\n\n");
         return createResponse(
-          result.jobs.length > 0
-            ? `Current Jobs:\n\n${formattedJobs}`
-            : "No jobs found matching criteria.",
+          result.jobs.length > 0 ? `Current Jobs:\n\n${formattedJobs}` : "No jobs found.",
         );
       } catch (error) {
         return createError(
