@@ -173,6 +173,23 @@ This approach is useful when you need local file access (e.g., indexing document
 
 3. **That's it!** The server will now be available to your AI assistant.
 
+### Option 3: Using npx with HTTP Protocol
+
+Similar to Option 2, this uses `npx` to run the latest published package without needing Docker or a local clone. However, this option starts the server using the Streamable HTTP protocol instead of the default stdio, making it accessible via HTTP endpoints. This is useful if you have multiple clients, you work with multiple code assistants in parallel, or want to expose the server to other applications.
+
+1.  **Ensure Node.js is installed.**
+2.  **Run the command:**
+
+    ```bash
+    # Ensure required environment variables like OPENAI_API_KEY are set
+    npx --package=@arabold/docs-mcp-server docs-server --protocol http --port 8000
+    ```
+
+    - `--protocol http`: Instructs the server to use the HTTP protocol.
+    - `--port <number>`: Specifies the listening port (default: 8000).
+
+    The server will expose endpoints like `/mcp` and `/sse` on the specified port.
+
 ## Using the CLI
 
 You can use the CLI to manage documentation directly, either via Docker or npx. **Important: Use the same method (Docker or npx) for both the server and CLI to ensure access to the same indexed documentation.**
@@ -255,154 +272,6 @@ The database schema uses a fixed dimension of 1536 for embedding vectors. Only m
 For OpenAI-compatible APIs (like Ollama), use the `openai` provider with `OPENAI_API_BASE` pointing to your endpoint.
 
 These variables can be set regardless of how you run the server (Docker, npx, or from source).
-
-## CLI Command Reference
-
-The `docs-cli` provides commands for managing the documentation index. Access it either via Docker (`docker run -v docs-mcp-data:/data ghcr.io/arabold/docs-mcp-server:latest docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
-
-**General Help:**
-
-```bash
-docs-cli --help
-# or
-npx -y --package=@arabold/docs-mcp-server docs-cli --help
-```
-
-**Command Specific Help:** (Replace `docs-cli` with the `npx...` command if not installed globally)
-
-```bash
-docs-cli scrape --help
-docs-cli search --help
-docs-cli fetch-url --help
-docs-cli find-version --help
-docs-cli remove --help
-docs-cli list --help
-```
-
-### Fetching Single URLs (`fetch-url`)
-
-Fetches a single URL and converts its content to Markdown. Unlike `scrape`, this command does not crawl links or store the content.
-
-```bash
-docs-cli fetch-url <url> [options]
-```
-
-**Options:**
-
-- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects).
-- `--scrape-mode <mode>`: HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default).
-
-**Examples:**
-
-```bash
-# Fetch a URL and convert to Markdown
-docs-cli fetch-url https://example.com/page.html
-```
-
-### Scraping Documentation (`scrape`)
-
-Scrapes and indexes documentation from a given URL for a specific library.
-
-```bash
-docs-cli scrape <library> <url> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The specific version to associate with the scraped documents.
-  - Accepts full versions (`1.2.3`), pre-release versions (`1.2.3-beta.1`), or partial versions (`1`, `1.2` which are expanded to `1.0.0`, `1.2.0`).
-  - If omitted, the documentation is indexed as **unversioned**.
-- `-p, --max-pages <number>`: Maximum pages to scrape (default: 1000).
-- `-d, --max-depth <number>`: Maximum navigation depth (default: 3).
-- `-c, --max-concurrency <number>`: Maximum concurrent requests (default: 3).
-- `--scope <scope>`: Defines the crawling boundary: 'subpages' (default), 'hostname', or 'domain'.
-- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects).
-- `--scrape-mode <mode>`: HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default).
-- `--ignore-errors`: Ignore errors during scraping (default: true).
-
-**Examples:**
-
-```bash
-# Scrape React 18.2.0 docs
-docs-cli scrape react --version 18.2.0 https://react.dev/
-```
-
-### Searching Documentation (`search`)
-
-Searches the indexed documentation for a library, optionally filtering by version.
-
-```bash
-docs-cli search <library> <query> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The target version or range to search within.
-  - Supports exact versions (`18.0.0`), partial versions (`18`), or ranges (`18.x`).
-  - If omitted, searches the **latest** available indexed version.
-  - If a specific version/range doesn't match, it falls back to the latest indexed version _older_ than the target.
-  - To search **only unversioned** documents, explicitly pass an empty string: `--version ""`. (Note: Omitting `--version` searches latest, which _might_ be unversioned if no other versions exist).
-- `-l, --limit <number>`: Maximum number of results (default: 5).
-- `-e, --exact-match`: Only match the exact version specified (disables fallback and range matching) (default: false).
-
-**Examples:**
-
-```bash
-# Search latest React docs for 'hooks'
-docs-cli search react 'hooks'
-```
-
-### Finding Available Versions (`find-version`)
-
-Checks the index for the best matching version for a library based on a target, and indicates if unversioned documents exist.
-
-```bash
-docs-cli find-version <library> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The target version or range. If omitted, finds the latest available version.
-
-**Examples:**
-
-```bash
-# Find the latest indexed version for react
-docs-cli find-version react
-```
-
-### Listing Libraries (`list`)
-
-Lists all libraries currently indexed in the store.
-
-```bash
-docs-cli list
-```
-
-### Removing Documentation (`remove`)
-
-Removes indexed documents for a specific library and version.
-
-```bash
-docs-cli remove <library> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The specific version to remove. If omitted, removes **unversioned** documents for the library.
-
-**Examples:**
-
-```bash
-# Remove React 18.2.0 docs
-docs-cli remove react --version 18.2.0
-```
-
-### Version Handling Summary
-
-- **Scraping:** Requires a specific, valid version (`X.Y.Z`, `X.Y.Z-pre`, `X.Y`, `X`) or no version (for unversioned docs). Ranges (`X.x`) are invalid for scraping.
-- **Searching/Finding:** Accepts specific versions, partials, or ranges (`X.Y.Z`, `X.Y`, `X`, `X.x`). Falls back to the latest older version if the target doesn't match. Omitting the version targets the latest available. Explicitly searching `--version ""` targets unversioned documents.
-- **Unversioned Docs:** Libraries can have documentation stored without a specific version (by omitting `--version` during scrape). These can be searched explicitly using `--version ""`. The `find-version` command will also report if unversioned docs exist alongside any semver matches.
 
 ## Development & Advanced Setup
 

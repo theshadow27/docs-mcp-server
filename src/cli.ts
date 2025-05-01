@@ -2,7 +2,6 @@
 import "dotenv/config";
 import { Command } from "commander";
 import packageJson from "../package.json";
-import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MAX_DEPTH, DEFAULT_MAX_PAGES } from "./config";
 import { PipelineManager } from "./pipeline/PipelineManager";
 import { FileFetcher, HttpFetcher } from "./scraper/fetcher";
 import { ScrapeMode } from "./scraper/types"; // Import ScrapeMode enum
@@ -14,6 +13,11 @@ import {
   ScrapeTool,
   SearchTool,
 } from "./tools";
+import {
+  DEFAULT_MAX_CONCURRENCY,
+  DEFAULT_MAX_DEPTH,
+  DEFAULT_MAX_PAGES,
+} from "./utils/config";
 import { LogLevel, setLogLevel } from "./utils/logger";
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
@@ -178,7 +182,7 @@ async function main() {
       .description("Find the best matching version for a library")
       .option(
         "-v, --version <string>", // Add optional version flag
-        "Target version to match (optional, supports ranges)",
+        "Pattern to match (optional, supports ranges)",
       )
       .action(async (library, options) => {
         // Update action parameters
