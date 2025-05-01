@@ -1,3 +1,18 @@
+# [1.11.0](https://github.com/arabold/docs-mcp-server/compare/v1.10.0...v1.11.0) (2025-05-01)
+
+
+### Bug Fixes
+
+* properly initialize streamable http transport in http server ([e4fbd79](https://github.com/arabold/docs-mcp-server/commit/e4fbd797ecbb984a9e9b2ee2f30b44dcd68ac4c1))
+* reuse promise in searchtool test for reliability ([e0f9cbe](https://github.com/arabold/docs-mcp-server/commit/e0f9cbe744c3d7cbe45c76d068266b50a93d86f0))
+
+
+### Features
+
+* add HTTP protocol support ([29441a0](https://github.com/arabold/docs-mcp-server/commit/29441a029a3891d2a3fecd4b55fe7a2c45d47261))
+* implement streamable http protocol support ([429b6c1](https://github.com/arabold/docs-mcp-server/commit/429b6c141bb0b05ba1c506b77f51e392330d8ffe)), closes [#71](https://github.com/arabold/docs-mcp-server/issues/71)
+* remove empty anchor links in HtmlToMarkdownMiddleware ([2774509](https://github.com/arabold/docs-mcp-server/commit/2774509f95f90f4cb04d55e6ddf80bd70c70f8f7))
+
 # [1.10.0](https://github.com/arabold/docs-mcp-server/compare/v1.9.0...v1.10.0) (2025-04-21)
 
 
