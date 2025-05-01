@@ -1,82 +1,51 @@
-# docs-mcp-server MCP Server
+# Docs MCP Server: Enhance Your AI Coding Assistant
 
-A MCP server for fetching and searching 3rd party package documentation.
+AI coding assistants often struggle with outdated documentation, leading to incorrect suggestions or hallucinated code examples. Verifying AI responses against specific library versions can be time-consuming and inefficient.
+
+The **Docs MCP Server** addresses these challenges by providing a personal, always-current knowledge base for your AI assistant. It acts as a bridge, connecting your LLM directly to the **latest official documentation** from thousands of software libraries.
+
+By grounding AI responses in accurate, version-aware context, the Docs MCP Server enables you to receive concise and relevant integration details and code snippets, improving the reliability and efficiency of LLM-assisted development.
+
+It's **free**, **open-source**, runs **locally** for privacy, and integrates seamlessly with your workflow via the Model Context Protocol (MCP).
+
+## Why Use the Docs MCP Server?
+
+LLM-assisted coding promises speed and efficiency, but often falls short due to:
+
+- 🌀 **Stale Knowledge:** LLMs train on snapshots of the internet, quickly falling behind new library releases and API changes.
+- 👻 **Code Hallucinations:** AI can invent plausible-looking code that is syntactically correct but functionally wrong or uses non-existent APIs.
+- ❓ **Version Ambiguity:** Generic answers rarely account for the specific version dependencies in _your_ project, leading to subtle bugs.
+- ⏳ **Verification Overhead:** Developers spend valuable time double-checking AI suggestions against official documentation.
+
+**The Docs MCP Server tackles these problems head-on by:**
+
+- ✅ **Providing Always Up-to-Date Context:** It fetches and indexes documentation _directly_ from official sources (websites, GitHub, npm, PyPI, local files) on demand.
+- 🎯 **Delivering Version-Specific Answers:** Search queries can target exact library versions, ensuring the information aligns with your project's dependencies.
+- 💡 **Reducing Hallucinations:** By grounding the LLM in real documentation, it provides accurate examples and integration details.
+- ⚡ **Boosting Productivity:** Get trustworthy answers faster, integrated directly into your AI assistant workflow.
 
 ## ✨ Key Features
 
-- 🌐 **Versatile Scraping:** Fetch documentation from diverse sources like websites, GitHub, npm, PyPI, or local files.
-- 🧠 **Intelligent Processing:** Automatically split content semantically and generate embeddings using your choice of models (OpenAI, Google Gemini, Azure OpenAI, AWS Bedrock, Ollama, and more).
-- 🔍 **Powerful Hybrid Search:** Combine vector similarity and full-text search across different library versions for highly relevant results.
-- 🖥️ **Web Interface:** Real-time monitoring of jobs and indexed libraries through a modern web UI with dark mode support.
-- ⚙️ **Asynchronous Job Handling:** Manage scraping and indexing tasks efficiently with a background job queue and MCP/CLI tools.
-- 💾 **Local Storage:** Leverage SQLite with `sqlite-vec` for efficient vector storage and FTS5 for robust full-text search.
-- 🐳 **Simple Deployment:** Get up and running quickly using Docker or npx.
-
-## Overview
-
-This project provides a Model Context Protocol (MCP) server designed to scrape, process, index, and search documentation for various software libraries and packages. It fetches content from specified URLs, splits it into meaningful chunks using semantic splitting techniques, generates vector embeddings using OpenAI, and stores the data in an SQLite database. The server utilizes `sqlite-vec` for efficient vector similarity search and FTS5 for full-text search capabilities, combining them for hybrid search results. It supports versioning, allowing documentation for different library versions (including unversioned content) to be stored and queried distinctly.
-
-The server exposes MCP tools for:
-
-- Starting a scraping job (`scrape_docs`): Returns a `jobId` immediately.
-- Checking job status (`get_job_status`): Retrieves the current status and progress of a specific job.
-- Listing active/completed jobs (`list_jobs`): Shows recent and ongoing jobs.
-- Cancelling a job (`cancel_job`): Attempts to stop a running or queued job.
-- Searching documentation (`search_docs`).
-- Listing indexed libraries (`list_libraries`).
-- Finding appropriate versions (`find_version`).
-- Removing indexed documents (`remove_docs`).
-- Fetching single URLs (`fetch_url`): Fetches a URL and returns its content as Markdown.
-
-## Configuration
-
-The following environment variables are supported to configure the embedding model behavior:
-
-### Embedding Model Configuration
-
-- `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Format: `provider:model_name` or just `model_name` (defaults to `text-embedding-3-small`). Supported providers and their required environment variables:
-
-  - `openai` (default): Uses OpenAI's embedding models
-
-    - `OPENAI_API_KEY`: **Required.** Your OpenAI API key
-    - `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID
-    - `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI-compatible APIs (e.g., Ollama, Azure OpenAI)
-
-  - `vertex`: Uses Google Cloud Vertex AI embeddings
-
-    - `GOOGLE_APPLICATION_CREDENTIALS`: **Required.** Path to service account JSON key file
-
-  - `gemini`: Uses Google Generative AI (Gemini) embeddings
-
-    - `GOOGLE_API_KEY`: **Required.** Your Google API key
-
-  - `aws`: Uses AWS Bedrock embeddings
-
-    - `AWS_ACCESS_KEY_ID`: **Required.** AWS access key
-    - `AWS_SECRET_ACCESS_KEY`: **Required.** AWS secret key
-    - `AWS_REGION` or `BEDROCK_AWS_REGION`: **Required.** AWS region for Bedrock
-
-  - `microsoft`: Uses Azure OpenAI embeddings
-    - `AZURE_OPENAI_API_KEY`: **Required.** Azure OpenAI API key
-    - `AZURE_OPENAI_API_INSTANCE_NAME`: **Required.** Azure instance name
-    - `AZURE_OPENAI_API_DEPLOYMENT_NAME`: **Required.** Azure deployment name
-    - `AZURE_OPENAI_API_VERSION`: **Required.** Azure API version
-
-### Vector Dimensions
-
-The database schema uses a fixed dimension of 1536 for embedding vectors. Only models that produce vectors with dimension ≤ 1536 are supported, except for certain providers (like Gemini) that support dimension reduction.
-
-For OpenAI-compatible APIs (like Ollama), use the `openai` provider with `OPENAI_API_BASE` pointing to your endpoint.
-
-These variables can be set regardless of how you run the server (Docker, npx, or from source).
+- **Up-to-Date Knowledge:** Fetches the latest documentation directly from the source.
+- **Version-Aware Search:** Get answers relevant to specific library versions (e.g., `react@18.2.0` vs `react@17.0.0`).
+- **Accurate Snippets:** Reduces AI hallucinations by using context from official docs.
+- **Web Interface:** Provides a easy-to-use web interface for searching and managing documentation.
+- **Broad Source Compatibility:** Scrapes websites, GitHub repos, package manager sites (npm, PyPI), and even local file directories.
+- **Intelligent Processing:** Automatically chunks documentation semantically and generates embeddings.
+- **Flexible Embedding Models:** Supports OpenAI (incl. compatible APIs like Ollama), Google Gemini/Vertex AI, Azure OpenAI, AWS Bedrock, and more.
+- **Powerful Hybrid Search:** Combines vector similarity with full-text search for relevance.
+- **Local & Private:** Runs entirely on your machine, keeping your data and queries private.
+- **Free & Open Source:** Built for the community, by the community.
+- **Simple Deployment:** Easy setup via Docker or `npx`.
+- **Seamless Integration:** Works with MCP-compatible clients (like Claude, Cline, Roo).
 
 ## Running the MCP Server
 
-There are two ways to run the docs-mcp-server:
+Get up and running quickly!
 
-### Option 1: Using Docker (Recommended)
+### Option 1: Using Docker
 
-This is the recommended approach for most users. It's easy, straightforward, and doesn't require Node.js to be installed.
+This approach is easy, straightforward, and doesn't require Node.js to be installed.
 
 1. **Ensure Docker is installed and running.**
 2. **Configure your MCP settings:**
@@ -177,7 +146,7 @@ docker run -i --rm \
 
 ### Option 2: Using npx
 
-This approach is recommended when you need local file access (e.g., indexing documentation from your local file system). While this can also be achieved by mounting paths into a Docker container, using npx is simpler but requires a Node.js installation.
+This approach is useful when you need local file access (e.g., indexing documentation from your local file system). While this can also be achieved by mounting paths into a Docker container, using `npx` is simpler but requires a Node.js installation.
 
 1. **Ensure Node.js is installed.**
 2. **Configure your MCP settings:**
@@ -205,9 +174,26 @@ This approach is recommended when you need local file access (e.g., indexing doc
 
 3. **That's it!** The server will now be available to your AI assistant.
 
+### Option 3: Using `npx` with HTTP Protocol
+
+Similar to Option 2, this uses `npx` to run the latest published package without needing Docker or a local clone. However, this option starts the server using the Streamable HTTP protocol instead of the default stdio, making it accessible via HTTP endpoints. This is useful if you have multiple clients, you work with multiple code assistants in parallel, or want to expose the server to other applications.
+
+1.  **Ensure Node.js is installed.**
+2.  **Run the command:**
+
+    ```bash
+    # Ensure required environment variables like OPENAI_API_KEY are set
+    `npx` --package=@arabold/docs-mcp-server docs-server --protocol http --port 8000
+    ```
+
+    - `--protocol http`: Instructs the server to use the HTTP protocol.
+    - `--port <number>`: Specifies the listening port (default: 8000).
+
+    The server will expose endpoints like `/mcp` and `/sse` on the specified port.
+
 ## Using the Web Interface
 
-You can access a web-based GUI at `http://localhost:3000` to monitor job status, view indexed libraries, and manage documentation through your browser. **Important: Use the same method (Docker or npx) for both the server and web interface to ensure access to the same indexed documentation.**
+You can access a web-based GUI at `http://localhost:3000` to manage and search library documentation through your browser. **Important: Use the same method (Docker or npx) for both the server and web interface to ensure access to the same indexed documentation.**
 
 ### Using Docker Web Interface
 
@@ -228,25 +214,21 @@ Make sure to:
 - Map port 3000 with `-p 3000:3000`
 - Pass any configuration environment variables with `-e` flags
 
-### Using npx Web Interface
+### Using `npx Web Interface
 
-If you're running the server with npx, use npx for the web interface as well:
+If you're running the server with `npx`, use `npx` for the web interface as well:
 
 ```bash
 npx -y --package=@arabold/docs-mcp-server docs-web
 ```
 
-The npx approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and web interface.
-
-The web interface provides:
-
-- Live job queue monitoring with automatic updates
-- Overview of indexed libraries and their versions
-- Responsive layout with dark mode support
+The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and web interface.
 
 ## Using the CLI
 
 You can use the CLI to manage documentation directly, either via Docker or npx. **Important: Use the same method (Docker or npx) for both the server and CLI to ensure access to the same indexed documentation.**
+
+Here's how to invoke the CLI:
 
 ### Using Docker CLI
 
@@ -262,165 +244,68 @@ docker run --rm \
 
 Make sure to use the same volume name (`docs-mcp-data` in this example) as you did for the server. Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed using `-e` flags, just like with the server.
 
-### Using npx CLI
+### Using `npx CLI
 
-If you're running the server with npx, use npx for the CLI as well:
+If you're running the server with npx, use `npx` for the CLI as well:
 
 ```bash
 npx -y --package=@arabold/docs-mcp-server docs-cli <command> [options]
 ```
 
-The npx approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and CLI.
+The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and CLI.
 
-(See "CLI Command Reference" below for available commands and options.)
+The main commands available are:
 
-### CLI Command Reference
+- `scrape`: Scrapes and indexes documentation from a URL.
+- `search`: Searches the indexed documentation.
+- `list`: Lists all indexed libraries.
+- `remove`: Removes indexed documentation.
+- `fetch-url`: Fetches a single URL and converts to Markdown.
+- `find-version`: Finds the best matching version for a library.
 
-The `docs-cli` provides commands for managing the documentation index. Access it either via Docker (`docker run -v docs-mcp-data:/data ghcr.io/arabold/docs-mcp-server:latest docs-cli ...`) or `npx` (`npx -y --package=@arabold/docs-mcp-server docs-cli ...`).
+See the [CLI Command Reference](#cli-command-reference) below for detailed command usage.
 
-**General Help:**
+## Configuration
 
-```bash
-docs-cli --help
-# or
-npx -y --package=@arabold/docs-mcp-server docs-cli --help
-```
+The following environment variables are supported to configure the embedding model behavior:
 
-**Command Specific Help:** (Replace `docs-cli` with the `npx...` command if not installed globally)
+### Embedding Model Configuration
 
-```bash
-docs-cli scrape --help
-docs-cli search --help
-docs-cli fetch-url --help
-docs-cli find-version --help
-docs-cli remove --help
-docs-cli list --help
-```
+- `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Format: `provider:model_name` or just `model_name` (defaults to `text-embedding-3-small`). Supported providers and their required environment variables:
 
-### Fetching Single URLs (`fetch-url`)
+  - `openai` (default): Uses OpenAI's embedding models
 
-Fetches a single URL and converts its content to Markdown. Unlike `scrape`, this command does not crawl links or store the content.
+    - `OPENAI_API_KEY`: **Required.** Your OpenAI API key
+    - `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID
+    - `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI-compatible APIs (e.g., Ollama, Azure OpenAI)
 
-```bash
-docs-cli fetch-url <url> [options]
-```
+  - `vertex`: Uses Google Cloud Vertex AI embeddings
 
-**Options:**
+    - `GOOGLE_APPLICATION_CREDENTIALS`: **Required.** Path to service account JSON key file
 
-- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects).
-- `--scrape-mode <mode>`: HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default).
+  - `gemini`: Uses Google Generative AI (Gemini) embeddings
 
-**Examples:**
+    - `GOOGLE_API_KEY`: **Required.** Your Google API key
 
-```bash
-# Fetch a URL and convert to Markdown
-docs-cli fetch-url https://example.com/page.html
-```
+  - `aws`: Uses AWS Bedrock embeddings
 
-### Scraping Documentation (`scrape`)
+    - `AWS_ACCESS_KEY_ID`: **Required.** AWS access key
+    - `AWS_SECRET_ACCESS_KEY`: **Required.** AWS secret key
+    - `AWS_REGION` or `BEDROCK_AWS_REGION`: **Required.** AWS region for Bedrock
 
-Scrapes and indexes documentation from a given URL for a specific library.
+  - `microsoft`: Uses Azure OpenAI embeddings
+    - `AZURE_OPENAI_API_KEY`: **Required.** Azure OpenAI API key
+    - `AZURE_OPENAI_API_INSTANCE_NAME`: **Required.** Azure instance name
+    - `AZURE_OPENAI_API_DEPLOYMENT_NAME`: **Required.** Azure deployment name
+    - `AZURE_OPENAI_API_VERSION`: **Required.** Azure API version
 
-```bash
-docs-cli scrape <library> <url> [options]
-```
+### Vector Dimensions
 
-**Options:**
+The database schema uses a fixed dimension of 1536 for embedding vectors. Only models that produce vectors with dimension ≤ 1536 are supported, except for certain providers (like Gemini) that support dimension reduction.
 
-- `-v, --version <string>`: The specific version to associate with the scraped documents.
-  - Accepts full versions (`1.2.3`), pre-release versions (`1.2.3-beta.1`), or partial versions (`1`, `1.2` which are expanded to `1.0.0`, `1.2.0`).
-  - If omitted, the documentation is indexed as **unversioned**.
-- `-p, --max-pages <number>`: Maximum pages to scrape (default: 1000).
-- `-d, --max-depth <number>`: Maximum navigation depth (default: 3).
-- `-c, --max-concurrency <number>`: Maximum concurrent requests (default: 3).
-- `--scope <scope>`: Defines the crawling boundary: 'subpages' (default), 'hostname', or 'domain'.
-- `--no-follow-redirects`: Disable following HTTP redirects (default: follow redirects).
-- `--scrape-mode <mode>`: HTML processing strategy: 'fetch' (fast, less JS), 'playwright' (slow, full JS), 'auto' (default).
-- `--ignore-errors`: Ignore errors during scraping (default: true).
+For OpenAI-compatible APIs (like Ollama), use the `openai` provider with `OPENAI_API_BASE` pointing to your endpoint.
 
-**Examples:**
-
-```bash
-# Scrape React 18.2.0 docs
-docs-cli scrape react --version 18.2.0 https://react.dev/
-```
-
-### Searching Documentation (`search`)
-
-Searches the indexed documentation for a library, optionally filtering by version.
-
-```bash
-docs-cli search <library> <query> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The target version or range to search within.
-  - Supports exact versions (`18.0.0`), partial versions (`18`), or ranges (`18.x`).
-  - If omitted, searches the **latest** available indexed version.
-  - If a specific version/range doesn't match, it falls back to the latest indexed version _older_ than the target.
-  - To search **only unversioned** documents, explicitly pass an empty string: `--version ""`. (Note: Omitting `--version` searches latest, which _might_ be unversioned if no other versions exist).
-- `-l, --limit <number>`: Maximum number of results (default: 5).
-- `-e, --exact-match`: Only match the exact version specified (disables fallback and range matching) (default: false).
-
-**Examples:**
-
-```bash
-# Search latest React docs for 'hooks'
-docs-cli search react 'hooks'
-```
-
-### Finding Available Versions (`find-version`)
-
-Checks the index for the best matching version for a library based on a target, and indicates if unversioned documents exist.
-
-```bash
-docs-cli find-version <library> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The target version or range. If omitted, finds the latest available version.
-
-**Examples:**
-
-```bash
-# Find the latest indexed version for react
-docs-cli find-version react
-```
-
-### Listing Libraries (`list`)
-
-Lists all libraries currently indexed in the store.
-
-```bash
-docs-cli list
-```
-
-### Removing Documentation (`remove`)
-
-Removes indexed documents for a specific library and version.
-
-```bash
-docs-cli remove <library> [options]
-```
-
-**Options:**
-
-- `-v, --version <string>`: The specific version to remove. If omitted, removes **unversioned** documents for the library.
-
-**Examples:**
-
-```bash
-# Remove React 18.2.0 docs
-docs-cli remove react --version 18.2.0
-```
-
-### Version Handling Summary
-
-- **Scraping:** Requires a specific, valid version (`X.Y.Z`, `X.Y.Z-pre`, `X.Y`, `X`) or no version (for unversioned docs). Ranges (`X.x`) are invalid for scraping.
-- **Searching/Finding:** Accepts specific versions, partials, or ranges (`X.Y.Z`, `X.Y`, `X`, `X.x`). Falls back to the latest older version if the target doesn't match. Omitting the version targets the latest available. Explicitly searching `--version ""` targets unversioned documents.
-- **Unversioned Docs:** Libraries can have documentation stored without a specific version (by omitting `--version` during scrape). These can be searched explicitly using `--version ""`. The `find-version` command will also report if unversioned docs exist alongside any semver matches.
+These variables can be set regardless of how you run the server (Docker, npx, or from source).
 
 ## Development & Advanced Setup
 
@@ -429,57 +314,6 @@ This section covers running the server/CLI directly from the source code for dev
 ### Running from Source (Development)
 
 This provides an isolated environment and exposes the server via HTTP endpoints.
-
-#### Running with HTTP Protocol
-
-When running from source, you can start the server using the Streamable HTTP protocol instead of the default stdio. This is controlled by the `--protocol` command-line option.
-
-- **`--protocol http`**: Starts the server using the Streamable HTTP protocol.
-- **`--port <number>`**: Specifies the port for the HTTP server to listen on (default: 8000).
-
-When running in HTTP mode, the server exposes the following endpoints:
-
-- **`/mcp`**: The main MCP endpoint for tool and resource interactions.
-- **`/sse`**: An endpoint for Server-Sent Events (SSE), used for streaming job progress and other updates.
-
-Example:
-
-```bash
-npm run start -- --protocol http --port 8080
-```
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/arabold/docs-mcp-server.git # Replace with actual URL if different
-    cd docs-mcp-server
-    ```
-2.  **Create `.env` file:**
-    Copy the example and add your OpenAI key (see "Environment Setup" below).
-    ```bash
-    cp .env.example .env
-    # Edit .env and add your OPENAI_API_KEY
-    ```
-3.  **Build the Docker image:**
-    ```bash
-    docker build -t docs-mcp-server .
-    ```
-4.  **Run the Docker container:**
-
-    ```bash
-    # Option 1: Using a named volume (recommended)
-    # Docker automatically creates the volume 'docs-mcp-data' if it doesn't exist on first run.
-    docker run -i --env-file .env -v docs-mcp-data:/data --name docs-mcp-server docs-mcp-server
-
-    # Option 2: Mapping to a host directory
-    # docker run -i --env-file .env -v /path/on/your/host:/data --name docs-mcp-server docs-mcp-server
-    ```
-
-    - `-i`: Keep STDIN open even if not attached. This is crucial for interacting with the server over stdio.
-    - `--env-file .env`: Loads environment variables (like `OPENAI_API_KEY`) from your local `.env` file.
-    - `-v docs-mcp-data:/data` or `-v /path/on/your/host:/data`: **Crucial for persistence.** This mounts a Docker named volume (Docker creates `docs-mcp-data` automatically if needed) or a host directory to the `/data` directory inside the container. The `/data` directory is where the server stores its `documents.db` file (as configured by `DOCS_MCP_STORE_PATH` in the Dockerfile). This ensures your indexed documentation persists even if the container is stopped or removed.
-    - `--name docs-mcp-server`: Assigns a convenient name to the container.
-
-    The server inside the container now runs directly using Node.js and communicates over **stdio**.
 
 This method is useful for contributing to the project or running un-published versions.
 
@@ -537,7 +371,7 @@ This method is useful for contributing to the project or running un-published ve
    # DOCS_MCP_STORE_PATH=/path/to/your/desired/storage/directory
    ```
 
-### Debugging (from Source)
+### Testing (from Source)
 
 Since MCP servers communicate over stdio when run directly via Node.js, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script after building:
 
@@ -546,24 +380,6 @@ npx @modelcontextprotocol/inspector node dist/server.js
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
-
-### Releasing
-
-This project uses [semantic-release](https://github.com/semantic-release/semantic-release) and [Conventional Commits](https://www.conventionalcommits.org/) to automate the release process.
-
-**How it works:**
-
-1.  **Commit Messages:** All commits merged into the `main` branch **must** follow the Conventional Commits specification.
-2.  **Manual Trigger:** The "Release" GitHub Actions workflow can be triggered manually from the Actions tab when you're ready to create a new release.
-3.  **`semantic-release` Actions:** Determines version, updates `CHANGELOG.md` & `package.json`, commits, tags, publishes to npm, and creates a GitHub Release.
-
-**What you need to do:**
-
-- Use Conventional Commits.
-- Merge changes to `main`.
-- Trigger a release manually when ready from the Actions tab in GitHub.
-
-**Automation handles:** Changelog, version bumps, tags, npm publish, GitHub releases.
 
 ### Architecture
 

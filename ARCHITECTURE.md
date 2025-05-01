@@ -406,6 +406,18 @@ The web interface leverages HTMX for dynamic updates, allowing partial page refr
 - Formats results as MCP responses
 - Provides progress feedback through MCP protocol (Note: Currently reports job start via message, detailed progress TBD)
 
+The MCP server exposes the following tools:
+
+- `scrape_docs`: Starts a scraping job.
+- `search_docs`: Searches the indexed documentation.
+- `list_libraries`: Lists all indexed libraries.
+- `find_version`: Finds the best matching version for a library.
+- `remove_docs`: Removes indexed documents.
+- `fetch_url`: Fetches a single URL and converts to Markdown.
+- `list_jobs`: Lists active/completed jobs.
+- `get_job_info`: Retrieves the status and progress of a specific job.
+- `cancel_job`: Attempts to cancel a running or queued job.
+
 ### Progress Reporting
 
 The project uses a unified progress reporting system via callbacks managed by the `PipelineManager`. This design:
@@ -499,6 +511,24 @@ import { functionToMock } from "./dependency";
 ```
 
 This structure ensures that mocks are set up correctly before the modules that depend on them are imported and used in your tests.
+
+## Releasing
+
+This project uses [semantic-release](https://github.com/semantic-release/semantic-release) and [Conventional Commits](https://www.conventionalcommits.org/) to automate the release process.
+
+**How it works:**
+
+1.  **Commit Messages:** All commits merged into the `main` branch **must** follow the Conventional Commits specification.
+2.  **Manual Trigger:** The "Release" GitHub Actions workflow can be triggered manually from the Actions tab when you're ready to create a new release.
+3.  **`semantic-release` Actions:** Determines version, updates `CHANGELOG.md` & `package.json`, commits, tags, publishes to npm, and creates a GitHub Release.
+
+**What you need to do:**
+
+- Use Conventional Commits.
+- Merge changes to `main`.
+- Trigger a release manually when ready from the Actions tab in GitHub.
+
+**Automation handles:** Changelog, version bumps, tags, npm publish, GitHub releases.
 
 ## Future Considerations
 
