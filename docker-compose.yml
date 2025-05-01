@@ -14,6 +14,21 @@ services:
     volumes:
       - docs-mcp-data:/data
 
+  docs-mcp-web:
+    image: ghcr.io/arabold/docs-mcp-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "dist/web.js"]
+    # platform: linux/amd64
+    container_name: docs-mcp-web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - docs-mcp-data:/data
+
 volumes:
   docs-mcp-data:
     name: docs-mcp-data
