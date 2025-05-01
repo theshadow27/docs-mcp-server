@@ -61,7 +61,7 @@ const ScrapeFormContent = () => (
       </div>
 
       {/* Consider using Flowbite Accordion here */}
-      <details class="bg-gray-50 dark:bg-gray-700 p-2 rounded-md">
+      <details class="bg-gray-50 dark:bg-gray-900 p-2 rounded-md">
         <summary class="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400">
           Advanced Options
         </summary>
