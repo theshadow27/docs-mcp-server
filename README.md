@@ -174,7 +174,7 @@ This approach is useful when you need local file access (e.g., indexing document
 
 3. **That's it!** The server will now be available to your AI assistant.
 
-### Option 3: Using `npx` with HTTP Protocol
+### Option 3: Using npx with HTTP Protocol
 
 Similar to Option 2, this uses `npx` to run the latest published package without needing Docker or a local clone. However, this option starts the server using the Streamable HTTP protocol instead of the default stdio, making it accessible via HTTP endpoints. This is useful if you have multiple clients, you work with multiple code assistants in parallel, or want to expose the server to other applications.
 
