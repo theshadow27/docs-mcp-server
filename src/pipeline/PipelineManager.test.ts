@@ -1,4 +1,4 @@
-import { type Mock, afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScraperService } from "../scraper";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import { PipelineManager } from "./PipelineManager";
@@ -58,7 +58,7 @@ describe("PipelineManager", () => {
     manager.setCallbacks(mockCallbacks);
   });
 
-  afterAll(() => {
+  afterEach(() => {
     vi.useRealTimers(); // Restore real timers
   });
 
