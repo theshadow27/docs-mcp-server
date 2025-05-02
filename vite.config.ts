@@ -1,19 +1,16 @@
-import { defineConfig } from "vite";
-import dts from 'vite-plugin-dts';
+import { defineConfig } from "vitest/config";
 import path from 'path';
 import packageJson from './package.json'; // Import package.json to read dependencies
 
 export default defineConfig({
   plugins: [
-    dts({
-      insertTypesEntry: true, // Ensures type exports are handled correctly
-      // Optionally specify tsconfig path if not default:
-      // tsconfigPath: './tsconfig.json',
-    }),
   ],
   resolve: {
     // Keep existing resolve extensions
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+  },
+  optimizeDeps: {
+    force: true
   },
   build: {
     outDir: 'dist', // Output directory
@@ -28,7 +25,7 @@ export default defineConfig({
       },
       formats: ['es'], // Output ESM format only
       // Output filenames will be based on entry keys (server.js, cli.js, web.js)
-      fileName: (format, entryName) => `${entryName}.js`,
+      // fileName: (format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
       // Externalize dependencies and node built-ins
@@ -36,10 +33,13 @@ export default defineConfig({
         /^node:/, // Externalize all node built-ins (e.g., 'node:fs', 'node:path')
         ...Object.keys(packageJson.dependencies || {}),
         // Explicitly externalize potentially problematic packages if needed
-         'better-sqlite3', // Often needs to be external due to native bindings
-         'playwright', // Playwright should definitely be external
-         'sqlite-vec', // Likely involves native bindings
+        'fingerprint-generator',
+        'header-generator',
+        'better-sqlite3', // Often needs to be external due to native bindings
+        'playwright', // Playwright should definitely be external
+        'sqlite-vec', // Likely involves native bindings
       ],
+      
       output: {
         // Optional: Configure output further if needed
         // preserveModules: true, // Uncomment if you need to preserve source file structure
@@ -50,6 +50,10 @@ export default defineConfig({
     target: `node${process.versions.node.split('.')[0]}`,
     ssr: true, // Explicitly mark this as an SSR/Node build
   },
-  // If you have Vitest config here, it would remain alongside 'plugins', 'resolve', 'build'
-  // test: { ... }
+  test: {
+    globals: true,
+    environment: "node",
+    testTimeout: 5000,
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  },
 });
