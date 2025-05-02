@@ -675,4 +675,31 @@ export class DocumentStore {
       throw new ConnectionError(`Failed to find parent chunk for ID ${id}`, error);
     }
   }
+
+  /**
+   * Fetches multiple documents by their IDs in a single call.
+   * Returns an array of Document objects, sorted by their sort_order.
+   */
+  async findChunksByIds(
+    library: string,
+    version: string,
+    ids: string[],
+  ): Promise<Document[]> {
+    if (!ids.length) return [];
+    try {
+      // Use parameterized query for variable number of IDs
+      const placeholders = ids.map(() => "?").join(",");
+      const stmt = this.db.prepare(
+        `SELECT * FROM documents WHERE library = ? AND version = ? AND id IN (${placeholders}) ORDER BY sort_order`,
+      );
+      const rows = stmt.all(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        ...ids,
+      ) as DbDocument[];
+      return rows.map((row) => mapDbDocumentToDocument(row));
+    } catch (error) {
+      throw new ConnectionError("Failed to fetch documents by IDs", error);
+    }
+  }
 }

@@ -80,6 +80,83 @@ describe("DocumentStore", () => {
     vi.restoreAllMocks();
   });
 
+  describe("findChunksByIds", () => {
+    const library = "test-lib";
+    const version = "1.0.0";
+
+    it("should fetch and return documents for given IDs, sorted by sort_order", async () => {
+      const ids = ["id1", "id2", "id3"];
+      const mockRows = [
+        {
+          id: "id2",
+          library,
+          version,
+          url: "url2",
+          content: "content2",
+          metadata: JSON.stringify({ url: "url2", score: 0.5 }),
+          embedding: null,
+          sort_order: 1,
+          score: 0.5,
+        },
+        {
+          id: "id1",
+          library,
+          version,
+          url: "url1",
+          content: "content1",
+          metadata: JSON.stringify({ url: "url1", score: 0.9 }),
+          embedding: null,
+          sort_order: 0,
+          score: 0.9,
+        },
+        {
+          id: "id3",
+          library,
+          version,
+          url: "url3",
+          content: "content3",
+          metadata: JSON.stringify({ url: "url3", score: 0.7 }),
+          embedding: null,
+          sort_order: 2,
+          score: 0.7,
+        },
+      ];
+      // Should be returned sorted by sort_order: id1, id2, id3
+      mockStatementAll.mockReturnValueOnce([mockRows[1], mockRows[0], mockRows[2]]);
+      const result = await documentStore.findChunksByIds(library, version, ids);
+      expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining("id IN"));
+      expect(mockStatementAll).toHaveBeenCalledWith(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        ...ids,
+      );
+      expect(result.length).toBe(3);
+      expect(result[0].id).toBe("id1");
+      expect(result[1].id).toBe("id2");
+      expect(result[2].id).toBe("id3");
+      expect(result[0].pageContent).toBe("content1");
+      expect(result[1].pageContent).toBe("content2");
+      expect(result[2].pageContent).toBe("content3");
+    });
+
+    it("should return an empty array if no IDs are provided", async () => {
+      const prepareCallsBefore = mockPrepare.mock.calls.length;
+      const allCallsBefore = mockStatementAll.mock.calls.length;
+      const result = await documentStore.findChunksByIds(library, version, []);
+      expect(result).toEqual([]);
+      expect(mockPrepare.mock.calls.length).toBe(prepareCallsBefore);
+      expect(mockStatementAll.mock.calls.length).toBe(allCallsBefore);
+    });
+
+    it("should return an empty array if no documents are found", async () => {
+      mockStatementAll.mockReturnValueOnce([]);
+      const result = await documentStore.findChunksByIds(library, version, ["idX"]);
+      expect(result).toEqual([]);
+      expect(mockPrepare).toHaveBeenCalled();
+      expect(mockStatementAll).toHaveBeenCalled();
+    });
+  });
+
   describe("findByContent", () => {
     const library = "test-lib";
     const version = "1.0.0";
