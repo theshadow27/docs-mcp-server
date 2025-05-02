@@ -3,22 +3,17 @@ import { Document } from "@langchain/core/documents";
 import { createFsFromVolume, vol } from "memfs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools/errors";
-import { getProjectRoot } from "../utils/paths";
-import { DocumentManagementService } from "./DocumentManagementService";
 import { StoreError } from "./errors";
 import type { LibraryVersionDetails } from "./types";
 
-// --- Calculate real project root BEFORE mocking fs ---
-// This assumes the test file is somewhere within the project structure.
-// Adjust depth ('../..') if the test file location changes relative to the root.
-const actualProjectRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
-// ----------------------------------------------------
-
-vi.mock("node:fs", () => ({ default: createFsFromVolume(vol) }));
+vi.mock("node:fs", () => ({
+  default: createFsFromVolume(vol),
+  existsSync: vi.fn(vol.existsSync),
+}));
 vi.mock("../utils/logger");
+vi.mock("../utils/paths", () => ({
+  getProjectRoot: vi.fn(() => "/docs-mcp-server"),
+}));
 
 // Mock env-paths using mockImplementation
 const mockEnvPaths = { data: "/mock/env/path/data" };
@@ -28,7 +23,6 @@ vi.mock("env-paths", () => ({
   default: vi.fn(),
 }));
 
-// Import the mocked function AFTER vi.mock
 import envPaths from "env-paths";
 
 // Assign the actual implementation to the mocked function
@@ -54,8 +48,10 @@ vi.mock("./DocumentStore", () => {
   return { DocumentStore: MockDocumentStore };
 });
 
-import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
+import { getProjectRoot } from "../utils/paths";
 // Import the mocked constructor AFTER vi.mock
+import { DocumentManagementService } from "./DocumentManagementService";
 import { DocumentStore } from "./DocumentStore";
 
 // Mock DocumentRetrieverService (keep existing structure)
@@ -71,11 +67,12 @@ vi.mock("./DocumentRetrieverService", () => ({
 
 describe("DocumentManagementService", () => {
   let docService: DocumentManagementService; // For general tests
+  const projectRoot = getProjectRoot();
 
   // Define expected paths consistently using the calculated actual root
   // Note: getProjectRoot() called here will now run *after* fs is mocked,
   // so it needs the dummy package.json created in beforeEach.
-  const expectedOldDbPath = path.join(actualProjectRoot, ".store", "documents.db");
+  const expectedOldDbPath = path.join(projectRoot, ".store", "documents.db");
   const expectedStandardDbPath = path.join(mockEnvPaths.data, "documents.db");
 
   beforeEach(() => {
@@ -84,9 +81,9 @@ describe("DocumentManagementService", () => {
 
     // --- Create dummy package.json in memfs for getProjectRoot() ---
     // Ensure the calculated project root directory exists in memfs
-    vol.mkdirSync(actualProjectRoot, { recursive: true });
+    vol.mkdirSync(projectRoot, { recursive: true });
     // Create a dummy package.json file there
-    vol.writeFileSync(path.join(actualProjectRoot, "package.json"), "{}");
+    vol.writeFileSync(path.join(projectRoot, "package.json"), "{}");
     // -------------------------------------------------------------
 
     // Ensure envPaths mock is reset/set for general tests
@@ -119,6 +116,7 @@ describe("DocumentManagementService", () => {
 
       // Instantiate LOCALLY for this specific test
       const localDocService = new DocumentManagementService();
+      expect(localDocService).toBeInstanceOf(DocumentManagementService);
 
       // Verify DocumentStore was called with the old path
       expect(vi.mocked(DocumentStore)).toHaveBeenCalledWith(expectedOldDbPath);

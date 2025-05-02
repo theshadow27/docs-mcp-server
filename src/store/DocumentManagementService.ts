@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import type { Document } from "@langchain/core/documents";
 import envPaths from "env-paths";
@@ -50,7 +50,7 @@ export class DocumentManagementService {
       const projectRoot = getProjectRoot();
       const oldDbDir = path.join(projectRoot, ".store");
       const oldDbPath = path.join(oldDbDir, "documents.db");
-      const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
+      const oldDbExists = fs.existsSync(oldDbPath); // Check file existence specifically
 
       if (oldDbExists) {
         dbPath = oldDbPath;
@@ -67,7 +67,7 @@ export class DocumentManagementService {
 
     // Ensure the chosen directory exists
     try {
-      mkdirSync(dbDir, { recursive: true });
+      fs.mkdirSync(dbDir, { recursive: true });
     } catch (error) {
       // Log potential error during directory creation but proceed
       // The DocumentStore constructor might handle DB file creation errors
