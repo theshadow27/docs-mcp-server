@@ -131,7 +131,7 @@ Once the Docs MCP Server is running, you can use the Web Interface to **add new 
 4.  **Click "Queue Job":** The server will start a background job to fetch, process, and index the documentation. You can monitor its progress in the "Job Queue" section of the Web UI.
 5.  **Repeat:** Repeat steps 3-4 for every library whose documentation you want the server to manage.
 
-**That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI's search bar.
+**That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI's by clicking on the library name in the "Indexed Documenation" section.
 
 ## Alternative: Using Docker
 
