@@ -117,7 +117,7 @@ export class DocumentRetrieverService {
     const ids = Array.from(uniqueChunkIds);
     const docs = await this.documentStore.findChunksByIds(library, version, ids);
     // Already sorted by sort_order in findChunksByIds
-    const content = docs.map((d) => d.pageContent).join("\n");
+    const content = docs.map((d) => d.pageContent).join("\n\n");
     // TODO: Apply code block merging here if/when implemented
     return {
       url,

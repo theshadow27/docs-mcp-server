@@ -148,6 +148,7 @@ export class DocumentStore {
         AND url = ?
         AND json_array_length(json_extract(metadata, '$.path')) = ?
         AND json_extract(metadata, '$.path') LIKE ? || '%'
+        AND sort_order > (SELECT sort_order FROM documents WHERE id = ?)
         ORDER BY sort_order
         LIMIT ?
       `),
@@ -177,6 +178,8 @@ export class DocumentStore {
         AND version = ? 
         AND url = ?
         AND json_extract(metadata, '$.path') = ?
+        AND sort_order < (SELECT sort_order FROM documents WHERE id = ?)
+        ORDER BY sort_order DESC
         LIMIT 1
       `),
     };
@@ -558,6 +561,7 @@ export class DocumentStore {
         parentUrl,
         parentPath.length + 1,
         JSON.stringify(parentPath),
+        id,
         limit,
       ) as Array<DbDocument>;
 
@@ -664,6 +668,7 @@ export class DocumentStore {
         version.toLowerCase(),
         childMetadata.url,
         JSON.stringify(parentPath),
+        id,
       ) as DbQueryResult<DbDocument>;
 
       if (!result) {
