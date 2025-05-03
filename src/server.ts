@@ -18,7 +18,10 @@ const options = program.opts();
 
 async function main() {
   const protocol = options.protocol;
-  const port = Number.parseInt(options.port, 10);
+  // Prioritize environment variable, then CLI arg, then default
+  const port = process.env.MCP_PORT
+    ? Number.parseInt(process.env.MCP_PORT, 10)
+    : Number.parseInt(options.port, 10);
 
   if (protocol !== "stdio" && protocol !== "http") {
     console.error('Invalid protocol specified. Use "stdio" or "http".');

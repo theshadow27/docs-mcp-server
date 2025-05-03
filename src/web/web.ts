@@ -9,6 +9,7 @@ import { ListJobsTool } from "../tools/ListJobsTool";
 import { ListLibrariesTool } from "../tools/ListLibrariesTool";
 import { RemoveTool } from "../tools/RemoveTool";
 import { ScrapeTool } from "../tools/ScrapeTool";
+import { DEFAULT_WEB_PORT } from "../utils/config";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { registerIndexRoute } from "./routes/index";
@@ -22,7 +23,7 @@ import { registerLibrariesRoutes } from "./routes/libraries/list";
  *
  * @returns The initialized Fastify server instance.
  */
-export async function startWebServer(): Promise<FastifyInstance> {
+export async function startWebServer(port: number): Promise<FastifyInstance> {
   const server = Fastify({
     logger: false, // Use our own logger instead
   });
@@ -64,11 +65,11 @@ export async function startWebServer(): Promise<FastifyInstance> {
   });
 
   try {
-    const address = await server.listen({ port: 3000, host: "0.0.0.0" });
-    logger.info(`🚀 Web server listening at ${address}`);
+    const address = await server.listen({ port, host: "0.0.0.0" });
+    logger.info(`🚀 Web UI available at ${address}`);
     return server; // Return the server instance
   } catch (error) {
-    logger.error(`❌ Failed to start web server: ${error}`);
+    logger.error(`❌ Failed to start web UI: ${error}`);
     // Ensure server is closed if listen fails but initialization succeeded partially
     await server.close();
     throw error;
@@ -83,7 +84,7 @@ export async function startWebServer(): Promise<FastifyInstance> {
 export async function stopWebServer(server: FastifyInstance): Promise<void> {
   try {
     await server.close();
-    logger.info("🛑 Web server stopped.");
+    logger.info("🛑 Web UI stopped.");
   } catch (error) {
     logger.error(`❌ Failed to stop web server gracefully: ${error}`);
     // Rethrow or handle as needed, but ensure the process doesn't hang

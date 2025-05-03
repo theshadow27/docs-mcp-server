@@ -15,7 +15,10 @@ export const DEFAULT_MAX_CONCURRENCY = 3;
 export const DEFAULT_PROTOCOL = "stdio";
 
 /** Default port for the HTTP protocol */
-export const DEFAULT_HTTP_PORT = 8000;
+export const DEFAULT_HTTP_PORT = 6280;
+
+/** Default port for the Web UI */
+export const DEFAULT_WEB_PORT = 6281;
 
 /**
  * Maximum number of retries for HTTP fetcher requests.

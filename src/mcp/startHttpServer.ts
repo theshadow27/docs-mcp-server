@@ -1,4 +1,5 @@
 import * as http from "node:http";
+import type { AddressInfo } from "node:net";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -96,7 +97,7 @@ export async function startHttpServer(
   });
 
   httpServer.listen(port, () => {
-    logger.info(`Documentation MCP server running on http://0.0.0.0:${port}`);
+    logger.info(`🤖 Docs MCP server listening at http://127.0.0.1:${port}`);
   });
 
   // Return the server instance

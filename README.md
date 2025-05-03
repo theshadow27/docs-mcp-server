@@ -43,6 +43,10 @@ LLM-assisted coding promises speed and efficiency, but often falls short due to:
 
 Get up and running quickly!
 
+- [Option 1: Using Docker](#option-1-using-docker)
+- [Option 2: Using npx](#option-2-using-npx)
+- [Option 3: Using Docker Compose](#option-3-using-docker-compose)
+
 ### Option 1: Using Docker
 
 This approach is easy, straightforward, and doesn't require Node.js to be installed.
@@ -174,26 +178,66 @@ This approach is useful when you need local file access (e.g., indexing document
 
 3. **That's it!** The server will now be available to your AI assistant.
 
-### Option 3: Using npx with HTTP Protocol
+### Option 3: Using Docker Compose
 
-Similar to Option 2, this uses `npx` to run the latest published package without needing Docker or a local clone. However, this option starts the server using the Streamable HTTP protocol instead of the default stdio, making it accessible via HTTP endpoints. This is useful if you have multiple clients, you work with multiple code assistants in parallel, or want to expose the server to other applications.
+This method provides a persistent local setup by running the server and web interface using Docker Compose. It requires cloning the repository but simplifies managing both services together.
 
-1.  **Ensure Node.js is installed.**
-2.  **Run the command:**
+1.  **Ensure Docker and Docker Compose are installed and running.**
+2.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/arabold/docs-mcp-server.git
+    cd docs-mcp-server
+    ```
+3.  **Set up your environment:**
+    Copy the example environment file and **edit it** to add your necessary API keys (e.g., `OPENAI_API_KEY`).
+    ```bash
+    cp .env.example .env
+    # Now, edit the .env file with your editor
+    ```
+    Refer to the [Configuration](#configuration) section for details on available environment variables.
+4.  **Launch the services:**
+    Run this command from the repository's root directory. It will build the images (if necessary) and start the server and web interface in the background.
 
     ```bash
-    # Ensure required environment variables like OPENAI_API_KEY are set
-    `npx` --package=@arabold/docs-mcp-server docs-server --protocol http --port 8000
+    docker compose up -d
     ```
 
-    - `--protocol http`: Instructs the server to use the HTTP protocol.
-    - `--port <number>`: Specifies the listening port (default: 8000).
+    - `-d`: Runs the containers in detached mode (in the background). Omit this to see logs directly in your terminal.
 
-    The server will expose endpoints like `/mcp` and `/sse` on the specified port.
+    **Note:** If you pull updates for the repository (e.g., using `git pull`), you'll need to rebuild the Docker images to include the changes by running `docker compose up -d --build`.
+
+5.  **Configure your MCP client:**
+    Add the following configuration block to your MCP settings file (e.g., for Claude, Cline, Roo):
+
+    ```json
+    {
+      "mcpServers": {
+        "docs-mcp-server": {
+          "url": "http://localhost:6280/sse", // Connects via HTTP to the Docker Compose service
+          "disabled": false,
+          "autoApprove": []
+        }
+      }
+    }
+    ```
+
+    Restart your AI assistant application after updating the configuration.
+
+6.  **Access the Web Interface:**
+    The web interface will be available at `http://localhost:6281`.
+
+**Benefits of this method:**
+
+- Runs both the server and web UI with a single command.
+- Uses the local source code (rebuilds automatically if code changes and you run `docker compose up --build`).
+- Persistent data storage via the `docs-mcp-data` Docker volume.
+- Easy configuration management via the `.env` file.
+
+To stop the services, run `docker compose down` from the repository directory.
 
 ## Using the Web Interface
 
-You can access a web-based GUI at `http://localhost:3000` to manage and search library documentation through your browser. **Important: Use the same method (Docker or npx) for both the server and web interface to ensure access to the same indexed documentation.**
+You can access a web-based GUI at `http://localhost:6281` to manage and search library documentation through your browser. **Important: Use the same method (Docker or npx) for both the server and web interface to ensure access to the same indexed documentation.**
 
 ### Using Docker Web Interface
 
@@ -211,7 +255,7 @@ docker run --rm \
 Make sure to:
 
 - Use the same volume name (`docs-mcp-data` in this example) as your server
-- Map port 3000 with `-p 3000:3000`
+- Map port 6281 with `-p 6281:3000`
 - Pass any configuration environment variables with `-e` flags
 
 ### Using `npx Web Interface
@@ -219,8 +263,10 @@ Make sure to:
 If you're running the server with `npx`, use `npx` for the web interface as well:
 
 ```bash
-npx -y --package=@arabold/docs-mcp-server docs-web
+npx -y --package=@arabold/docs-mcp-server docs-web --port 6281
 ```
+
+You can specify a different port using the `--port` flag.
 
 The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and web interface.
 
