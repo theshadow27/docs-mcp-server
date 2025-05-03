@@ -119,16 +119,16 @@ To stop the services, run `docker compose down` from the repository directory.
 
 ![Docs MCP Server Web Interface](docs/docs-mcp-server.png)
 
-Once the Docs MCP Server is running, you need to tell it which documentation to index. The easiest way is using the Web Interface.
+Once the Docs MCP Server is running, you can use the Web Interface to **add new documentation** to be indexed or **search existing documentation**.
 
 1.  **Open the Web Interface:** If you used the recommended Docker Compose setup, navigate your browser to `http://localhost:6281`.
-2.  **Find the "Scrape New Documentation" Form:** This is usually prominently displayed on the main page.
+2.  **Find the "Queue New Scrape Job" Form:** This is usually prominently displayed on the main page.
 3.  **Enter the Details:**
     - **URL:** Provide the starting URL for the documentation you want to index (e.g., `https://react.dev/reference/react`, `https://github.com/expressjs/express`, `https://docs.python.org/3/`).
     - **Library Name:** Give it a short, memorable name (e.g., `react`, `express`, `python`). This is how you'll refer to it in searches.
     - **Version (Optional):** If you want to index a specific version, enter it here (e.g., `18.2.0`, `4.17.1`, `3.11`). If left blank, the server often tries to detect the latest version or indexes it as unversioned.
-    - **(Optional) Advanced Settings:** You can often configure scraping depth, scope (subpages, hostname, domain), etc. Defaults are usually fine to start.
-4.  **Click "Scrape":** The server will start a background job to fetch, process, and index the documentation. You can monitor its progress in the "Jobs" section of the Web UI.
+    - **(Optional) Advanced Settings:** Adjust `Scope` (e.g., 'Subpages', 'Hostname', 'Domain'), `Max Pages`, `Max Depth`, and `Follow Redirects` if needed. Defaults are usually sufficient.
+4.  **Click "Queue Job":** The server will start a background job to fetch, process, and index the documentation. You can monitor its progress in the "Job Queue" section of the Web UI.
 5.  **Repeat:** Repeat steps 3-4 for every library whose documentation you want the server to manage.
 
 **That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI's search bar.
