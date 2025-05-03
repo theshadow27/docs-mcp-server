@@ -33,7 +33,7 @@ interface DocumentSection {
  *
  * The splitting process happens in two steps:
  * 1. Split document into sections based on headings (H1-H3 only)
- * 2. Split section content into smaller chunks based on maxChunkSize
+ * 2. Split section content into smaller chunks based on preferredChunkSize
  */
 export class SemanticMarkdownSplitter implements DocumentSplitter {
   private turndownService: TurndownService;
@@ -41,7 +41,10 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
   public codeSplitter: CodeContentSplitter;
   public tableSplitter: TableContentSplitter;
 
-  constructor(private maxChunkSize: number) {
+  constructor(
+    private preferredChunkSize: number,
+    private maxChunkSize: number,
+  ) {
     this.turndownService = new TurndownService({
       headingStyle: "atx",
       hr: "---",
@@ -83,14 +86,16 @@ export class SemanticMarkdownSplitter implements DocumentSplitter {
       },
     });
 
+    // Text splitter uses preferred chunk size (keeps paragraphs together if possible)
     this.textSplitter = new TextContentSplitter({
-      maxChunkSize: this.maxChunkSize,
+      chunkSize: this.preferredChunkSize,
     });
+    // Code/table splitters use the hard chunk size (avoid splitting unless necessary)
     this.codeSplitter = new CodeContentSplitter({
-      maxChunkSize: this.maxChunkSize,
+      chunkSize: this.maxChunkSize,
     });
     this.tableSplitter = new TableContentSplitter({
-      maxChunkSize: this.maxChunkSize,
+      chunkSize: this.maxChunkSize,
     });
   }
 

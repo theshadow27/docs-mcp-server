@@ -6,7 +6,7 @@ vi.mock("../../utils/logger");
 
 describe("CodeContentSplitter", () => {
   const options = {
-    maxChunkSize: 100,
+    chunkSize: 100,
   } satisfies ContentSplitterOptions;
   const splitter = new CodeContentSplitter(options);
 
@@ -38,7 +38,7 @@ const y = 2;`;
     const chunks = await splitter.split(markdown);
     expect(chunks.length).toBeGreaterThan(1);
     for (const chunk of chunks) {
-      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.length).toBeLessThanOrEqual(options.chunkSize);
       expect(chunk.startsWith("```javascript\n")).toBe(true);
       expect(chunk.endsWith("\n```")).toBe(true);
     }

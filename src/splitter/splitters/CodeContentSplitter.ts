@@ -19,17 +19,17 @@ export class CodeContentSplitter implements ContentSplitter {
     let currentChunkLines: string[] = [];
 
     for (const line of lines) {
-      // Check if a single line with code block markers exceeds maxChunkSize
+      // Check if a single line with code block markers exceeds chunkSize
       const singleLineSize = this.wrap(line, language).length;
-      if (singleLineSize > this.options.maxChunkSize) {
-        throw new MinimumChunkSizeError(singleLineSize, this.options.maxChunkSize);
+      if (singleLineSize > this.options.chunkSize) {
+        throw new MinimumChunkSizeError(singleLineSize, this.options.chunkSize);
       }
 
       currentChunkLines.push(line);
       const newChunkContent = this.wrap(currentChunkLines.join("\n"), language);
       const newChunkSize = newChunkContent.length;
 
-      if (newChunkSize > this.options.maxChunkSize && currentChunkLines.length > 1) {
+      if (newChunkSize > this.options.chunkSize && currentChunkLines.length > 1) {
         // remove last item
         const lastLine = currentChunkLines.pop();
         // wrap content and create chunk

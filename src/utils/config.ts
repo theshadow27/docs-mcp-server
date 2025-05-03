@@ -26,3 +26,10 @@ export const FETCHER_MAX_RETRIES = 6;
  * Base delay in milliseconds for HTTP fetcher retry backoff.
  */
 export const FETCHER_BASE_DELAY = 1000;
+
+/**
+ * Default chunk size settings for splitters
+ */
+export const SPLITTER_MIN_CHUNK_SIZE = 500;
+export const SPLITTER_PREFERRED_CHUNK_SIZE = 1500;
+export const SPLITTER_MAX_CHUNK_SIZE = 5000;

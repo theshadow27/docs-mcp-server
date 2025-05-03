@@ -101,7 +101,7 @@ describe("GreedySplitter", () => {
     ]);
   });
 
-  it("should not exceed maxChunkSize", async () => {
+  it("should not exceed preferredChunkSize", async () => {
     const initialChunks: ContentChunk[] = [
       {
         types: ["text"],
@@ -115,7 +115,7 @@ describe("GreedySplitter", () => {
       },
     ];
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
-    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 30); // maxChunkSize = 30
+    const splitter = new GreedySplitter(mockSemanticSplitter, 10, 30); // preferredChunkSize = 30
     const result = await splitter.splitText("Some Markdown");
     expect(result).toEqual([
       {
@@ -384,7 +384,7 @@ Some other text
 `;
 
     // Create a *real* SemanticMarkdownSplitter to get the initial chunks
-    const realSemanticSplitter = new SemanticMarkdownSplitter(200);
+    const realSemanticSplitter = new SemanticMarkdownSplitter(200, 5000);
     const initialChunks = await realSemanticSplitter.splitText(markdown);
 
     const mockSemanticSplitter = createMockSemanticSplitter(initialChunks);
