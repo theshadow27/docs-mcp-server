@@ -3,7 +3,7 @@
  */
 export interface ContentSplitterOptions {
   /** Maximum characters per chunk */
-  maxChunkSize: number;
+  chunkSize: number;
 }
 
 /**

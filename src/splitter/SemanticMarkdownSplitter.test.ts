@@ -5,13 +5,13 @@ vi.mock("../utils/logger");
 
 describe("SemanticMarkdownSplitter", () => {
   it("should handle empty markdown", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(100, 5000);
     const result = await splitter.splitText("");
     expect(result).toEqual([]);
   });
 
   it("should handle markdown with no headings", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(100, 5000);
     const markdown = "This is some text without any headings.";
     const result = await splitter.splitText(markdown);
 
@@ -28,7 +28,7 @@ describe("SemanticMarkdownSplitter", () => {
   });
 
   it("should correctly split on H1-H6 headings", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(100, 5000);
     const markdown = `
 # Chapter 1
 Some text in chapter 1.
@@ -216,7 +216,7 @@ Text in chapter 2.
   });
 
   it("should separate headings, text, code, and tables", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(100, 5000);
     const markdown = `
 # Mixed Content Section
 
@@ -271,9 +271,9 @@ console.log('Hello');
   });
 
   it("should correctly split long tables while preserving headers", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(10, 100);
 
-    // Create a table with many rows that will exceed maxChunkSize
+    // Create a table with many rows that will exceed chunkSize
     const tableRows = Array.from(
       { length: 20 },
       (_, i) => `| ${i + 1} | This is row ${i + 1} | ${(i + 1) * 100} |`,
@@ -307,9 +307,9 @@ ${tableRows}
   });
 
   it("should correctly split long code blocks while preserving language", async () => {
-    const splitter = new SemanticMarkdownSplitter(100);
+    const splitter = new SemanticMarkdownSplitter(10, 100);
 
-    // Create a long code block that will exceed maxChunkSize
+    // Create a long code block that will exceed chunkSize
     const codeLines = Array.from(
       { length: 20 },
       (_, i) =>
@@ -342,7 +342,7 @@ ${codeLines}
   });
 
   it("should handle tables that cannot be split semantically by using character-based splitting", async () => {
-    const splitter = new SemanticMarkdownSplitter(20);
+    const splitter = new SemanticMarkdownSplitter(20, 20);
     const markdown = `
 | Header1 | Header2 |
 |---------|---------|
@@ -359,7 +359,7 @@ ${codeLines}
   });
 
   it("should handle code blocks that cannot be split semantically by using character-based splitting", async () => {
-    const splitter = new SemanticMarkdownSplitter(20);
+    const splitter = new SemanticMarkdownSplitter(20, 20);
     const markdown = "```javascript\nconst x = 1;\n```";
 
     // Should not throw an error anymore

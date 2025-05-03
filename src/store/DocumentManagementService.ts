@@ -7,6 +7,11 @@ import semver from "semver";
 import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
 import type { ContentChunk, DocumentSplitter } from "../splitter/types";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools";
+import {
+  SPLITTER_MAX_CHUNK_SIZE,
+  SPLITTER_MIN_CHUNK_SIZE,
+  SPLITTER_PREFERRED_CHUNK_SIZE,
+} from "../utils/config";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
@@ -77,13 +82,14 @@ export class DocumentManagementService {
     this.store = new DocumentStore(dbPath);
     this.documentRetriever = new DocumentRetrieverService(this.store);
 
-    const minChunkSize = 500;
-    const maxChunkSize = 1500;
-    const semanticSplitter = new SemanticMarkdownSplitter(maxChunkSize);
+    const semanticSplitter = new SemanticMarkdownSplitter(
+      SPLITTER_PREFERRED_CHUNK_SIZE,
+      SPLITTER_MAX_CHUNK_SIZE,
+    );
     const greedySplitter = new GreedySplitter(
       semanticSplitter,
-      minChunkSize,
-      maxChunkSize,
+      SPLITTER_MIN_CHUNK_SIZE,
+      SPLITTER_PREFERRED_CHUNK_SIZE,
     );
 
     this.splitter = greedySplitter;

@@ -7,7 +7,7 @@ vi.mock("../../utils/logger");
 
 describe("TableContentSplitter", () => {
   const options = {
-    maxChunkSize: 100,
+    chunkSize: 100,
   } satisfies ContentSplitterOptions;
   const splitter = new TableContentSplitter(options);
 
@@ -27,7 +27,7 @@ describe("TableContentSplitter", () => {
   });
 
   it("should split large tables by rows", async () => {
-    // Create a large table that *might* exceed maxChunkSize, depending on header length
+    // Create a large table that *might* exceed chunkSize, depending on header length
     const rows = Array(20)
       .fill(0)
       .map((_, i) => `| Data ${i}A | Data ${i}B |`);
@@ -44,9 +44,9 @@ ${rows.join("\n")}`;
     }
   });
 
-  it("should throw MinimumChunkSizeError if single row with headers exceeds maxChunkSize", async () => {
+  it("should throw MinimumChunkSizeError if single row with headers exceeds chunkSize", async () => {
     const splitter = new TableContentSplitter({
-      maxChunkSize: 50, // Small size for testing
+      chunkSize: 50, // Small size for testing
     });
     const table = `| Header A | Header B | Header C |
 |----------|-----------|-----------|

@@ -6,7 +6,7 @@ vi.mock("../../utils/logger");
 
 describe("TextContentSplitter", () => {
   const options = {
-    maxChunkSize: 100,
+    chunkSize: 100,
   } satisfies ContentSplitterOptions;
   const splitter = new TextContentSplitter(options);
 
@@ -26,7 +26,7 @@ Third paragraph to complete the example.`;
   });
 
   it("should fall back to line breaks when paragraphs too large", async () => {
-    // Create a paragraph larger than maxChunkSize
+    // Create a paragraph larger than preferredChunkSize
     const longParagraph = Array(5)
       .fill("This is a very long line of text that should be split.")
       .join(" ");
@@ -41,7 +41,7 @@ And line four finishes it.`;
     // Should split into multiple chunks at line boundaries
     expect(chunks.length).toBeGreaterThan(1);
     for (const chunk of chunks) {
-      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.length).toBeLessThanOrEqual(options.chunkSize);
     }
   });
 
@@ -54,7 +54,7 @@ And line four finishes it.`;
     // Small consecutive lines should be merged
     expect(chunks.length).toBeLessThan(6); // Less than total number of lines
     for (const chunk of chunks) {
-      expect(chunk.length).toBeLessThanOrEqual(options.maxChunkSize);
+      expect(chunk.length).toBeLessThanOrEqual(options.chunkSize);
     }
   });
 
@@ -70,7 +70,7 @@ And line four finishes it.`;
 
   it("should split words as last resort", async () => {
     const splitter = new TextContentSplitter({
-      maxChunkSize: 20, // Very small for testing word splitting
+      chunkSize: 20, // Very small for testing word splitting
     });
 
     const text =
