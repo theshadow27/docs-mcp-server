@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/arabold/docs-mcp-server/compare/v1.12.0...v1.12.1) (2025-05-03)
+
+
+### Bug Fixes
+
+* **ci:** fix docker build ([d8796eb](https://github.com/arabold/docs-mcp-server/commit/d8796ebe2d1a93c4f7b37c68169a9522ed18b936))
+
 # [1.12.0](https://github.com/arabold/docs-mcp-server/compare/v1.11.0...v1.12.0) (2025-05-03)
 
 
