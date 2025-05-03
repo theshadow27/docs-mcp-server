@@ -247,7 +247,7 @@ If you're running the server with Docker, use Docker for the web interface as we
 docker run --rm \
   -e OPENAI_API_KEY="your-openai-api-key-here" \
   -v docs-mcp-data:/data \
-  -p 3000:3000 \
+  -p 6281:6281 \
   ghcr.io/arabold/docs-mcp-server:latest \
   docs-web
 ```
@@ -255,7 +255,7 @@ docker run --rm \
 Make sure to:
 
 - Use the same volume name (`docs-mcp-data` in this example) as your server
-- Map port 6281 with `-p 6281:3000`
+- Map port 6281 with `-p 6281:6281`
 - Pass any configuration environment variables with `-e` flags
 
 ### Using `npx Web Interface
