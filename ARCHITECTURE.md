@@ -292,6 +292,104 @@ The document storage and retrieval system is divided into two main services:
 
 This separation of concerns improves the modularity, maintainability, and testability of the system.
 
+### Web Interface
+
+The web interface provides a GUI for interacting with the server, monitoring jobs, and viewing indexed libraries. It follows a server-side rendered architecture using modern web technologies, emphasizing modularity through reusable components.
+
+#### Technology Stack
+
+- **Fastify:** Web server framework
+- **`@kitajs/html`:** Server-side JSX rendering for component-based UI
+- **HTMX:** Dynamic content updates without full page reloads
+- **Tailwind/Flowbite:** Styling via CDN
+
+#### Component Structure
+
+The web interface is organized into logical parts:
+
+- **Entry Point (`src/web.ts`):** Server initialization and environment setup.
+- **Core Server (`src/web/web.ts`):** Configures Fastify, registers plugins, instantiates services/tools, and maps routes to handlers.
+- **Routes (`src/web/routes/`):** Contains route handler modules, organized into subdirectories by feature (e.g., `jobs/`, `libraries/`). These handlers fetch data using the core Tools and compose the UI using components. The root `index.tsx` defines the main page structure.
+- **Components (`src/web/components/`):** Contains reusable JSX components (e.g., Layout, JobItem, LibraryList, Alert) responsible for rendering specific parts of the UI. These components receive data as props from the route handlers.
+
+This structure separates routing and data fetching logic (in `routes/`) from presentation logic (in `components/`), promoting code reuse and maintainability.
+
+#### Integration Flow
+
+```mermaid
+graph TD
+    subgraph "User Interfaces"
+        CLI("CLI: src/cli.ts")
+        MCP("MCP Server: src/server.ts")
+        WEB("Web Interface: src/web.ts")
+    end
+
+    subgraph "Core Tools"
+        T_Scrape("Scrape Tool")
+        T_Search("Search Tool")
+        T_Jobs("Job Tools")
+        T_Libs("Library Tools")
+        T_Remove("Remove Tool")
+        T_Fetch("Fetch URL Tool")
+        T_Find("Find Version Tool")
+    end
+
+    subgraph "Core Services"
+        Pipeline("Pipeline Manager")
+        Scraper("Scraper Service")
+        Store("Document Mgmt Service")
+        Retriever("Document Retriever Service")
+    end
+
+    CLI --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+    MCP --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+
+    subgraph "Web Server (src/web/web.ts)"
+        Routes("Route Handlers: src/web/routes/*.tsx")
+    end
+
+    WEB --> Routes
+    Routes -- "Calls Tools" --> T_Jobs & T_Libs
+
+    T_Scrape --> Pipeline
+    T_Jobs --> Pipeline
+    T_Libs --> Store
+    T_Search --> Retriever
+    T_Remove --> Store
+    T_Fetch --> Scraper
+    T_Find --> Store
+
+    Pipeline --> Scraper
+    Pipeline --> Store
+    Retriever --> Store
+```
+
+#### AlpineJS and HTMX Interaction Pattern
+
+When using AlpineJS for component state management alongside HTMX for dynamic updates, avoid calling the global `htmx` object directly from within Alpine event handlers (`x-on:`, `@`). Due to potential scope limitations in Alpine's expression evaluation, this can lead to "htmx is not defined" errors.
+
+**Recommended Pattern:**
+
+1.  **Alpine Dispatches Event:** Let the Alpine component manage its state. When an action requires triggering an HTMX request, use `$el.dispatchEvent` to dispatch a standard browser `CustomEvent` from the element.
+    ```html
+    <button
+      x-data="{...}"
+      x-on:click="if (confirmed) $el.dispatchEvent(new CustomEvent('confirmed-action'))"
+    >
+      ...
+    </button>
+    ```
+2.  **HTMX Listens for Event:** Configure the `hx-trigger` attribute on the same element to listen for the dispatched custom event name.
+    ```html
+    <button ... hx-post="/do-something" hx-trigger="confirmed-action">
+      ...
+    </button>
+    ```
+
+This approach uses standard browser events as the communication bridge, decoupling Alpine's internal scope from HTMX.
+
+The web interface leverages HTMX for dynamic updates, allowing partial page refreshes for job status and library list changes without full page reloads. Static assets are served from the `public` directory with `index: false` to prevent interference with dynamic routes.
+
 ### Interface-Specific Adapters
 
 #### CLI (cli.ts)

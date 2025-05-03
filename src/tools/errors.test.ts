@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LibraryVersion } from "./ListLibrariesTool";
+import type { LibraryVersionDetails } from "../store/types"; // Use LibraryVersionDetails
 import { ToolError, VersionNotFoundError } from "./errors";
 
 vi.mock("../utils/logger");
@@ -19,13 +19,34 @@ describe("Tool Errors", () => {
   describe("VersionNotFoundError", () => {
     const library = "test-lib";
     const requestedVersion = "1.2.3";
-    const availableVersions: LibraryVersion[] = [
-      { version: "1.0.0", indexed: true },
-      { version: "2.0.0", indexed: false },
-      { version: "1.1.0", indexed: true },
-      { version: "2.0.0-beta.1", indexed: true },
+    // Update test data to match LibraryVersionDetails
+    const availableVersions: LibraryVersionDetails[] = [
+      {
+        version: "1.0.0",
+        documentCount: 10,
+        uniqueUrlCount: 5,
+        indexedAt: "2024-01-01T00:00:00Z",
+      },
+      {
+        version: "2.0.0",
+        documentCount: 20,
+        uniqueUrlCount: 10,
+        indexedAt: "2024-01-02T00:00:00Z",
+      },
+      {
+        version: "1.1.0",
+        documentCount: 15,
+        uniqueUrlCount: 7,
+        indexedAt: "2024-01-03T00:00:00Z",
+      },
+      {
+        version: "2.0.0-beta.1",
+        documentCount: 5,
+        uniqueUrlCount: 3,
+        indexedAt: "2024-01-04T00:00:00Z",
+      },
     ];
-    const emptyAvailable: LibraryVersion[] = [];
+    const emptyAvailable: LibraryVersionDetails[] = [];
 
     it("should create an instance with correct properties", () => {
       const error = new VersionNotFoundError(
@@ -57,14 +78,36 @@ describe("Tool Errors", () => {
       );
       const latest = error.getLatestVersion();
       // Expect 2.0.0, as it's the highest stable version according to semver rules
-      expect(latest).toEqual({ version: "2.0.0", indexed: false });
+      // Update assertion to match LibraryVersionDetails structure
+      expect(latest).toEqual({
+        version: "2.0.0",
+        documentCount: 20,
+        uniqueUrlCount: 10,
+        indexedAt: "2024-01-02T00:00:00Z",
+      });
     });
 
     it("should handle pre-release versions correctly in getLatestVersion", () => {
-      const versionsWithPrerelease: LibraryVersion[] = [
-        { version: "1.0.0", indexed: true },
-        { version: "1.1.0-alpha.1", indexed: true },
-        { version: "1.1.0", indexed: false },
+      // Update test data to match LibraryVersionDetails
+      const versionsWithPrerelease: LibraryVersionDetails[] = [
+        {
+          version: "1.0.0",
+          documentCount: 10,
+          uniqueUrlCount: 5,
+          indexedAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          version: "1.1.0-alpha.1",
+          documentCount: 5,
+          uniqueUrlCount: 3,
+          indexedAt: "2024-01-02T00:00:00Z",
+        },
+        {
+          version: "1.1.0",
+          documentCount: 15,
+          uniqueUrlCount: 7,
+          indexedAt: "2024-01-03T00:00:00Z",
+        },
       ];
       const error = new VersionNotFoundError(
         library,
@@ -72,7 +115,13 @@ describe("Tool Errors", () => {
         versionsWithPrerelease,
       );
       const latest = error.getLatestVersion();
-      expect(latest).toEqual({ version: "1.1.0", indexed: false }); // Stable 1.1.0 is > 1.1.0-alpha.1
+      // Update assertion to match LibraryVersionDetails structure
+      expect(latest).toEqual({
+        version: "1.1.0",
+        documentCount: 15,
+        uniqueUrlCount: 7,
+        indexedAt: "2024-01-03T00:00:00Z",
+      }); // Stable 1.1.0 is > 1.1.0-alpha.1
     });
 
     it("should return undefined from getLatestVersion when availableVersions is empty", () => {
@@ -82,14 +131,31 @@ describe("Tool Errors", () => {
     });
 
     it("should handle only pre-release versions in getLatestVersion", () => {
-      const onlyPrerelease: LibraryVersion[] = [
-        { version: "1.0.0-rc.1", indexed: true },
-        { version: "1.0.0-beta.2", indexed: false },
+      // Update test data to match LibraryVersionDetails
+      const onlyPrerelease: LibraryVersionDetails[] = [
+        {
+          version: "1.0.0-rc.1",
+          documentCount: 5,
+          uniqueUrlCount: 3,
+          indexedAt: "2024-01-01T00:00:00Z",
+        },
+        {
+          version: "1.0.0-beta.2",
+          documentCount: 3,
+          uniqueUrlCount: 2,
+          indexedAt: "2024-01-02T00:00:00Z",
+        },
       ];
       const error = new VersionNotFoundError(library, requestedVersion, onlyPrerelease);
       const latest = error.getLatestVersion();
       // rc.1 > beta.2
-      expect(latest).toEqual({ version: "1.0.0-rc.1", indexed: true });
+      // Update assertion to match LibraryVersionDetails structure
+      expect(latest).toEqual({
+        version: "1.0.0-rc.1",
+        documentCount: 5,
+        uniqueUrlCount: 3,
+        indexedAt: "2024-01-01T00:00:00Z",
+      });
     });
   });
 });

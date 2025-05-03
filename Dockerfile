@@ -21,7 +21,9 @@ FROM node:22-slim
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package*.json .
+COPY public        public
+COPY db            db
 
 # Install production dependencies only
 RUN npm ci --omit=dev
@@ -30,6 +32,7 @@ RUN ln -s /root/.cache/ms-playwright/chromium-1161 /root/.cache/ms-playwright/ch
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+
 RUN ln -s /app/dist/cli.js /app/docs-cli
 
 # Set data directory for the container
@@ -37,6 +40,10 @@ ENV DOCS_MCP_STORE_PATH=/data
 
 # Define volumes
 VOLUME /data
+
+# Expose the ports the applications listen on
+EXPOSE 6280
+EXPOSE 6281
 
 # Set the command to run the application
 CMD ["node", "dist/server.js"]

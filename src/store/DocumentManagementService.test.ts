@@ -1,13 +1,19 @@
 import path from "node:path";
 import { Document } from "@langchain/core/documents";
-import { createFsFromVolume, vol } from "memfs"; // Import memfs volume
+import { createFsFromVolume, vol } from "memfs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools/errors";
-import { DocumentManagementService } from "./DocumentManagementService";
 import { StoreError } from "./errors";
+import type { LibraryVersionDetails } from "./types";
 
-vi.mock("node:fs", () => ({ default: createFsFromVolume(vol) }));
+vi.mock("node:fs", () => ({
+  default: createFsFromVolume(vol),
+  existsSync: vi.fn(vol.existsSync),
+}));
 vi.mock("../utils/logger");
+vi.mock("../utils/paths", () => ({
+  getProjectRoot: vi.fn(() => "/docs-mcp-server"),
+}));
 
 // Mock env-paths using mockImplementation
 const mockEnvPaths = { data: "/mock/env/path/data" };
@@ -17,7 +23,6 @@ vi.mock("env-paths", () => ({
   default: vi.fn(),
 }));
 
-// Import the mocked function AFTER vi.mock
 import envPaths from "env-paths";
 
 // Assign the actual implementation to the mocked function
@@ -29,7 +34,9 @@ const mockStore = {
   shutdown: vi.fn(),
   queryUniqueVersions: vi.fn(),
   checkDocumentExists: vi.fn(),
-  queryLibraryVersions: vi.fn(),
+  queryLibraryVersions: vi
+    .fn()
+    .mockResolvedValue(new Map<string, LibraryVersionDetails[]>()), // Add mock implementation
   addDocuments: vi.fn(),
   deleteDocuments: vi.fn(),
 };
@@ -41,7 +48,10 @@ vi.mock("./DocumentStore", () => {
   return { DocumentStore: MockDocumentStore };
 });
 
+import { existsSync } from "node:fs";
+import { getProjectRoot } from "../utils/paths";
 // Import the mocked constructor AFTER vi.mock
+import { DocumentManagementService } from "./DocumentManagementService";
 import { DocumentStore } from "./DocumentStore";
 
 // Mock DocumentRetrieverService (keep existing structure)
@@ -57,15 +67,25 @@ vi.mock("./DocumentRetrieverService", () => ({
 
 describe("DocumentManagementService", () => {
   let docService: DocumentManagementService; // For general tests
+  const projectRoot = getProjectRoot();
 
-  // Define expected paths consistently
-  const projectRoot = path.resolve(import.meta.dirname, "..");
+  // Define expected paths consistently using the calculated actual root
+  // Note: getProjectRoot() called here will now run *after* fs is mocked,
+  // so it needs the dummy package.json created in beforeEach.
   const expectedOldDbPath = path.join(projectRoot, ".store", "documents.db");
   const expectedStandardDbPath = path.join(mockEnvPaths.data, "documents.db");
 
   beforeEach(() => {
     vi.clearAllMocks();
     vol.reset(); // Reset memfs
+
+    // --- Create dummy package.json in memfs for getProjectRoot() ---
+    // Ensure the calculated project root directory exists in memfs
+    vol.mkdirSync(projectRoot, { recursive: true });
+    // Create a dummy package.json file there
+    vol.writeFileSync(path.join(projectRoot, "package.json"), "{}");
+    // -------------------------------------------------------------
+
     // Ensure envPaths mock is reset/set for general tests
     mockEnvPathsFn.mockReturnValue(mockEnvPaths);
 
@@ -96,6 +116,7 @@ describe("DocumentManagementService", () => {
 
       // Instantiate LOCALLY for this specific test
       const localDocService = new DocumentManagementService();
+      expect(localDocService).toBeInstanceOf(DocumentManagementService);
 
       // Verify DocumentStore was called with the old path
       expect(vi.mocked(DocumentStore)).toHaveBeenCalledWith(expectedOldDbPath);
@@ -284,15 +305,15 @@ describe("DocumentManagementService", () => {
         expect(versions).toEqual([]);
       });
 
-      it("should return an array of indexed versions", async () => {
+      it("should return an array versions", async () => {
         const library = "test-lib";
         mockStore.queryUniqueVersions.mockResolvedValue(["1.0.0", "1.1.0", "1.2.0"]); // Fix: Use mockStoreInstance
 
         const versions = await docService.listVersions(library);
         expect(versions).toEqual([
-          { version: "1.0.0", indexed: true },
-          { version: "1.1.0", indexed: true },
-          { version: "1.2.0", indexed: true },
+          { version: "1.0.0" },
+          { version: "1.1.0" },
+          { version: "1.2.0" },
         ]);
         expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library); // Fix: Use mockStoreInstance
       });
@@ -310,9 +331,9 @@ describe("DocumentManagementService", () => {
 
         const versions = await docService.listVersions(library);
         expect(versions).toEqual([
-          { version: "1.0.0", indexed: true },
-          { version: "2.0.0-beta", indexed: true },
-          { version: "2.0.0", indexed: true },
+          { version: "1.0.0" },
+          { version: "2.0.0-beta" },
+          { version: "2.0.0" },
         ]);
         expect(mockStore.queryUniqueVersions).toHaveBeenCalledWith(library); // Fix: Use mockStoreInstance
       });
@@ -434,58 +455,175 @@ describe("DocumentManagementService", () => {
     });
 
     describe("listLibraries", () => {
-      it("should list libraries and their versions", async () => {
-        const mockLibraryMap = new Map([
-          ["lib1", new Set(["1.0.0", "1.1.0"])],
-          ["lib2", new Set(["2.0.0"])],
+      it("should list libraries and their detailed versions, including unversioned", async () => {
+        // Mock data now includes LibraryVersionDetails and unversioned cases
+        const mockLibraryMap = new Map<string, LibraryVersionDetails[]>([
+          [
+            "lib1", // Standard case
+            [
+              {
+                version: "1.0.0",
+                documentCount: 10,
+                uniqueUrlCount: 5,
+                indexedAt: "2024-01-01T00:00:00.000Z",
+              },
+              {
+                version: "1.1.0",
+                documentCount: 15,
+                uniqueUrlCount: 7,
+                indexedAt: "2024-02-01T00:00:00.000Z",
+              },
+            ],
+          ],
+          [
+            "lib2", // Standard case
+            [
+              {
+                version: "2.0.0",
+                documentCount: 20,
+                uniqueUrlCount: 10,
+                indexedAt: "2024-03-01T00:00:00.000Z",
+              },
+            ],
+          ],
+          [
+            "unversioned-only", // Only unversioned
+            [
+              {
+                version: "",
+                documentCount: 1,
+                uniqueUrlCount: 1,
+                indexedAt: "2024-04-01T00:00:00.000Z",
+              },
+            ],
+          ],
+          [
+            "mixed-versions", // Semver and unversioned
+            [
+              {
+                version: "", // Unversioned comes first from store sort
+                documentCount: 2,
+                uniqueUrlCount: 1,
+                indexedAt: "2024-04-03T00:00:00.000Z",
+              },
+              {
+                version: "1.0.0",
+                documentCount: 5,
+                uniqueUrlCount: 2,
+                indexedAt: "2024-04-02T00:00:00.000Z",
+              },
+            ],
+          ],
         ]);
-        mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap); // Fix: Use mockStoreInstance
+        mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
 
         const result = await docService.listLibraries();
+
+        // Assert the structure matches the new detailed format
         expect(result).toEqual([
           {
             library: "lib1",
             versions: [
-              { version: "1.0.0", indexed: true },
-              { version: "1.1.0", indexed: true },
+              {
+                version: "1.0.0",
+                documentCount: 10,
+                uniqueUrlCount: 5,
+                indexedAt: "2024-01-01T00:00:00.000Z",
+              },
+              {
+                version: "1.1.0",
+                documentCount: 15,
+                uniqueUrlCount: 7,
+                indexedAt: "2024-02-01T00:00:00.000Z",
+              },
             ],
           },
           {
             library: "lib2",
-            versions: [{ version: "2.0.0", indexed: true }],
+            versions: [
+              {
+                version: "2.0.0",
+                documentCount: 20,
+                uniqueUrlCount: 10,
+                indexedAt: "2024-03-01T00:00:00.000Z",
+              },
+            ],
+          },
+          {
+            library: "unversioned-only",
+            versions: [
+              {
+                version: "",
+                documentCount: 1,
+                uniqueUrlCount: 1,
+                indexedAt: "2024-04-01T00:00:00.000Z",
+              },
+            ],
+          },
+          {
+            library: "mixed-versions",
+            versions: [
+              {
+                version: "",
+                documentCount: 2,
+                uniqueUrlCount: 1,
+                indexedAt: "2024-04-03T00:00:00.000Z",
+              },
+              {
+                version: "1.0.0",
+                documentCount: 5,
+                uniqueUrlCount: 2,
+                indexedAt: "2024-04-02T00:00:00.000Z",
+              },
+            ],
           },
         ]);
+        expect(mockStore.queryLibraryVersions).toHaveBeenCalledTimes(1);
       });
 
       it("should return an empty array if there are no libraries", async () => {
-        mockStore.queryLibraryVersions.mockResolvedValue(new Map()); // Fix: Use mockStoreInstance
+        // Mock returns an empty map of the correct type
+        mockStore.queryLibraryVersions.mockResolvedValue(
+          new Map<string, LibraryVersionDetails[]>(),
+        );
         const result = await docService.listLibraries();
         expect(result).toEqual([]);
+        expect(mockStore.queryLibraryVersions).toHaveBeenCalledTimes(1);
       });
 
-      it("should filter out empty string versions from the list", async () => {
-        const mockLibraryMap = new Map([
-          ["lib1", new Set(["1.0.0", ""])], // Has empty version
-          ["lib2", new Set(["2.0.0"])],
-          ["lib3", new Set([""])], // Only has empty version
+      // Test case where store returns a library that only had an unversioned entry
+      // (which is now included, not filtered by the store)
+      it("should correctly handle libraries with only unversioned entries", async () => {
+        const mockLibraryMap = new Map<string, LibraryVersionDetails[]>([
+          [
+            "lib-unversioned",
+            [
+              {
+                version: "", // The unversioned entry
+                documentCount: 3,
+                uniqueUrlCount: 2,
+                indexedAt: "2024-04-04T00:00:00.000Z",
+              },
+            ],
+          ],
         ]);
-        mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap); // Fix: Use mockStoreInstance
+        mockStore.queryLibraryVersions.mockResolvedValue(mockLibraryMap);
 
         const result = await docService.listLibraries();
         expect(result).toEqual([
           {
-            library: "lib1",
-            versions: [{ version: "1.0.0", indexed: true }], // Empty version filtered out
-          },
-          {
-            library: "lib2",
-            versions: [{ version: "2.0.0", indexed: true }],
-          },
-          {
-            library: "lib3",
-            versions: [], // Empty version filtered out, resulting in empty array
+            library: "lib-unversioned",
+            versions: [
+              {
+                version: "",
+                documentCount: 3,
+                uniqueUrlCount: 2,
+                indexedAt: "2024-04-04T00:00:00.000Z",
+              },
+            ],
           },
         ]);
+        expect(mockStore.queryLibraryVersions).toHaveBeenCalledTimes(1);
       });
     });
 

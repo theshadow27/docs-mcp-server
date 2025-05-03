@@ -133,7 +133,9 @@ ${r.content}\n`,
         );
 
         if (formattedResults.length === 0) {
-          return createResponse(`No results found for '${query}' in ${library}.`);
+          return createResponse(
+            `No results found for '${query}' in ${library}. Try to use a different or more general query.`,
+          );
         }
         return createResponse(
           `Search results for '${query}' in ${library}:
@@ -151,9 +153,7 @@ ${formattedResults.join("")}`,
           );
         }
         if (error instanceof VersionNotFoundError) {
-          const indexedVersions = error.availableVersions
-            .filter((v): v is { version: string; indexed: true } => v.indexed)
-            .map((v) => v.version);
+          const indexedVersions = error.availableVersions.map((v) => v.version);
           return createResponse(
             [
               `Version "${version}" not found.`,

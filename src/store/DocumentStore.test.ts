@@ -1,5 +1,5 @@
 import { type Mock, afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { VECTOR_DIMENSION } from "./schema";
+import { VECTOR_DIMENSION } from "./types";
 
 // --- Mocking Setup ---
 
@@ -44,6 +44,11 @@ vi.mock("sqlite-vec", () => ({
   load: vi.fn(),
 }));
 
+// Mock the migration runner to prevent DB calls during init in tests
+vi.mock("./applyMigrations", () => ({
+  applyMigrations: vi.fn(), // Mock the exported function
+}));
+
 // --- Test Suite ---
 
 // Import DocumentStore AFTER mocks are defined
@@ -73,6 +78,83 @@ describe("DocumentStore", () => {
 
   afterAll(() => {
     vi.restoreAllMocks();
+  });
+
+  describe("findChunksByIds", () => {
+    const library = "test-lib";
+    const version = "1.0.0";
+
+    it("should fetch and return documents for given IDs, sorted by sort_order", async () => {
+      const ids = ["id1", "id2", "id3"];
+      const mockRows = [
+        {
+          id: "id2",
+          library,
+          version,
+          url: "url2",
+          content: "content2",
+          metadata: JSON.stringify({ url: "url2", score: 0.5 }),
+          embedding: null,
+          sort_order: 1,
+          score: 0.5,
+        },
+        {
+          id: "id1",
+          library,
+          version,
+          url: "url1",
+          content: "content1",
+          metadata: JSON.stringify({ url: "url1", score: 0.9 }),
+          embedding: null,
+          sort_order: 0,
+          score: 0.9,
+        },
+        {
+          id: "id3",
+          library,
+          version,
+          url: "url3",
+          content: "content3",
+          metadata: JSON.stringify({ url: "url3", score: 0.7 }),
+          embedding: null,
+          sort_order: 2,
+          score: 0.7,
+        },
+      ];
+      // Should be returned sorted by sort_order: id1, id2, id3
+      mockStatementAll.mockReturnValueOnce([mockRows[1], mockRows[0], mockRows[2]]);
+      const result = await documentStore.findChunksByIds(library, version, ids);
+      expect(mockPrepare).toHaveBeenCalledWith(expect.stringContaining("id IN"));
+      expect(mockStatementAll).toHaveBeenCalledWith(
+        library.toLowerCase(),
+        version.toLowerCase(),
+        ...ids,
+      );
+      expect(result.length).toBe(3);
+      expect(result[0].id).toBe("id1");
+      expect(result[1].id).toBe("id2");
+      expect(result[2].id).toBe("id3");
+      expect(result[0].pageContent).toBe("content1");
+      expect(result[1].pageContent).toBe("content2");
+      expect(result[2].pageContent).toBe("content3");
+    });
+
+    it("should return an empty array if no IDs are provided", async () => {
+      const prepareCallsBefore = mockPrepare.mock.calls.length;
+      const allCallsBefore = mockStatementAll.mock.calls.length;
+      const result = await documentStore.findChunksByIds(library, version, []);
+      expect(result).toEqual([]);
+      expect(mockPrepare.mock.calls.length).toBe(prepareCallsBefore);
+      expect(mockStatementAll.mock.calls.length).toBe(allCallsBefore);
+    });
+
+    it("should return an empty array if no documents are found", async () => {
+      mockStatementAll.mockReturnValueOnce([]);
+      const result = await documentStore.findChunksByIds(library, version, ["idX"]);
+      expect(result).toEqual([]);
+      expect(mockPrepare).toHaveBeenCalled();
+      expect(mockStatementAll).toHaveBeenCalled();
+    });
   });
 
   describe("findByContent", () => {
@@ -231,6 +313,166 @@ describe("DocumentStore", () => {
       const searchVector = JSON.parse(searchCall?.[2] || "[]");
       expect(insertVector.length).toBe(VECTOR_DIMENSION);
       expect(searchVector.length).toBe(VECTOR_DIMENSION);
+    });
+  });
+
+  describe("queryLibraryVersions", () => {
+    it("should return a map of libraries to their detailed versions", async () => {
+      const mockData = [
+        {
+          library: "react",
+          version: "18.2.0",
+          documentCount: 150,
+          uniqueUrlCount: 50,
+          indexedAt: "2024-01-10T10:00:00.000Z",
+        },
+        {
+          library: "react",
+          version: "17.0.1",
+          documentCount: 120,
+          uniqueUrlCount: 45,
+          indexedAt: "2023-05-15T12:30:00.000Z",
+        },
+        {
+          library: "vue",
+          version: "3.3.0",
+          documentCount: 200,
+          uniqueUrlCount: 70,
+          indexedAt: "2024-02-20T08:00:00.000Z",
+        },
+        {
+          library: "react",
+          version: "", // Internal empty version, should be filtered out
+          documentCount: 5,
+          uniqueUrlCount: 1,
+          indexedAt: "2023-01-01T00:00:00.000Z",
+        },
+        {
+          library: "old-lib",
+          version: "1.0.0",
+          documentCount: 10,
+          uniqueUrlCount: 5,
+          indexedAt: null, // Test null indexedAt
+        },
+        {
+          library: "unversioned-only", // Test lib with only unversioned
+          version: "",
+          documentCount: 1,
+          uniqueUrlCount: 1,
+          indexedAt: "2024-04-01T00:00:00.000Z",
+        },
+        {
+          library: "mixed-versions", // Test lib with semver and unversioned
+          version: "1.0.0",
+          documentCount: 5,
+          uniqueUrlCount: 2,
+          indexedAt: "2024-04-02T00:00:00.000Z",
+        },
+        {
+          library: "mixed-versions", // Test lib with semver and unversioned
+          version: "",
+          documentCount: 2,
+          uniqueUrlCount: 1,
+          indexedAt: "2024-04-03T00:00:00.000Z",
+        },
+      ];
+      mockStatementAll.mockReturnValue(mockData); // Configure mock return for this test
+
+      const result = await documentStore.queryLibraryVersions();
+
+      // Check the prepared statement was called
+      expect(mockPrepare).toHaveBeenCalledWith(
+        expect.stringContaining("GROUP BY library, version"),
+      );
+      expect(mockStatementAll).toHaveBeenCalledTimes(1);
+
+      // Check the structure and content
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(5); // react, vue, old-lib, unversioned-only, mixed-versions
+
+      // Check React versions (should include "" sorted first)
+      const reactVersions = result.get("react");
+      expect(reactVersions).toBeDefined();
+      expect(reactVersions?.length).toBe(3); // Expect 3 versions now
+      expect(reactVersions?.[0]).toEqual({
+        // Unversioned first
+        version: "",
+        documentCount: 5,
+        uniqueUrlCount: 1,
+        indexedAt: new Date("2023-01-01T00:00:00.000Z").toISOString(),
+      });
+      expect(reactVersions?.[1]).toEqual({
+        // Then 17.0.1
+        version: "17.0.1",
+        documentCount: 120,
+        uniqueUrlCount: 45,
+        indexedAt: new Date("2023-05-15T12:30:00.000Z").toISOString(),
+      });
+      expect(reactVersions?.[2]).toEqual({
+        // Then 18.2.0
+        version: "18.2.0",
+        documentCount: 150,
+        uniqueUrlCount: 50,
+        indexedAt: new Date("2024-01-10T10:00:00.000Z").toISOString(),
+      });
+
+      // Check Vue version
+      const vueVersions = result.get("vue");
+      expect(vueVersions).toBeDefined();
+      expect(vueVersions?.length).toBe(1);
+      expect(vueVersions?.[0]).toEqual({
+        version: "3.3.0",
+        documentCount: 200,
+        uniqueUrlCount: 70,
+        indexedAt: new Date("2024-02-20T08:00:00.000Z").toISOString(),
+      });
+
+      // Check Old Lib version (with null indexedAt)
+      const oldLibVersions = result.get("old-lib");
+      expect(oldLibVersions).toBeDefined();
+      expect(oldLibVersions?.length).toBe(1);
+      expect(oldLibVersions?.[0]).toEqual({
+        version: "1.0.0",
+        documentCount: 10,
+        uniqueUrlCount: 5,
+        indexedAt: null,
+      });
+
+      // Check Unversioned Only lib
+      const unversionedOnly = result.get("unversioned-only");
+      expect(unversionedOnly).toBeDefined();
+      expect(unversionedOnly?.length).toBe(1);
+      expect(unversionedOnly?.[0]).toEqual({
+        version: "", // Expect empty string version
+        documentCount: 1,
+        uniqueUrlCount: 1,
+        indexedAt: new Date("2024-04-01T00:00:00.000Z").toISOString(),
+      });
+
+      // Check Mixed Versions lib (should include "" and be sorted)
+      const mixedVersions = result.get("mixed-versions");
+      expect(mixedVersions).toBeDefined();
+      expect(mixedVersions?.length).toBe(2);
+      // Empty string version should come first due to semver compare treating it lowest
+      expect(mixedVersions?.[0]).toEqual({
+        version: "",
+        documentCount: 2,
+        uniqueUrlCount: 1,
+        indexedAt: new Date("2024-04-03T00:00:00.000Z").toISOString(),
+      });
+      expect(mixedVersions?.[1]).toEqual({
+        version: "1.0.0",
+        documentCount: 5,
+        uniqueUrlCount: 2,
+        indexedAt: new Date("2024-04-02T00:00:00.000Z").toISOString(),
+      });
+    });
+
+    it("should return an empty map if no libraries are found", async () => {
+      mockStatementAll.mockReturnValue([]); // No data
+      const result = await documentStore.queryLibraryVersions();
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
     });
   });
 });

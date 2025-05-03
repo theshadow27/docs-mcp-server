@@ -1,7 +1,7 @@
 import { Embeddings } from "@langchain/core/embeddings";
 import { describe, expect, test } from "vitest";
 import { DimensionError } from "../errors";
-import { VECTOR_DIMENSION } from "../schema";
+import { VECTOR_DIMENSION } from "../types";
 import { FixedDimensionEmbeddings } from "./FixedDimensionEmbeddings";
 
 // Mock embedding models that produce vectors of different sizes

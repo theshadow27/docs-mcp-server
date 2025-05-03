@@ -1,13 +1,10 @@
 import type { DocumentManagementService } from "../store/DocumentManagementService";
+import type { LibraryVersionDetails } from "../store/types";
 
-export interface LibraryVersion {
-  version: string;
-  indexed: boolean;
-}
-
+// Define the structure for the tool's output, using the detailed version info
 export interface LibraryInfo {
   name: string;
-  versions: LibraryVersion[];
+  versions: LibraryVersionDetails[]; // Use the detailed interface
 }
 
 export interface ListLibrariesResult {
@@ -25,14 +22,14 @@ export class ListLibrariesTool {
   }
 
   async execute(options?: Record<string, never>): Promise<ListLibrariesResult> {
+    // docService.listLibraries() now returns the detailed structure directly
     const rawLibraries = await this.docService.listLibraries();
 
-    const libraries = rawLibraries.map(({ library, versions }) => ({
+    // The structure returned by listLibraries already matches LibraryInfo[]
+    // No complex mapping is needed here anymore, just ensure the names match
+    const libraries: LibraryInfo[] = rawLibraries.map(({ library, versions }) => ({
       name: library,
-      versions: versions.map((v) => ({
-        version: v.version,
-        indexed: v.indexed,
-      })),
+      versions: versions, // Directly assign the detailed versions array
     }));
 
     return { libraries };

@@ -17,10 +17,6 @@ describe("ScrapeTool", () => {
   let mockDocService: Partial<DocumentManagementService>;
   let mockManagerInstance: Partial<PipelineManager>; // Mock manager instance
   let scrapeTool: ScrapeTool;
-  let mockOnProgress: Mock<(response: ProgressResponse) => void>;
-
-  // Mock implementation for manager callbacks
-  let managerCallbacks: PipelineManagerCallbacks = {}; // Use manager callbacks type
 
   const MOCK_JOB_ID = "test-job-123";
 
@@ -43,9 +39,7 @@ describe("ScrapeTool", () => {
         status: PipelineJobStatus.COMPLETED,
         progress: { pagesScraped: 0 }, // Default progress
       } as Partial<PipelineJob>),
-      setCallbacks: vi.fn((callbacks) => {
-        managerCallbacks = callbacks; // Capture manager callbacks
-      }),
+      // setCallbacks mock removed
       // stop: vi.fn().mockResolvedValue(undefined), // Mock if needed
     };
 
@@ -57,19 +51,15 @@ describe("ScrapeTool", () => {
       mockDocService as DocumentManagementService,
       mockManagerInstance as PipelineManager,
     );
-    mockOnProgress = vi.fn();
-    managerCallbacks = {}; // Reset captured callbacks
+    // mockOnProgress initialization removed
+    // managerCallbacks reset removed
   });
 
   // Helper function for basic options
-  const getBaseOptions = (
-    version?: string | null,
-    onProgress?: Mock,
-  ): ScrapeToolOptions => ({
+  const getBaseOptions = (version?: string | null): ScrapeToolOptions => ({
     library: "test-lib",
     version: version,
     url: "http://example.com/docs",
-    onProgress: onProgress,
   });
 
   // --- Version Handling Tests ---
@@ -151,28 +141,9 @@ describe("ScrapeTool", () => {
   it("should return the number of pages scraped on successful completion", async () => {
     const options = getBaseOptions("1.0.0");
 
-    // Simulate progress via manager callbacks
-    (mockManagerInstance.waitForJobCompletion as Mock).mockImplementation(async () => {
-      if (managerCallbacks.onJobProgress) {
-        // Simulate progress updates
-        await managerCallbacks.onJobProgress({} as PipelineJob, {
-          pagesScraped: 10,
-          maxPages: 100,
-          currentUrl: "url1",
-          depth: 1,
-          maxDepth: 3,
-        });
-        await managerCallbacks.onJobProgress({} as PipelineJob, {
-          pagesScraped: 25,
-          maxPages: 100,
-          currentUrl: "url2",
-          depth: 2,
-          maxDepth: 3,
-        });
-      }
-    });
+    // Removed simulation of progress via manager callbacks as they are no longer used internally by ScrapeTool
 
-    // Mock getJob to reflect final state if needed, though result comes from callback tracking now
+    // Mock getJob to reflect final state
     (mockManagerInstance.getJob as Mock).mockResolvedValue({
       id: MOCK_JOB_ID,
       status: PipelineJobStatus.COMPLETED,
@@ -211,157 +182,5 @@ describe("ScrapeTool", () => {
     expect(mockManagerInstance.enqueueJob).toHaveBeenCalledOnce(); // Job was still enqueued
   });
 
-  // --- Callback Tests ---
-
-  it("should call onProgress callback when manager reports progress", async () => {
-    const options = getBaseOptions("1.0.0", mockOnProgress);
-    (mockManagerInstance.waitForJobCompletion as Mock).mockImplementation(async () => {
-      // Simulate manager calling its progress callback
-      if (managerCallbacks.onJobProgress) {
-        await managerCallbacks.onJobProgress({ id: MOCK_JOB_ID } as PipelineJob, {
-          pagesScraped: 5,
-          maxPages: 10,
-          currentUrl: "http://page.com",
-          depth: 1,
-          maxDepth: 2,
-        });
-      }
-    });
-
-    await scrapeTool.execute(options);
-
-    // Check for enqueue and completion messages only
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        { type: "text", text: expect.stringContaining(`🚀 Job ${MOCK_JOB_ID} enqueued`) },
-      ],
-    });
-    // The waitForJobCompletion mock doesn't actually trigger the completion onProgress call in the refactored code.
-    // We'll rely on other tests to verify completion logic if needed, or adjust the mock.
-    // Check completion message (adjust mock if needed)
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        {
-          type: "text",
-          text: expect.stringContaining(`✅ Job ${MOCK_JOB_ID} completed`),
-        },
-      ],
-    });
-  });
-
-  it("should call onProgress callback when manager reports a job error", async () => {
-    const options = getBaseOptions("1.0.0", mockOnProgress);
-    const docError = new Error("Failed to parse");
-    (mockManagerInstance.waitForJobCompletion as Mock).mockImplementation(async () => {
-      // Simulate manager calling its error callback
-      if (managerCallbacks.onJobError) {
-        await managerCallbacks.onJobError(
-          { id: MOCK_JOB_ID } as PipelineJob,
-          docError,
-          { content: "bad", metadata: { title: "Bad Doc" } } as Document, // Use local Document structure
-        );
-      }
-    });
-
-    await scrapeTool.execute(options);
-
-    // Check for enqueue and completion messages only
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        { type: "text", text: expect.stringContaining(`🚀 Job ${MOCK_JOB_ID} enqueued`) },
-      ],
-    });
-    // Similar to the progress test, the mock doesn't trigger the specific onProgress for job errors.
-    // Check completion message (adjust mock if needed)
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        {
-          type: "text",
-          text: expect.stringContaining(`✅ Job ${MOCK_JOB_ID} completed`),
-        },
-      ],
-    });
-  });
-
-  it("should call onProgress callback when manager reports job status change", async () => {
-    const options = getBaseOptions("1.0.0", mockOnProgress);
-    (mockManagerInstance.waitForJobCompletion as Mock).mockImplementation(async () => {
-      // Simulate manager calling its status change callback
-      if (managerCallbacks.onJobStatusChange) {
-        await managerCallbacks.onJobStatusChange({
-          id: MOCK_JOB_ID,
-          status: PipelineJobStatus.FAILED,
-          error: new Error("Something broke"),
-        } as PipelineJob);
-      }
-    });
-
-    // This test setup relies on internal callbacks that were removed.
-    // The refactored ScrapeTool now calls onProgress only for enqueue and final completion/failure.
-    // We'll simulate the waitForJobCompletion rejecting to test the failure path.
-
-    const jobError = new Error("Something broke");
-    (mockManagerInstance.waitForJobCompletion as Mock).mockRejectedValue(jobError);
-
-    // Execute the tool and expect it to throw
-    await expect(scrapeTool.execute(options)).rejects.toThrow("Something broke");
-
-    // Check if onProgress was called for enqueue and the final failure
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        { type: "text", text: expect.stringContaining(`🚀 Job ${MOCK_JOB_ID} enqueued`) },
-      ],
-    });
-    expect(mockOnProgress).toHaveBeenCalledWith({
-      content: [
-        {
-          type: "text",
-          text: expect.stringContaining(
-            `❌ Job ${MOCK_JOB_ID} failed or cancelled: Something broke`,
-          ),
-        },
-      ],
-    });
-    // Remove expectations for intermediate status updates via onProgress
-    // expect(mockOnProgress).toHaveBeenCalledWith({
-    //   content: [
-    //     {
-    //       type: "text",
-    //       text: expect.stringContaining(`Job ${MOCK_JOB_ID} status: failed`),
-    //     },
-    //   ],
-    // });
-  });
-
-  it("should not fail if onProgress is not provided", async () => {
-    const options = getBaseOptions("1.0.0"); // No onProgress callback
-    (mockManagerInstance.waitForJobCompletion as Mock).mockImplementation(async () => {
-      // Simulate internal callbacks firing
-      if (managerCallbacks.onJobProgress) {
-        await managerCallbacks.onJobProgress({} as PipelineJob, {
-          pagesScraped: 1,
-          maxPages: 10,
-          currentUrl: "url",
-          depth: 0,
-          maxDepth: 1,
-        });
-      }
-      if (managerCallbacks.onJobError) {
-        await managerCallbacks.onJobError(
-          {} as PipelineJob,
-          new Error("Test Error"),
-          // Provide minimal valid metadata for the test simulation
-          { content: "", metadata: { title: "Test Doc" } } as Document,
-        );
-      }
-      if (managerCallbacks.onJobStatusChange) {
-        await managerCallbacks.onJobStatusChange({
-          status: PipelineJobStatus.COMPLETED,
-        } as PipelineJob);
-      }
-    });
-
-    // Expect no error to be thrown during execution when callbacks fire internally
-    await expect(scrapeTool.execute(options)).resolves.toBeDefined();
-  });
+  // --- Callback Tests --- (Removed as onProgress is deprecated and removed)
 });

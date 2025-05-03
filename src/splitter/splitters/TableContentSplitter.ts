@@ -32,15 +32,15 @@ export class TableContentSplitter implements ContentSplitter {
     let currentRows: string[] = [];
 
     for (const row of rows) {
-      // Check if a single row with headers exceeds maxChunkSize
+      // Check if a single row with headers exceeds chunkSize
       const singleRowSize = this.wrap(row, headers).length;
-      if (singleRowSize > this.options.maxChunkSize) {
-        throw new MinimumChunkSizeError(singleRowSize, this.options.maxChunkSize);
+      if (singleRowSize > this.options.chunkSize) {
+        throw new MinimumChunkSizeError(singleRowSize, this.options.chunkSize);
       }
 
       const newChunkContent = this.wrap([...currentRows, row].join("\n"), headers);
       const newChunkSize = newChunkContent.length;
-      if (newChunkSize > this.options.maxChunkSize && currentRows.length > 0) {
+      if (newChunkSize > this.options.chunkSize && currentRows.length > 0) {
         // Add current chunk, start new
         chunks.push(this.wrap(currentRows.join("\n"), headers));
         currentRows = [row];

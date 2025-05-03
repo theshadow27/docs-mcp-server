@@ -1,3 +1,4 @@
+import type { Document } from "@langchain/core/documents";
 import type { DocumentStore } from "./DocumentStore";
 import type { StoreSearchResult } from "./types";
 
@@ -9,6 +10,120 @@ export class DocumentRetrieverService {
 
   constructor(documentStore: DocumentStore) {
     this.documentStore = documentStore;
+  }
+
+  /**
+   * Collects all related chunk IDs for a given initial hit.
+   * Returns an object with url, hitId, relatedIds (Set), and score.
+   */
+  private async getRelatedChunkIds(
+    library: string,
+    version: string,
+    doc: Document,
+    siblingLimit = SIBLING_LIMIT,
+    childLimit = CHILD_LIMIT,
+  ): Promise<{
+    url: string;
+    hitId: string;
+    relatedIds: Set<string>;
+    score: number;
+  }> {
+    const id = doc.id as string;
+    const url = doc.metadata.url as string;
+    const score = doc.metadata.score as number;
+    const relatedIds = new Set<string>();
+    relatedIds.add(id);
+
+    // Parent
+    const parent = await this.documentStore.findParentChunk(library, version, id);
+    if (parent) {
+      relatedIds.add(parent.id as string);
+    }
+
+    // Preceding Siblings
+    const precedingSiblings = await this.documentStore.findPrecedingSiblingChunks(
+      library,
+      version,
+      id,
+      siblingLimit,
+    );
+    for (const sib of precedingSiblings) {
+      relatedIds.add(sib.id as string);
+    }
+
+    // Child Chunks
+    const childChunks = await this.documentStore.findChildChunks(
+      library,
+      version,
+      id,
+      childLimit,
+    );
+    for (const child of childChunks) {
+      relatedIds.add(child.id as string);
+    }
+
+    // Subsequent Siblings
+    const subsequentSiblings = await this.documentStore.findSubsequentSiblingChunks(
+      library,
+      version,
+      id,
+      siblingLimit,
+    );
+    for (const sib of subsequentSiblings) {
+      relatedIds.add(sib.id as string);
+    }
+
+    return { url, hitId: id, relatedIds, score };
+  }
+
+  /**
+   * Groups related chunk info by URL, deduplicates IDs, and finds max score per URL.
+   */
+  private groupAndPrepareFetch(
+    relatedInfos: Array<{
+      url: string;
+      hitId: string;
+      relatedIds: Set<string>;
+      score: number;
+    }>,
+  ): Map<string, { uniqueChunkIds: Set<string>; maxScore: number }> {
+    const urlMap = new Map<string, { uniqueChunkIds: Set<string>; maxScore: number }>();
+    for (const info of relatedInfos) {
+      let entry = urlMap.get(info.url);
+      if (!entry) {
+        entry = { uniqueChunkIds: new Set(), maxScore: info.score };
+        urlMap.set(info.url, entry);
+      }
+      for (const id of info.relatedIds) {
+        entry.uniqueChunkIds.add(id);
+      }
+      if (info.score > entry.maxScore) {
+        entry.maxScore = info.score;
+      }
+    }
+    return urlMap;
+  }
+
+  /**
+   * Finalizes the merged result for a URL group by fetching, sorting, and joining content.
+   */
+  private async finalizeResult(
+    library: string,
+    version: string,
+    url: string,
+    uniqueChunkIds: Set<string>,
+    maxScore: number,
+  ): Promise<StoreSearchResult> {
+    const ids = Array.from(uniqueChunkIds);
+    const docs = await this.documentStore.findChunksByIds(library, version, ids);
+    // Already sorted by sort_order in findChunksByIds
+    const content = docs.map((d) => d.pageContent).join("\n\n");
+    // TODO: Apply code block merging here if/when implemented
+    return {
+      url,
+      content,
+      score: maxScore,
+    };
   }
 
   /**
@@ -37,63 +152,27 @@ export class DocumentRetrieverService {
       limit ?? 10,
     );
 
+    // Step 1: Expand context for each initial hit (collect related chunk IDs)
+    const relatedInfos = await Promise.all(
+      initialResults.map((doc) =>
+        this.getRelatedChunkIds(library, normalizedVersion, doc),
+      ),
+    );
+
+    // Step 2: Group by URL, deduplicate, and find max score
+    const urlMap = this.groupAndPrepareFetch(relatedInfos);
+
+    // Step 3: For each URL group, fetch, sort, and format the merged result
     const results: StoreSearchResult[] = [];
-
-    for (const doc of initialResults) {
-      const id = doc.id as string;
-      let content = "";
-
-      // Parent
-      const parent = await this.documentStore.findParentChunk(
+    for (const [url, { uniqueChunkIds, maxScore }] of urlMap.entries()) {
+      const result = await this.finalizeResult(
         library,
         normalizedVersion,
-        id,
+        url,
+        uniqueChunkIds,
+        maxScore,
       );
-      if (parent) {
-        content += `${parent.pageContent}\n\n`;
-      }
-
-      // Preceding Siblings
-      const precedingSiblings = await this.documentStore.findPrecedingSiblingChunks(
-        library,
-        normalizedVersion,
-        id,
-        SIBLING_LIMIT,
-      );
-      if (precedingSiblings.length > 0) {
-        content += `${precedingSiblings.map((d) => d.pageContent).join("\n\n")}\n\n`;
-      }
-
-      // Initial Result
-      content += `${doc.pageContent}`;
-
-      // Child Chunks
-      const childChunks = await this.documentStore.findChildChunks(
-        library,
-        normalizedVersion,
-        id,
-        CHILD_LIMIT,
-      );
-      if (childChunks.length > 0) {
-        content += `\n\n${childChunks.map((d) => d.pageContent).join("\n\n")}`;
-      }
-
-      // Subsequent Siblings
-      const subsequentSiblings = await this.documentStore.findSubsequentSiblingChunks(
-        library,
-        normalizedVersion,
-        id,
-        SIBLING_LIMIT,
-      );
-      if (subsequentSiblings.length > 0) {
-        content += `\n\n${subsequentSiblings.map((d) => d.pageContent).join("\n\n")}`;
-      }
-
-      results.push({
-        url: doc.metadata.url,
-        content,
-        score: doc.metadata.score,
-      });
+      results.push(result);
     }
 
     return results;

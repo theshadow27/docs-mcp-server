@@ -14,8 +14,6 @@ export interface ScrapeToolOptions {
   library: string;
   version?: string | null; // Make version optional
   url: string;
-  /** @deprecated Progress reporting should be handled via job status polling or external callbacks. */
-  onProgress?: (response: ProgressResponse) => void; // Keep for interface compatibility, but mark deprecated
   options?: {
     maxPages?: number;
     maxDepth?: number;
@@ -73,7 +71,6 @@ export class ScrapeTool {
       library,
       version,
       url,
-      // onProgress is no longer used internally
       options: scraperOptions,
       waitForCompletion = true,
     } = options;
@@ -136,12 +133,6 @@ export class ScrapeTool {
       scrapeMode: scraperOptions?.scrapeMode ?? ScrapeMode.Auto, // Pass scrapeMode enum
     });
 
-    logger.info(`🚀 Job ${jobId} enqueued for scraping.`);
-    // Report enqueueing via onProgress if provided (for backward compatibility, though deprecated)
-    options.onProgress?.({
-      content: [{ type: "text", text: `🚀 Job ${jobId} enqueued for scraping.` }],
-    });
-
     // Conditionally wait for completion
     if (waitForCompletion) {
       try {
@@ -149,32 +140,14 @@ export class ScrapeTool {
         // Fetch final job state to get status and potentially final page count
         const finalJob = await manager.getJob(jobId);
         const finalPagesScraped = finalJob?.progress?.pagesScraped ?? 0; // Get count from final job state
-        logger.info(
+        logger.debug(
           `Job ${jobId} finished with status ${finalJob?.status}. Pages scraped: ${finalPagesScraped}`,
         );
-        // Report completion via onProgress if provided
-        options.onProgress?.({
-          content: [
-            {
-              type: "text",
-              text: `✅ Job ${jobId} completed. Pages scraped: ${finalPagesScraped}`,
-            },
-          ],
-        });
         return {
           pagesScraped: finalPagesScraped,
         };
       } catch (error) {
         logger.error(`Job ${jobId} failed or was cancelled: ${error}`);
-        // Report failure via onProgress if provided
-        options.onProgress?.({
-          content: [
-            {
-              type: "text",
-              text: `❌ Job ${jobId} failed or cancelled: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-        });
         throw error; // Re-throw so the caller knows it failed
       }
       // No finally block needed to stop manager, as it's managed externally

@@ -1,6 +1,7 @@
 import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentManagementService } from "../store";
 import type { StoreSearchResult } from "../store/types";
+import type { LibraryVersionDetails } from "../store/types";
 import { logger } from "../utils/logger";
 import { SearchTool, type SearchToolOptions } from "./SearchTool";
 import { LibraryNotFoundError, VersionNotFoundError } from "./errors";
@@ -21,6 +22,7 @@ describe("SearchTool", () => {
       findBestVersion: vi.fn(),
       searchStore: vi.fn(),
       listVersions: vi.fn(),
+      listLibraries: vi.fn(),
     };
 
     searchTool = new SearchTool(mockDocService as DocumentManagementService);
@@ -71,13 +73,27 @@ describe("SearchTool", () => {
       ...baseOptions,
       exactMatch: true,
     };
-    const availableVersions = [{ version: "1.0.0", indexed: true }];
+    // Mock listLibraries for this specific test case
+    const mockLibraryDetails = [
+      {
+        library: "test-lib",
+        versions: [
+          {
+            version: "1.0.0",
+            documentCount: 1,
+            uniqueUrlCount: 1,
+            indexedAt: "2024-01-01T00:00:00Z",
+          },
+        ],
+      },
+    ];
     (mockDocService.validateLibraryExists as Mock).mockResolvedValue(undefined);
-    (mockDocService.listVersions as Mock).mockResolvedValue(availableVersions);
+    (mockDocService.listLibraries as Mock).mockResolvedValue(mockLibraryDetails); // Mock listLibraries call
 
     await expect(searchTool.execute(options)).rejects.toThrow(VersionNotFoundError);
     expect(mockDocService.validateLibraryExists).toHaveBeenCalledWith("test-lib");
-    expect(mockDocService.listVersions).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.listLibraries).toHaveBeenCalled(); // Expect listLibraries now
+    expect(mockDocService.listVersions).not.toHaveBeenCalled(); // Should not be called here
     expect(mockDocService.searchStore).not.toHaveBeenCalled();
   });
 
@@ -87,13 +103,27 @@ describe("SearchTool", () => {
       version: "latest",
       exactMatch: true,
     };
-    const availableVersions = [{ version: "1.0.0", indexed: true }];
+    // Mock listLibraries for this specific test case
+    const mockLibraryDetails = [
+      {
+        library: "test-lib",
+        versions: [
+          {
+            version: "1.0.0",
+            documentCount: 1,
+            uniqueUrlCount: 1,
+            indexedAt: "2024-01-01T00:00:00Z",
+          },
+        ],
+      },
+    ];
     (mockDocService.validateLibraryExists as Mock).mockResolvedValue(undefined);
-    (mockDocService.listVersions as Mock).mockResolvedValue(availableVersions);
+    (mockDocService.listLibraries as Mock).mockResolvedValue(mockLibraryDetails); // Mock listLibraries call
 
     await expect(searchTool.execute(options)).rejects.toThrow(VersionNotFoundError);
     expect(mockDocService.validateLibraryExists).toHaveBeenCalledWith("test-lib");
-    expect(mockDocService.listVersions).toHaveBeenCalledWith("test-lib");
+    expect(mockDocService.listLibraries).toHaveBeenCalled(); // Expect listLibraries now
+    expect(mockDocService.listVersions).not.toHaveBeenCalled(); // Should not be called here
     expect(mockDocService.searchStore).not.toHaveBeenCalled();
   });
 
@@ -177,7 +207,15 @@ describe("SearchTool", () => {
 
   it("should throw VersionNotFoundError and include available versions", async () => {
     const options: SearchToolOptions = { ...baseOptions, version: "nonexistent" };
-    const available = [{ version: "1.0.0", indexed: true }];
+    // Update test data to match LibraryVersionDetails
+    const available: LibraryVersionDetails[] = [
+      {
+        version: "1.0.0",
+        documentCount: 5,
+        uniqueUrlCount: 2,
+        indexedAt: "2024-01-01T00:00:00Z",
+      },
+    ];
     const error = new VersionNotFoundError("test-lib", "nonexistent", available);
     (mockDocService.findBestVersion as Mock).mockRejectedValue(error);
 

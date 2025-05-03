@@ -8,9 +8,28 @@ services:
     # platform: linux/amd64
     container_name: docs-mcp-server
     ports:
-      - "8000:8000"
+      - "6280:6280"
     env_file:
       - .env
+    environment:
+      - MCP_PORT=6280
+    volumes:
+      - docs-mcp-data:/data
+
+  docs-mcp-web:
+    image: ghcr.io/arabold/docs-mcp-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "dist/web.js"]
+    # platform: linux/amd64
+    container_name: docs-mcp-web
+    ports:
+      - "6281:6281"
+    env_file:
+      - .env
+    environment:
+      - WEB_PORT=6281
     volumes:
       - docs-mcp-data:/data
 

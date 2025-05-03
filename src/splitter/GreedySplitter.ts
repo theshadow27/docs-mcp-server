@@ -13,7 +13,7 @@ import type { ContentChunk, DocumentSplitter, SectionContentType } from "./types
 export class GreedySplitter implements DocumentSplitter {
   private baseSplitter: DocumentSplitter;
   private minChunkSize: number;
-  private maxChunkSize: number;
+  private preferredChunkSize: number;
 
   /**
    * Combines a base document splitter with size constraints to produce optimally-sized chunks.
@@ -23,11 +23,11 @@ export class GreedySplitter implements DocumentSplitter {
   constructor(
     baseSplitter: DocumentSplitter,
     minChunkSize: number,
-    maxChunkSize: number,
+    preferredChunkSize: number,
   ) {
     this.baseSplitter = baseSplitter;
     this.minChunkSize = minChunkSize;
-    this.maxChunkSize = maxChunkSize;
+    this.preferredChunkSize = preferredChunkSize;
   }
 
   /**
@@ -101,7 +101,9 @@ export class GreedySplitter implements DocumentSplitter {
     if (!currentChunk) {
       return false;
     }
-    return currentChunk.content.length + nextChunk.content.length > this.maxChunkSize;
+    return (
+      currentChunk.content.length + nextChunk.content.length > this.preferredChunkSize
+    );
   }
 
   /**

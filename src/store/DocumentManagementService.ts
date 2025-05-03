@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import type { Document } from "@langchain/core/documents";
 import envPaths from "env-paths";
@@ -7,11 +7,22 @@ import semver from "semver";
 import { GreedySplitter, SemanticMarkdownSplitter } from "../splitter";
 import type { ContentChunk, DocumentSplitter } from "../splitter/types";
 import { LibraryNotFoundError, VersionNotFoundError } from "../tools";
+import {
+  SPLITTER_MAX_CHUNK_SIZE,
+  SPLITTER_MIN_CHUNK_SIZE,
+  SPLITTER_PREFERRED_CHUNK_SIZE,
+} from "../utils/config";
 import { logger } from "../utils/logger";
+import { getProjectRoot } from "../utils/paths";
 import { DocumentRetrieverService } from "./DocumentRetrieverService";
 import { DocumentStore } from "./DocumentStore";
 import { StoreError } from "./errors";
-import type { FindVersionResult, LibraryVersion, StoreSearchResult } from "./types";
+import type {
+  FindVersionResult,
+  LibraryVersion,
+  LibraryVersionDetails,
+  StoreSearchResult,
+} from "./types";
 
 /**
  * Provides semantic search capabilities across different versions of library documentation.
@@ -41,10 +52,10 @@ export class DocumentManagementService {
       logger.debug(`💾 Using database directory from DOCS_MCP_STORE_PATH: ${dbDir}`);
     } else {
       // 2. Check Old Local Path
-      const projectRoot = path.resolve(import.meta.dirname, "..");
+      const projectRoot = getProjectRoot();
       const oldDbDir = path.join(projectRoot, ".store");
       const oldDbPath = path.join(oldDbDir, "documents.db");
-      const oldDbExists = existsSync(oldDbPath); // Check file existence specifically
+      const oldDbExists = fs.existsSync(oldDbPath); // Check file existence specifically
 
       if (oldDbExists) {
         dbPath = oldDbPath;
@@ -61,7 +72,7 @@ export class DocumentManagementService {
 
     // Ensure the chosen directory exists
     try {
-      mkdirSync(dbDir, { recursive: true });
+      fs.mkdirSync(dbDir, { recursive: true });
     } catch (error) {
       // Log potential error during directory creation but proceed
       // The DocumentStore constructor might handle DB file creation errors
@@ -71,13 +82,14 @@ export class DocumentManagementService {
     this.store = new DocumentStore(dbPath);
     this.documentRetriever = new DocumentRetrieverService(this.store);
 
-    const minChunkSize = 500;
-    const maxChunkSize = 1500;
-    const semanticSplitter = new SemanticMarkdownSplitter(maxChunkSize);
+    const semanticSplitter = new SemanticMarkdownSplitter(
+      SPLITTER_PREFERRED_CHUNK_SIZE,
+      SPLITTER_MAX_CHUNK_SIZE,
+    );
     const greedySplitter = new GreedySplitter(
       semanticSplitter,
-      minChunkSize,
-      maxChunkSize,
+      SPLITTER_MIN_CHUNK_SIZE,
+      SPLITTER_PREFERRED_CHUNK_SIZE,
     );
 
     this.splitter = greedySplitter;
@@ -145,12 +157,7 @@ export class DocumentManagementService {
    */
   async listVersions(library: string): Promise<LibraryVersion[]> {
     const versions = await this.store.queryUniqueVersions(library);
-    return versions
-      .filter((v) => semver.valid(v))
-      .map((version) => ({
-        version,
-        indexed: true,
-      }));
+    return versions.filter((v) => semver.valid(v)).map((version) => ({ version }));
   }
 
   /**
@@ -185,10 +192,7 @@ export class DocumentManagementService {
 
     // Check if unversioned documents exist *before* filtering for valid semver
     const hasUnversioned = await this.store.checkDocumentExists(library, "");
-
-    const validSemverVersions = (await this.listVersions(library)).filter(
-      (v) => v.indexed,
-    ); // listVersions already filters for semver
+    const validSemverVersions = await this.listVersions(library);
 
     if (validSemverVersions.length === 0) {
       if (hasUnversioned) {
@@ -197,7 +201,10 @@ export class DocumentManagementService {
       }
       // Throw error only if NO versions (semver or unversioned) exist
       logger.warn(`⚠️ No valid versions found for ${library}`);
-      throw new VersionNotFoundError(library, targetVersion ?? "", []);
+      // Fetch detailed versions to pass to the error constructor
+      const allLibraryDetails = await this.store.queryLibraryVersions();
+      const libraryDetails = allLibraryDetails.get(library) ?? [];
+      throw new VersionNotFoundError(library, targetVersion ?? "", libraryDetails);
     }
 
     const versionStrings = validSemverVersions.map((v) => v.version);
@@ -237,22 +244,13 @@ export class DocumentManagementService {
     // If a semver match was found, return it along with unversioned status.
     // If no semver match AND no unversioned, throw error.
     if (!bestMatch && !hasUnversioned) {
-      throw new VersionNotFoundError(library, targetVersion ?? "", validSemverVersions);
+      // Fetch detailed versions to pass to the error constructor
+      const allLibraryDetails = await this.store.queryLibraryVersions();
+      const libraryDetails = allLibraryDetails.get(library) ?? [];
+      throw new VersionNotFoundError(library, targetVersion ?? "", libraryDetails);
     }
 
     return { bestMatch, hasUnversioned };
-  }
-
-  /**
-   * Deletes all documents for a specific library and optional version.
-   * If version is omitted, deletes documents without a specific version.
-   * @deprecated Use removeAllDocuments instead.
-   */
-  async deleteStore(library: string, version?: string | null): Promise<void> {
-    const normalizedVersion = this.normalizeVersion(version);
-    logger.info(`🗑️ Deleting store for ${library}@${normalizedVersion || "[no version]"}`);
-    const count = await this.store.deleteDocuments(library, normalizedVersion);
-    logger.info(`📊 Deleted ${count} documents`);
   }
 
   /**
@@ -325,21 +323,15 @@ export class DocumentManagementService {
   }
 
   async listLibraries(): Promise<
-    Array<{
-      library: string;
-      versions: Array<{ version: string; indexed: boolean }>;
-    }>
+    Array<{ library: string; versions: LibraryVersionDetails[] }>
   > {
+    // queryLibraryVersions now returns the detailed map directly
     const libraryMap = await this.store.queryLibraryVersions();
+
+    // Transform the map into the desired array structure
     return Array.from(libraryMap.entries()).map(([library, versions]) => ({
       library,
-      // Filter out the internal empty string version before mapping
-      versions: Array.from(versions)
-        .filter((v) => v !== "")
-        .map((version) => ({
-          version,
-          indexed: true,
-        })),
+      versions, // The versions array already contains LibraryVersionDetails
     }));
   }
 }

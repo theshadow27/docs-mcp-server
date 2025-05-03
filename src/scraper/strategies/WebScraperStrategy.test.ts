@@ -1,6 +1,7 @@
 import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Document } from "../../types";
 import type { ScraperOptions } from "../types";
+import { ScrapeMode } from "../types"; // Import ScrapeMode
 import { WebScraperStrategy } from "./WebScraperStrategy";
 
 // Mock dependencies
@@ -48,7 +49,7 @@ describe("WebScraperStrategy", () => {
       scope: "subpages",
       // Ensure followRedirects has a default for tests if needed by fetch mock checks
       followRedirects: true,
-      scrapeMode: "fetch", // fastest mode for testing
+      scrapeMode: ScrapeMode.Fetch, // Use enum member
     };
 
     // No need to mock prototype anymore

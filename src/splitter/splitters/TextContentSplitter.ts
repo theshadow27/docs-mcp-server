@@ -19,17 +19,17 @@ export class TextContentSplitter implements ContentSplitter {
   async split(content: string): Promise<string[]> {
     const trimmedContent = fullTrim(content);
 
-    if (trimmedContent.length <= this.options.maxChunkSize) {
+    if (trimmedContent.length <= this.options.chunkSize) {
       return [trimmedContent];
     }
 
-    // Check for unsplittable content (e.g., a single word longer than maxChunkSize)
+    // Check for unsplittable content (e.g., a single word longer than chunkSize)
     const words = trimmedContent.split(/\s+/);
     const longestWord = words.reduce((max, word) =>
       word.length > max.length ? word : max,
     );
-    if (longestWord.length > this.options.maxChunkSize) {
-      throw new MinimumChunkSizeError(longestWord.length, this.options.maxChunkSize);
+    if (longestWord.length > this.options.chunkSize) {
+      throw new MinimumChunkSizeError(longestWord.length, this.options.chunkSize);
     }
 
     // First try splitting by paragraphs (double newlines)
@@ -54,7 +54,7 @@ export class TextContentSplitter implements ContentSplitter {
    * Checks if all chunks are within the maximum size limit
    */
   private areChunksValid(chunks: string[]): boolean {
-    return chunks.every((chunk) => chunk.length <= this.options.maxChunkSize);
+    return chunks.every((chunk) => chunk.length <= this.options.chunkSize);
   }
 
   /**
@@ -86,7 +86,7 @@ export class TextContentSplitter implements ContentSplitter {
    */
   private async splitByWords(text: string): Promise<string[]> {
     const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: this.options.maxChunkSize,
+      chunkSize: this.options.chunkSize,
       chunkOverlap: 0,
     });
 
@@ -111,10 +111,7 @@ export class TextContentSplitter implements ContentSplitter {
       const currentChunkSize = this.getChunkSize(currentChunk);
       const nextChunkSize = this.getChunkSize(chunk);
 
-      if (
-        currentChunkSize + nextChunkSize + separator.length <=
-        this.options.maxChunkSize
-      ) {
+      if (currentChunkSize + nextChunkSize + separator.length <= this.options.chunkSize) {
         // Merge chunks
         currentChunk = `${currentChunk}${separator}${chunk}`;
       } else {

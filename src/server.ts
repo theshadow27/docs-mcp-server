@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { program } from "commander";
-import { startServer } from "./mcp/index.js";
+import { startServer, stopServer } from "./mcp/index.js";
 import { DEFAULT_HTTP_PORT, DEFAULT_PROTOCOL } from "./utils/config.js";
+import { logger } from "./utils/logger"; // Import logger for HMR hook
 
 program
   .option("--protocol <type>", "Protocol to use (stdio or http)", DEFAULT_PROTOCOL)
@@ -16,7 +18,10 @@ const options = program.opts();
 
 async function main() {
   const protocol = options.protocol;
-  const port = Number.parseInt(options.port, 10);
+  // Prioritize environment variable, then CLI arg, then default
+  const port = process.env.MCP_PORT
+    ? Number.parseInt(process.env.MCP_PORT, 10)
+    : Number.parseInt(options.port, 10);
 
   if (protocol !== "stdio" && protocol !== "http") {
     console.error('Invalid protocol specified. Use "stdio" or "http".');
@@ -36,4 +41,19 @@ async function main() {
   }
 }
 
+// Handle HMR using Vite's API
+if (import.meta.hot) {
+  import.meta.hot.on("vite:beforeFullReload", async () => {
+    logger.info("🔥 Hot reload detected. Shutting down existing MCP server...");
+    try {
+      await stopServer();
+      logger.info("✅ MCP server shut down for hot reload.");
+    } catch (error) {
+      logger.error(`❌ Error stopping MCP server during HMR: ${error}`);
+      // Decide if we should exit or try to continue
+    }
+  });
+}
+
+// Start the application
 main();

@@ -1,5 +1,8 @@
 import type { DocumentMetadata } from "../types";
 
+/** Default vector dimension used across the application */
+export const VECTOR_DIMENSION = 1536;
+
 /**
  * Database document record type matching the documents table schema
  */
@@ -40,9 +43,21 @@ export interface StoreSearchResult {
   score: number | null;
 }
 
+/**
+ * Represents a library and its indexed versions.
+ */
 export interface LibraryVersion {
   version: string;
-  indexed: boolean;
+}
+
+/**
+ * Detailed information about a specific indexed library version.
+ */
+export interface LibraryVersionDetails {
+  version: string;
+  documentCount: number;
+  uniqueUrlCount: number;
+  indexedAt: string | null; // ISO 8601 format from MIN(indexed_at)
 }
 
 /**
