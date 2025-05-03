@@ -1,51 +1,37 @@
-import {
-  FingerprintGenerator as FG,
-  type FingerprintGeneratorOptions,
-} from "fingerprint-generator";
+import { HeaderGenerator, type HeaderGeneratorOptions } from "header-generator";
 
 /**
  * Generates realistic browser-like HTTP headers to help avoid bot detection.
+ * Uses the `header-generator` library for header generation.
  */
 export class FingerprintGenerator {
-  private fingerprintGenerator: FG;
+  private headerGenerator: HeaderGenerator;
 
   /**
    * Creates an instance of FingerprintGenerator.
-   * @param options Optional configuration for the fingerprint generator.
+   * @param options Optional configuration for the header generator.
    */
-  constructor(options?: Partial<FingerprintGeneratorOptions>) {
-    // Default options for a broad range of realistic fingerprints
-    const defaultOptions: Partial<FingerprintGeneratorOptions> = {
+  constructor(options?: Partial<HeaderGeneratorOptions>) {
+    // Default options for a broad range of realistic headers
+    const defaultOptions: Partial<HeaderGeneratorOptions> = {
       browsers: [{ name: "chrome", minVersion: 100 }, "firefox", "safari"],
       devices: ["desktop", "mobile"],
       operatingSystems: ["windows", "linux", "macos", "android", "ios"],
       locales: ["en-US", "en"],
-      browserListQuery: "last 10 versions",
       httpVersion: "2",
-      strict: false,
-      screen: {
-        minWidth: 800,
-        minHeight: 600,
-        maxWidth: 1920,
-        maxHeight: 1080,
-      },
     };
 
-    this.fingerprintGenerator = new FG({
+    this.headerGenerator = new HeaderGenerator({
       ...defaultOptions,
       ...options,
     });
   }
 
   /**
-   * Generates a set of realistic HTTP headers from a fingerprint.
-   * @returns A set of realistic HTTP headers from a fingerprint.
+   * Generates a set of realistic HTTP headers.
+   * @returns A set of realistic HTTP headers.
    */
   generateHeaders(): Record<string, string> {
-    // Assuming getFingerprint returns an object with a 'headers' property
-    const fingerprint = this.fingerprintGenerator.getFingerprint();
-    // Need to confirm the exact structure of the fingerprint object
-    // and where headers are located. This is an educated guess.
-    return fingerprint.headers as Record<string, string>;
+    return this.headerGenerator.getHeaders();
   }
 }

@@ -1,15 +1,15 @@
-import axios from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RedirectError, ScraperError } from "../../utils/errors";
 
 vi.mock("axios");
 vi.mock("../../utils/logger");
+
+import axios from "axios";
 const mockedAxios = vi.mocked(axios, true);
 
 import { HttpFetcher } from "./HttpFetcher";
 
-// FIXME: Sometimes the tests just hang forever
-describe.skip("HttpFetcher", () => {
+describe("HttpFetcher", () => {
   beforeEach(() => {
     mockedAxios.get.mockReset();
     vi.useFakeTimers();
@@ -117,13 +117,12 @@ describe.skip("HttpFetcher", () => {
     await fetcher.fetch("https://example.com");
     expect(mockedAxios.get).toHaveBeenCalledWith("https://example.com", {
       responseType: "arraybuffer",
+      // Test for the presence of fingerprint headers
       headers: expect.objectContaining({
         "user-agent": expect.any(String),
         accept: expect.any(String),
         "accept-encoding": expect.any(String),
         "accept-language": expect.any(String),
-        "sec-fetch-dest": expect.any(String),
-        // ...plenty more headers...
       }),
       timeout: undefined,
       maxRedirects: 5, // Default follows redirects
@@ -148,7 +147,7 @@ describe.skip("HttpFetcher", () => {
     });
   });
 
-  describe.skip("redirect handling", () => {
+  describe("redirect handling", () => {
     it("should follow redirects by default", async () => {
       const fetcher = new HttpFetcher();
       const mockResponse = {

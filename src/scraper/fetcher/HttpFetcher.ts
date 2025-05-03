@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
+import { FETCHER_BASE_DELAY, FETCHER_MAX_RETRIES } from "../../utils/config";
 import { RedirectError, ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
 import { FingerprintGenerator } from "./FingerprintGenerator";
@@ -8,9 +9,6 @@ import type { ContentFetcher, FetchOptions, RawContent } from "./types";
  * Fetches content from remote sources using HTTP/HTTPS.
  */
 export class HttpFetcher implements ContentFetcher {
-  private readonly MAX_RETRIES = 6;
-  private readonly BASE_DELAY = 1000; // 1 second
-
   private readonly retryableStatusCodes = [
     408, // Request Timeout
     429, // Too Many Requests
@@ -36,8 +34,8 @@ export class HttpFetcher implements ContentFetcher {
   }
 
   async fetch(source: string, options?: FetchOptions): Promise<RawContent> {
-    const maxRetries = options?.maxRetries ?? this.MAX_RETRIES;
-    const baseDelay = options?.retryDelay ?? this.BASE_DELAY;
+    const maxRetries = options?.maxRetries ?? FETCHER_MAX_RETRIES;
+    const baseDelay = options?.retryDelay ?? FETCHER_BASE_DELAY;
     // Default to following redirects if not specified
     const followRedirects = options?.followRedirects ?? true;
 
