@@ -22,7 +22,6 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json .
-COPY public        public
 COPY db            db
 
 # Install production dependencies only
@@ -32,6 +31,7 @@ RUN ln -s /root/.cache/ms-playwright/chromium-1161 /root/.cache/ms-playwright/ch
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
 
 RUN ln -s /app/dist/cli.js /app/docs-cli
 
