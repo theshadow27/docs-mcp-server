@@ -1,3 +1,29 @@
+# [1.12.0](https://github.com/arabold/docs-mcp-server/compare/v1.11.0...v1.12.0) (2025-05-03)
+
+
+### Bug Fixes
+
+* improved contrast in dark mode ([dc91fb3](https://github.com/arabold/docs-mcp-server/commit/dc91fb3eb3090b9da9434ee52c0ceaf11c0d4373))
+* **scraper:** use header-generator for concurrent-safe HTTP header generation ([3a2593d](https://github.com/arabold/docs-mcp-server/commit/3a2593d1b89bddbf0547f7461252c10bd7803d57))
+* start pipeline manager in web server ([b01a598](https://github.com/arabold/docs-mcp-server/commit/b01a598bd2674c357080b64ffbad807f1e7e54d4))
+* **store:** ensure parent and child chunk retrieval uses correct hierarchy ([d1cb5b5](https://github.com/arabold/docs-mcp-server/commit/d1cb5b51ce10145ad9a41bc6911561ec48169c0b))
+
+
+### Features
+
+* add library detail page with search ([3e2b009](https://github.com/arabold/docs-mcp-server/commit/3e2b0099e6b6516806a8514448abe5f2e5d98455))
+* add web interface for job and library monitoring ([bf2d27d](https://github.com/arabold/docs-mcp-server/commit/bf2d27d2a77422e44857b595608e17284e195429))
+* configure and document custom ports for docker compose setup ([c10bde4](https://github.com/arabold/docs-mcp-server/commit/c10bde4720560780ebf98d524177aca1e879ca01))
+* display library versions with details in UI ([f2f4351](https://github.com/arabold/docs-mcp-server/commit/f2f4351ea0cbb30a724c1f310f797bc8bacff02f))
+* **docker:** add web interface service to docker-compose ([950f7ca](https://github.com/arabold/docs-mcp-server/commit/950f7ca1869123750caed3fa5f4fd310bae69770))
+* enhance hmr, shutdown, sanitization, and ui ([d00e022](https://github.com/arabold/docs-mcp-server/commit/d00e02264ed326e2e121212be97d45b9212207d7))
+* **scraper:** retry all retryable HTTP status codes and add fingerprint-generator ([31b4a13](https://github.com/arabold/docs-mcp-server/commit/31b4a13d5718db11e5e5e561f9a1bb6944a4e7cf))
+* **store:** add details to listLibraries output ([19638f8](https://github.com/arabold/docs-mcp-server/commit/19638f8a080eb1b76be132c56e3b139277b4c27a))
+* **web/libraries:** display snippet count ([6543504](https://github.com/arabold/docs-mcp-server/commit/654350414b7f509f3682db2935c7432ae7d30f23))
+* **web:** add dynamic data and job queuing form to web UI ([4bc518d](https://github.com/arabold/docs-mcp-server/commit/4bc518d1ded90b84f34e777c60937b517e94f13f))
+* **web:** add two-stage delete confirmation for library versions ([1b6e846](https://github.com/arabold/docs-mcp-server/commit/1b6e846ae827fa361a2ee8a2c743f8d6bda64f9e))
+* **web:** bundle frontend assets with Vite ([6dbfdb3](https://github.com/arabold/docs-mcp-server/commit/6dbfdb35404cd5d0e9c907fe36e86a196ff51544))
+
 # [1.11.0](https://github.com/arabold/docs-mcp-server/compare/v1.10.0...v1.11.0) (2025-05-01)
 
 
