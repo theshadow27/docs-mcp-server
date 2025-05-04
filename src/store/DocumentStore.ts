@@ -247,13 +247,13 @@ export class DocumentStore {
    */
   async initialize(): Promise<void> {
     try {
-      // 1. Apply migrations (must happen after connection, before schema/statements)
-      applyMigrations(this.db);
-
-      // 2. Load extensions
+      // 1. Load extensions first (moved before migrations)
       sqliteVec.load(this.db);
 
-      // 3. Initialize prepared statements (Schema creation is now handled by migrations)
+      // 2. Apply migrations (after extensions are loaded)
+      applyMigrations(this.db);
+
+      // 3. Initialize prepared statements
       this.prepareStatements();
 
       // 4. Initialize embeddings client (await to catch errors)
