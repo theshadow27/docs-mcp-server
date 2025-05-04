@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/arabold/docs-mcp-server/compare/v1.12.1...v1.12.2) (2025-05-04)
+
+
+### Bug Fixes
+
+* **docs:** corrected port numbers in README.md ([93438ef](https://github.com/arabold/docs-mcp-server/commit/93438ef9f481e6510adf886a6eb5f4ad64f94a64))
+
 ## [1.12.1](https://github.com/arabold/docs-mcp-server/compare/v1.12.0...v1.12.1) (2025-05-03)
 
 
