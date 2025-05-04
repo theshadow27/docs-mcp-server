@@ -242,30 +242,30 @@ export class DocumentStore {
     return `"${escapedQuotes}"`;
   }
 
-/**
- * Initializes database connection and ensures readiness
- */
-async initialize(): Promise<void> {
-  try {
-    // 1. Load extensions first (moved before migrations)
-    sqliteVec.load(this.db);
+  /**
+   * Initializes database connection and ensures readiness
+   */
+  async initialize(): Promise<void> {
+    try {
+      // 1. Load extensions first (moved before migrations)
+      sqliteVec.load(this.db);
 
-    // 2. Apply migrations (after extensions are loaded)
-    applyMigrations(this.db);
+      // 2. Apply migrations (after extensions are loaded)
+      applyMigrations(this.db);
 
-    // 3. Initialize prepared statements
-    this.prepareStatements();
+      // 3. Initialize prepared statements
+      this.prepareStatements();
 
-    // 4. Initialize embeddings client (await to catch errors)
-    await this.initializeEmbeddings();
-  } catch (error) {
-    // Re-throw StoreError directly, wrap others in ConnectionError
-    if (error instanceof StoreError) {
-      throw error;
+      // 4. Initialize embeddings client (await to catch errors)
+      await this.initializeEmbeddings();
+    } catch (error) {
+      // Re-throw StoreError directly, wrap others in ConnectionError
+      if (error instanceof StoreError) {
+        throw error;
+      }
+      throw new ConnectionError("Failed to initialize database connection", error);
     }
-    throw new ConnectionError("Failed to initialize database connection", error);
   }
-}
 
   /**
    * Gracefully closes database connections
