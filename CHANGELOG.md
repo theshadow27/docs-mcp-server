@@ -1,3 +1,10 @@
+## [1.12.4](https://github.com/arabold/docs-mcp-server/compare/v1.12.3...v1.12.4) (2025-05-05)
+
+
+### Reverts
+
+* Revert "fix: handle indexed_at column already exists" ([4058cfe](https://github.com/arabold/docs-mcp-server/commit/4058cfe4e0f738ea7a242c83a63abc65757313f6))
+
 ## [1.12.3](https://github.com/arabold/docs-mcp-server/compare/v1.12.2...v1.12.3) (2025-05-05)
 
 
