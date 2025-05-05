@@ -1,3 +1,10 @@
+## [1.12.3](https://github.com/arabold/docs-mcp-server/compare/v1.12.2...v1.12.3) (2025-05-05)
+
+
+### Bug Fixes
+
+* handle indexed_at column already exists ([78fda67](https://github.com/arabold/docs-mcp-server/commit/78fda67de98a4151727613863963a43c9bcc12a5))
+
 ## [1.12.2](https://github.com/arabold/docs-mcp-server/compare/v1.12.1...v1.12.2) (2025-05-04)
 
 
