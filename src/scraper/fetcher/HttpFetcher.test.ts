@@ -19,6 +19,52 @@ describe("HttpFetcher", () => {
     vi.useRealTimers();
   });
 
+  it("should normalize mimeType from content-type header", async () => {
+    const fetcher = new HttpFetcher();
+
+    // Test case 1: Markdown with charset
+    mockedAxios.get.mockResolvedValueOnce({
+      data: "Some markdown",
+      headers: { "content-type": "text/markdown; charset=UTF-8" },
+    });
+    let result = await fetcher.fetch("https://example.com/test.md");
+    expect(result.mimeType).toBe("text/markdown");
+
+    // Test case 2: Plain text with charset and different casing
+    mockedAxios.get.mockResolvedValueOnce({
+      data: "Some text",
+      headers: { "content-type": "Text/Plain; charset=iso-8859-1" },
+    });
+    result = await fetcher.fetch("https://example.com/test.txt");
+    expect(result.mimeType).toBe("text/plain");
+
+    // Test case 3: JSON with parameters
+    mockedAxios.get.mockResolvedValueOnce({
+      data: "{}",
+      headers: { "content-type": "Application/JSON; version=2.0" },
+    });
+    result = await fetcher.fetch("https://example.com/api/data");
+    expect(result.mimeType).toBe("application/json");
+
+    // Test case 4: Simple HTML (no parameters)
+    mockedAxios.get.mockResolvedValueOnce({
+      data: "<p>Hello</p>",
+      headers: { "content-type": "text/html" },
+    });
+    result = await fetcher.fetch("https://example.com/index.html");
+    expect(result.mimeType).toBe("text/html");
+
+    // Test case 5: Default to application/octet-stream if no content-type header
+    mockedAxios.get.mockResolvedValueOnce({
+      data: "binary data",
+      headers: {
+        /* No content-type header */
+      },
+    });
+    result = await fetcher.fetch("https://example.com/somefile");
+    expect(result.mimeType).toBe("application/octet-stream");
+  });
+
   it("should fetch content successfully", async () => {
     const fetcher = new HttpFetcher();
     const mockResponse = {

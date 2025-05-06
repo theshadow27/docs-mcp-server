@@ -58,9 +58,13 @@ export class HttpFetcher implements ContentFetcher {
 
         const response = await axios.get(source, config);
 
+        const rawMimeType =
+          response.headers["content-type"] || "application/octet-stream";
+        const normalizedMimeType = rawMimeType.split(";")[0].trim().toLowerCase();
+
         return {
           content: response.data,
-          mimeType: response.headers["content-type"] || "application/octet-stream",
+          mimeType: normalizedMimeType,
           source: source,
           encoding: response.headers["content-encoding"],
         } satisfies RawContent;
