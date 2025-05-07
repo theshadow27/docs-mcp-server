@@ -6,15 +6,17 @@ import { MarkdownMetadataExtractorMiddleware } from "../middleware/MarkdownMetad
 import type { ContentProcessorMiddleware, MiddlewareContext } from "../middleware/types";
 import type { ScraperOptions } from "../types";
 import { convertToString } from "../utils/buffer";
-import type { ContentPipeline, ProcessedContent } from "./types";
+import { BasePipeline } from "./BasePipeline";
+import type { ProcessedContent } from "./types";
 
 /**
  * Pipeline for processing Markdown content using middleware.
  */
-export class MarkdownPipeline implements ContentPipeline {
+export class MarkdownPipeline extends BasePipeline {
   private readonly middleware: ContentProcessorMiddleware[];
 
   constructor() {
+    super();
     this.middleware = [
       new MarkdownMetadataExtractorMiddleware(),
       new MarkdownLinkExtractorMiddleware(),
@@ -46,20 +48,8 @@ export class MarkdownPipeline implements ContentPipeline {
       fetcher,
     };
 
-    let index = -1;
-    const dispatch = async (i: number): Promise<void> => {
-      if (i <= index) throw new Error("next() called multiple times");
-      index = i;
-      const mw = this.middleware[i];
-      if (!mw) return;
-      await mw.process(context, dispatch.bind(null, i + 1));
-    };
-
-    try {
-      await dispatch(0);
-    } catch (error) {
-      context.errors.push(error instanceof Error ? error : new Error(String(error)));
-    }
+    // Execute the middleware stack using the base class method
+    await this.executeMiddlewareStack(this.middleware, context);
 
     return {
       textContent: typeof context.content === "string" ? context.content : "",

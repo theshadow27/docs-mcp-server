@@ -9,16 +9,18 @@ import { HtmlToMarkdownMiddleware } from "../middleware/HtmlToMarkdownMiddleware
 import type { ContentProcessorMiddleware, MiddlewareContext } from "../middleware/types";
 import type { ScraperOptions } from "../types";
 import { convertToString } from "../utils/buffer";
-import type { ContentPipeline, ProcessedContent } from "./types";
+import { BasePipeline } from "./BasePipeline";
+import type { ProcessedContent } from "./types";
 
 /**
  * Pipeline for processing HTML content using middleware.
  */
-export class HtmlPipeline implements ContentPipeline {
+export class HtmlPipeline extends BasePipeline {
   private readonly playwrightMiddleware: HtmlPlaywrightMiddleware;
   private readonly standardMiddleware: ContentProcessorMiddleware[];
 
   constructor() {
+    super();
     this.playwrightMiddleware = new HtmlPlaywrightMiddleware();
     this.standardMiddleware = [
       new HtmlCheerioParserMiddleware(),
@@ -55,20 +57,8 @@ export class HtmlPipeline implements ContentPipeline {
       middleware = [this.playwrightMiddleware, ...middleware];
     }
 
-    let index = -1;
-    const dispatch = async (i: number): Promise<void> => {
-      if (i <= index) throw new Error("next() called multiple times");
-      index = i;
-      const mw = middleware[i];
-      if (!mw) return;
-      await mw.process(context, dispatch.bind(null, i + 1));
-    };
-
-    try {
-      await dispatch(0);
-    } catch (error) {
-      context.errors.push(error instanceof Error ? error : new Error(String(error)));
-    }
+    // Execute the middleware stack using the base class method
+    await this.executeMiddlewareStack(middleware, context);
 
     return {
       textContent: typeof context.content === "string" ? context.content : "",
