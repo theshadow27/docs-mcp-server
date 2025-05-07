@@ -3,13 +3,11 @@ import type { ContentFetcher } from "../fetcher/types";
 import type { ScraperOptions } from "../types";
 
 /**
- * Represents the context passed through the content processing middleware pipeline.
+ * Represents the context passed through the middleware pipeline.
  */
-export interface ContentProcessingContext {
-  /** The content being processed (can be Buffer initially, then string). */
-  content: string | Buffer;
-  /** The MIME type of the content (e.g., 'text/html', 'text/markdown'). */
-  contentType: string;
+export interface MiddlewareContext {
+  /** The content being processed (always a string in middleware). */
+  content: string;
   /** The original source URL of the content. */
   readonly source: string;
   /** Extracted metadata (e.g., title). */
@@ -29,13 +27,13 @@ export interface ContentProcessingContext {
 }
 
 /**
- * Defines the interface for a content processing middleware component.
+ * Defines the interface for a middleware component.
  */
 export interface ContentProcessorMiddleware {
   /**
-   * Processes the content context asynchronously.
-   * @param context The current processing context.
+   * Processes the middleware context asynchronously.
+   * @param context The current middleware context.
    * @param next A function to call to pass control to the next middleware in the pipeline.
    */
-  process(context: ContentProcessingContext, next: () => Promise<void>): Promise<void>;
+  process(context: MiddlewareContext, next: () => Promise<void>): Promise<void>;
 }

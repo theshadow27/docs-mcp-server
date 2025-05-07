@@ -5,11 +5,11 @@ import type { ScraperOptions } from "../types";
 import { MarkdownPipeline } from "./MarkdownPipeline";
 
 // Mock middleware
-vi.mock("../middleware/components/MarkdownMetadataExtractorMiddleware");
-vi.mock("../middleware/components/MarkdownLinkExtractorMiddleware");
+vi.mock("../middleware/MarkdownMetadataExtractorMiddleware");
+vi.mock("../middleware/MarkdownLinkExtractorMiddleware");
 
-import { MarkdownLinkExtractorMiddleware } from "../middleware/components/MarkdownLinkExtractorMiddleware";
-import { MarkdownMetadataExtractorMiddleware } from "../middleware/components/MarkdownMetadataExtractorMiddleware";
+import { MarkdownLinkExtractorMiddleware } from "../middleware/MarkdownLinkExtractorMiddleware";
+import { MarkdownMetadataExtractorMiddleware } from "../middleware/MarkdownMetadataExtractorMiddleware";
 
 describe("MarkdownPipeline", () => {
   let mockMetadataProcess: Mock;
@@ -45,16 +45,62 @@ describe("MarkdownPipeline", () => {
     expect(pipeline.canProcess({ mimeType: undefined } as RawContent)).toBe(false);
   });
 
-  it("process decodes Buffer content with charset", async () => {
+  it("process decodes Buffer content with UTF-8 charset", async () => {
     const pipeline = new MarkdownPipeline();
     const raw: RawContent = {
-      content: Buffer.from("abc", "utf-8"),
+      content: Buffer.from("# Header", "utf-8"),
       mimeType: "text/markdown",
       charset: "utf-8",
       source: "http://test",
     };
     const result = await pipeline.process(raw, {} as ScraperOptions);
-    expect(result.textContent).toBe("abc");
+    expect(result.textContent).toBe("# Header");
+  });
+
+  it("process decodes Buffer content with ISO-8859-1 charset", async () => {
+    // Save the original implementation
+    const originalMetadataProcess = mockMetadataProcess;
+
+    // Replace with a version that captures the content before calling next
+    let capturedContent = "";
+    mockMetadataProcess = vi.fn(async (ctx, next) => {
+      capturedContent = ctx.content;
+      ctx.metadata.title = "Test Title";
+      await next();
+    });
+    (MarkdownMetadataExtractorMiddleware.prototype.process as Mock) = mockMetadataProcess;
+
+    const pipeline = new MarkdownPipeline();
+    // Create a buffer with ISO-8859-1 encoding (Latin-1)
+    // This contains characters that would be encoded differently in UTF-8
+    const markdownWithSpecialChars = "# Café";
+    const raw: RawContent = {
+      content: Buffer.from(markdownWithSpecialChars, "latin1"),
+      mimeType: "text/markdown",
+      charset: "iso-8859-1", // Explicitly set charset to ISO-8859-1
+      source: "http://test",
+    };
+    const result = await pipeline.process(raw, {} as ScraperOptions);
+    expect(result.textContent).toBe("# Café");
+
+    // Verify the content was properly decoded
+    expect(capturedContent).toBe("# Café");
+
+    // Restore the original implementation for other tests
+    mockMetadataProcess = originalMetadataProcess;
+    (MarkdownMetadataExtractorMiddleware.prototype.process as Mock) = mockMetadataProcess;
+  });
+
+  it("process defaults to UTF-8 when charset is not specified", async () => {
+    const pipeline = new MarkdownPipeline();
+    const raw: RawContent = {
+      content: Buffer.from("# Default UTF-8", "utf-8"),
+      mimeType: "text/markdown",
+      // No charset specified
+      source: "http://test",
+    };
+    const result = await pipeline.process(raw, {} as ScraperOptions);
+    expect(result.textContent).toBe("# Default UTF-8");
   });
 
   it("process uses string content directly", async () => {

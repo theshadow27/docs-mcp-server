@@ -8,23 +8,20 @@ import {
   it,
   vi,
 } from "vitest";
-import type { ContentFetcher, RawContent } from "../../fetcher/types";
-import { executeJsInSandbox } from "../../utils/sandbox";
-import type {
-  SandboxExecutionOptions,
-  SandboxExecutionResult,
-} from "../../utils/sandbox";
-import type { ContentProcessingContext } from "../types";
+import type { ContentFetcher, RawContent } from "../fetcher/types";
+import { executeJsInSandbox } from "../utils/sandbox";
+import type { SandboxExecutionOptions, SandboxExecutionResult } from "../utils/sandbox";
 import { HtmlJsExecutorMiddleware } from "./HtmlJsExecutorMiddleware";
+import type { MiddlewareContext } from "./types";
 
 // Mock the logger
 vi.mock("../../../utils/logger");
 
 // Mock the sandbox utility
-vi.mock("../../utils/sandbox");
+vi.mock("../utils/sandbox");
 
 describe("HtmlJsExecutorMiddleware", () => {
-  let mockContext: ContentProcessingContext;
+  let mockContext: MiddlewareContext;
   let mockNext: Mock;
   let mockSandboxResult: SandboxExecutionResult;
   let mockFetcher: MockedObject<ContentFetcher>;
@@ -41,20 +38,16 @@ describe("HtmlJsExecutorMiddleware", () => {
     mockContext = {
       source: "http://example.com",
       content: "", // Will be set in tests
-      contentType: "text/html",
       metadata: {},
       links: [],
       errors: [],
       options: {
-        // Add required ScraperOptions properties
-        url: "http://example.com", // Can reuse context.source
+        url: "http://example.com",
         library: "test-lib",
         version: "1.0.0",
-        signal: undefined, // Initialize signal
-        // Add other optional ScraperOptions properties if needed for specific tests
+        signal: undefined,
       },
       fetcher: mockFetcher,
-      // dom property might be added by the middleware
     };
     mockNext = vi.fn().mockResolvedValue(undefined);
 
@@ -115,38 +108,6 @@ describe("HtmlJsExecutorMiddleware", () => {
 
     await middleware.process(mockContext, mockNext);
 
-    expect(mockNext).toHaveBeenCalledOnce();
-  });
-
-  it("should skip processing for non-HTML content", async () => {
-    mockContext.content = '{"data": "value"}';
-    mockContext.contentType = "application/json";
-    const middleware = new HtmlJsExecutorMiddleware();
-
-    await middleware.process(mockContext, mockNext);
-
-    expect(executeJsInSandbox).not.toHaveBeenCalled();
-    expect(mockNext).toHaveBeenCalledOnce();
-    expect(mockContext.content).toBe('{"data": "value"}'); // Content unchanged
-  });
-
-  it("should handle Buffer content", async () => {
-    const initialHtml = "<p>Buffer Content</p>";
-    mockContext.content = Buffer.from(initialHtml);
-    mockContext.contentType = "text/html; charset=utf-8";
-    const middleware = new HtmlJsExecutorMiddleware();
-
-    await middleware.process(mockContext, mockNext);
-
-    expect(executeJsInSandbox).toHaveBeenCalledOnce();
-    // Updated assertion to expect fetchScriptContent
-    expect(executeJsInSandbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        html: initialHtml,
-        url: "http://example.com",
-        fetchScriptContent: expect.any(Function),
-      }),
-    );
     expect(mockNext).toHaveBeenCalledOnce();
   });
 

@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
-import { logger } from "../../../utils/logger";
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { logger } from "../../utils/logger";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Middleware to parse HTML string/buffer content into a Cheerio object.
@@ -9,26 +9,11 @@ import type { ContentProcessingContext, ContentProcessorMiddleware } from "../ty
  * (e.g., after potential rendering by Playwright or modification by JS execution).
  */
 export class HtmlCheerioParserMiddleware implements ContentProcessorMiddleware {
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
-    // Only process HTML content
-    if (!context.contentType.startsWith("text/html")) {
-      await next();
-      return;
-    }
-
-    // Ensure content is a string for Cheerio
-    const htmlString =
-      typeof context.content === "string"
-        ? context.content
-        : Buffer.from(context.content).toString("utf-8");
-
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     try {
       logger.debug(`Parsing HTML content with Cheerio from ${context.source}`);
       // Load the HTML string using Cheerio
-      const $ = cheerio.load(htmlString);
+      const $ = cheerio.load(context.content);
 
       // Add the Cheerio API object to the context
       context.dom = $;

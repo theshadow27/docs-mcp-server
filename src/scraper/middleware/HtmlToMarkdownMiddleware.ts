@@ -1,8 +1,8 @@
 // @ts-ignore
 import { gfm } from "@joplin/turndown-plugin-gfm";
 import TurndownService from "turndown";
-import { logger } from "../../../utils/logger"; // Added logger
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { logger } from "../../utils/logger"; // Added logger
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Middleware to convert the final processed HTML content (from Cheerio object in context.dom)
@@ -82,20 +82,13 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
    * @param context The current processing context.
    * @param next Function to call the next middleware.
    */
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     // Check if we have a Cheerio object from a previous step
     const $ = context.dom;
     if (!$) {
-      // Log a warning if running on HTML content without a DOM
-      if (context.contentType.startsWith("text/html")) {
-        logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure HtmlCheerioParserMiddleware ran correctly.`,
-        );
-      }
-      // Otherwise, just proceed (might be non-HTML content or error state)
+      logger.warn(
+        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware ran correctly.`,
+      );
       await next();
       return;
     }
@@ -112,13 +105,10 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
         // If conversion results in empty markdown, log a warning but treat as valid empty markdown
         const warnMsg = `HTML to Markdown conversion resulted in empty content for ${context.source}.`;
         logger.warn(warnMsg);
-        // Set content to empty string and update type, do not add error
         context.content = "";
-        context.contentType = "text/markdown";
       } else {
         // Conversion successful and produced non-empty markdown
         context.content = markdown;
-        context.contentType = "text/markdown"; // Update content type
         logger.debug(`Successfully converted HTML to Markdown for ${context.source}`);
       }
     } catch (error) {

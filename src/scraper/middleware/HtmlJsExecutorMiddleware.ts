@@ -1,8 +1,8 @@
-import { createJSDOM } from "../../../utils/dom"; // Replace JSDOM import with createJSDOM
-import { logger } from "../../../utils/logger";
-import type { FetchOptions, RawContent } from "../../fetcher/types";
-import { executeJsInSandbox } from "../../utils/sandbox";
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { createJSDOM } from "../../utils/dom";
+import { logger } from "../../utils/logger";
+import type { FetchOptions, RawContent } from "../fetcher/types";
+import { executeJsInSandbox } from "../utils/sandbox";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Middleware to parse HTML content and execute embedded JavaScript within a secure sandbox.
@@ -23,22 +23,7 @@ import type { ContentProcessingContext, ContentProcessorMiddleware } from "../ty
  * consider using a headless browser solution.
  */
 export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
-    // Only process HTML content
-    if (!context.contentType.startsWith("text/html")) {
-      await next();
-      return;
-    }
-
-    // Ensure content is a string for the sandbox
-    const initialHtml =
-      typeof context.content === "string"
-        ? context.content
-        : Buffer.from(context.content).toString("utf-8");
-
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     try {
       logger.debug(
         `Executing JavaScript in sandbox for HTML content from ${context.source}`,
@@ -132,10 +117,9 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
 
       // TODO: Plumb timeout options from context.options if available
       const sandboxOptions = {
-        html: initialHtml,
+        html: context.content,
         url: context.source,
-        fetchScriptContent: fetchScriptContentCallback, // Pass the callback
-        // timeout: context.options?.scriptTimeout // Example for future enhancement
+        fetchScriptContent: fetchScriptContentCallback,
       };
 
       const result = await executeJsInSandbox(sandboxOptions);
@@ -160,17 +144,14 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       // Proceed to the next middleware with the modified context
       await next();
     } catch (error) {
-      // Catch errors related to the middleware execution itself (e.g., sandbox call failing unexpectedly)
-      // Ensure the error message clearly indicates the middleware source
       const baseMessage = `HtmlJsExecutorMiddleware failed for ${context.source}`;
       const errorMessage = error instanceof Error ? error.message : String(error);
       const processingError = new Error(`${baseMessage}: ${errorMessage}`, {
-        cause: error, // Preserve original error cause if available
+        cause: error,
       });
 
-      logger.error(processingError.message); // Log the combined message
+      logger.error(processingError.message);
       context.errors.push(processingError);
-      // Do not proceed further down the pipeline if the executor itself fails critically
       return;
     }
   }

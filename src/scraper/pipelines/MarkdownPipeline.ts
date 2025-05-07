@@ -1,14 +1,11 @@
-import { TextDecoder } from "node:util";
 import { MimeTypeUtils } from "../../utils/mimeTypeUtils";
 import type { RawContent } from "../fetcher/types";
 import type { ContentFetcher } from "../fetcher/types";
-import { MarkdownLinkExtractorMiddleware } from "../middleware/components/MarkdownLinkExtractorMiddleware";
-import { MarkdownMetadataExtractorMiddleware } from "../middleware/components/MarkdownMetadataExtractorMiddleware";
-import type {
-  ContentProcessingContext,
-  ContentProcessorMiddleware,
-} from "../middleware/types";
+import { MarkdownLinkExtractorMiddleware } from "../middleware/MarkdownLinkExtractorMiddleware";
+import { MarkdownMetadataExtractorMiddleware } from "../middleware/MarkdownMetadataExtractorMiddleware";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "../middleware/types";
 import type { ScraperOptions } from "../types";
+import { convertToString } from "../utils/buffer";
 import type { ContentPipeline, ProcessedContent } from "./types";
 
 /**
@@ -37,18 +34,10 @@ export class MarkdownPipeline implements ContentPipeline {
     options: ScraperOptions,
     fetcher?: ContentFetcher,
   ): Promise<ProcessedContent> {
-    let contentString: string;
+    const contentString = convertToString(rawContent.content, rawContent.charset);
 
-    if (Buffer.isBuffer(rawContent.content)) {
-      const decoder = new TextDecoder(rawContent.charset || "utf-8");
-      contentString = decoder.decode(rawContent.content);
-    } else {
-      contentString = rawContent.content;
-    }
-
-    const context: ContentProcessingContext = {
+    const context: MiddlewareContext = {
       content: contentString,
-      contentType: rawContent.mimeType,
       source: rawContent.source,
       metadata: {},
       links: [],

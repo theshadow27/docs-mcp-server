@@ -1,17 +1,14 @@
-import { TextDecoder } from "node:util";
 import { MimeTypeUtils } from "../../utils/mimeTypeUtils";
 import type { RawContent } from "../fetcher/types";
 import type { ContentFetcher } from "../fetcher/types";
-import { HtmlCheerioParserMiddleware } from "../middleware/components/HtmlCheerioParserMiddleware";
-import { HtmlLinkExtractorMiddleware } from "../middleware/components/HtmlLinkExtractorMiddleware";
-import { HtmlMetadataExtractorMiddleware } from "../middleware/components/HtmlMetadataExtractorMiddleware";
-import { HtmlPlaywrightMiddleware } from "../middleware/components/HtmlPlaywrightMiddleware";
-import { HtmlToMarkdownMiddleware } from "../middleware/components/HtmlToMarkdownMiddleware";
-import type {
-  ContentProcessingContext,
-  ContentProcessorMiddleware,
-} from "../middleware/types";
+import { HtmlCheerioParserMiddleware } from "../middleware/HtmlCheerioParserMiddleware";
+import { HtmlLinkExtractorMiddleware } from "../middleware/HtmlLinkExtractorMiddleware";
+import { HtmlMetadataExtractorMiddleware } from "../middleware/HtmlMetadataExtractorMiddleware";
+import { HtmlPlaywrightMiddleware } from "../middleware/HtmlPlaywrightMiddleware";
+import { HtmlToMarkdownMiddleware } from "../middleware/HtmlToMarkdownMiddleware";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "../middleware/types";
 import type { ScraperOptions } from "../types";
+import { convertToString } from "../utils/buffer";
 import type { ContentPipeline, ProcessedContent } from "./types";
 
 /**
@@ -40,18 +37,10 @@ export class HtmlPipeline implements ContentPipeline {
     options: ScraperOptions,
     fetcher?: ContentFetcher,
   ): Promise<ProcessedContent> {
-    let contentString: string;
+    const contentString = convertToString(rawContent.content, rawContent.charset);
 
-    if (Buffer.isBuffer(rawContent.content)) {
-      const decoder = new TextDecoder(rawContent.charset || "utf-8");
-      contentString = decoder.decode(rawContent.content);
-    } else {
-      contentString = rawContent.content;
-    }
-
-    const context: ContentProcessingContext = {
+    const context: MiddlewareContext = {
       content: contentString,
-      contentType: rawContent.mimeType,
       source: rawContent.source,
       metadata: {},
       links: [],

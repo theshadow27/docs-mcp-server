@@ -1,9 +1,9 @@
 import * as cheerio from "cheerio"; // Import cheerio
 import { describe, expect, it, vi } from "vitest";
-import { logger } from "../../../utils/logger";
-import type { ScraperOptions } from "../../types";
-import type { ContentProcessingContext } from "../types";
+import { logger } from "../../utils/logger";
+import type { ScraperOptions } from "../types";
 import { HtmlLinkExtractorMiddleware } from "./HtmlLinkExtractorMiddleware";
+import type { MiddlewareContext } from "./types";
 
 // Suppress logger output during tests
 vi.mock("../../../utils/logger");
@@ -22,24 +22,20 @@ const createMockScraperOptions = (url = "http://example.com"): ScraperOptions =>
   ignoreErrors: false,
 });
 
-// Helper to create a basic context, optionally with a pre-populated DOM
 const createMockContext = (
-  contentType: string,
-  htmlContent?: string, // Optional HTML to create a DOM from
-  source = "http://example.com/path/page.html", // Default source with path
+  htmlContent?: string,
+  source = "http://example.com/path/page.html",
   options?: Partial<ScraperOptions>,
-): ContentProcessingContext => {
-  const context: ContentProcessingContext = {
-    content: htmlContent || (contentType === "text/html" ? "" : "non-html"),
-    contentType,
+): MiddlewareContext => {
+  const context: MiddlewareContext = {
+    content: htmlContent || "",
     source,
     metadata: {},
-    links: [], // Initialize links array
+    links: [],
     errors: [],
     options: { ...createMockScraperOptions(source), ...options },
   };
-  if (htmlContent && contentType.startsWith("text/html")) {
-    // Load HTML using Cheerio
+  if (htmlContent) {
     context.dom = cheerio.load(htmlContent);
   }
   return context;
@@ -56,7 +52,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
         <a href="../sibling/link">Sibling Relative</a>
       </body></html>`;
     const sourceUrl = "http://example.com/sub/dir/page.html";
-    const context = createMockContext("text/html", html, sourceUrl);
+    const context = createMockContext(html, sourceUrl);
     const next = vi.fn().mockResolvedValue(undefined);
 
     await middleware.process(context, next);
@@ -84,7 +80,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
         <a href="  ">Whitespace</a>
         <a>No Href</a>
       </body></html>`;
-    const context = createMockContext("text/html", html);
+    const context = createMockContext(html);
     const next = vi.fn().mockResolvedValue(undefined);
 
     await middleware.process(context, next);
@@ -104,7 +100,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
         <a href="page2.html">Page 2 Rel Dup</a>
       </body></html>`;
     const sourceUrl = "http://example.com/index.html";
-    const context = createMockContext("text/html", html, sourceUrl);
+    const context = createMockContext(html, sourceUrl);
     const next = vi.fn().mockResolvedValue(undefined);
 
     await middleware.process(context, next);
@@ -123,7 +119,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
 
   it("should skip processing and warn if context.dom is missing for HTML content", async () => {
     const middleware = new HtmlLinkExtractorMiddleware();
-    const context = createMockContext("text/html"); // No HTML content, dom is undefined
+    const context = createMockContext(); // No HTML content, dom is undefined
     const next = vi.fn().mockResolvedValue(undefined);
     const warnSpy = vi.spyOn(logger, "warn");
 
@@ -141,7 +137,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
 
   it("should skip processing if content type is not HTML", async () => {
     const middleware = new HtmlLinkExtractorMiddleware();
-    const context = createMockContext("text/plain", "<a>http://example.com</a>");
+    const context = createMockContext("<a>http://example.com</a>");
     const next = vi.fn().mockResolvedValue(undefined);
     const warnSpy = vi.spyOn(logger, "warn");
 
@@ -158,7 +154,7 @@ describe("HtmlLinkExtractorMiddleware", () => {
   it("should handle errors during DOM query", async () => {
     const middleware = new HtmlLinkExtractorMiddleware();
     const html = "<html><body><a href='/'>Link</a></body></html>";
-    const context = createMockContext("text/html", html);
+    const context = createMockContext(html);
     const next = vi.fn().mockResolvedValue(undefined);
     const errorMsg = "Query failed";
     const mockError = new Error(errorMsg);

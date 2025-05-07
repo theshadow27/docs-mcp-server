@@ -1,5 +1,5 @@
-import { logger } from "../../../utils/logger";
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { logger } from "../../utils/logger";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Options for HtmlSanitizerMiddleware.
@@ -77,18 +77,13 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
     ".noprint",
   ];
 
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     // Check if Cheerio DOM exists
     const $ = context.dom;
     if (!$) {
-      if (context.contentType.startsWith("text/html")) {
-        logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
-        );
-      }
+      logger.warn(
+        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
+      );
       await next();
       return;
     }

@@ -1,7 +1,7 @@
 import { type Browser, type Page, chromium } from "playwright";
-import { logger } from "../../../utils/logger";
-import { ScrapeMode } from "../../types"; // Import ScrapeMode
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { logger } from "../../utils/logger";
+import { ScrapeMode } from "../types";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Middleware to process HTML content using Playwright for rendering dynamic content,
@@ -44,15 +44,8 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
     }
   }
 
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
-    // Only process HTML content
-    if (!context.contentType.startsWith("text/html")) {
-      await next();
-      return;
-    }
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
+    // Always process, content type is handled by pipeline selection
 
     // Determine if Playwright should run based on scrapeMode
     const scrapeMode = context.options?.scrapeMode ?? ScrapeMode.Auto; // Default to Auto
@@ -85,7 +78,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
         if (route.request().url() === context.source) {
           return route.fulfill({
             status: 200,
-            contentType: context.contentType,
+            contentType: "text/html",
             body: context.content,
           });
         }
