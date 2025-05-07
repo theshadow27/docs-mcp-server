@@ -80,7 +80,7 @@ describe("HtmlPlaywrightMiddleware", () => {
     const context = createPipelineTestContext(
       initialHtml,
       // Using a unique domain helps isolate Playwright's network interception
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/test",
+      "https://example-f8b6e5ad.com/test",
     ); // Set a source URL for the context
 
     // Create a pipeline with only the Playwright middleware for this test
@@ -102,7 +102,7 @@ describe("HtmlPlaywrightMiddleware", () => {
     const context = createPipelineTestContext(
       invalidHtml,
       // Using a unique domain helps isolate Playwright's network interception
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/test-invalid",
+      "https://example-f8b6e5ad.com/test-invalid",
     );
     const next = vi.fn(); // Mock the next function
     await playwrightMiddleware.process(context, next);
@@ -121,7 +121,7 @@ describe("HtmlPlaywrightMiddleware", () => {
     const html = "<html><body>Good</body></html>";
     const context = createPipelineTestContext(
       html,
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/goto-fail",
+      "https://example-f8b6e5ad.com/goto-fail",
     );
     const next = vi.fn();
 
