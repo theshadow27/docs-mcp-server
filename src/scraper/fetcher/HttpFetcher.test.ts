@@ -23,14 +23,71 @@ describe("HttpFetcher", () => {
     const fetcher = new HttpFetcher();
     const mockResponse = {
       data: "<html><body><h1>Hello</h1></body></html>",
-      headers: { "content-type": "text/html" },
+      headers: { "content-type": "text/html; charset=utf-8" },
     };
     mockedAxios.get.mockResolvedValue(mockResponse);
 
     const result = await fetcher.fetch("https://example.com");
     expect(result.content).toBe(mockResponse.data);
     expect(result.mimeType).toBe("text/html");
+    expect(result.charset).toBe("utf-8");
     expect(result.source).toBe("https://example.com");
+  });
+
+  it("should extract charset from content-type header", async () => {
+    const fetcher = new HttpFetcher();
+    const mockResponse = {
+      data: "abc",
+      headers: { "content-type": "text/plain; charset=iso-8859-1" },
+    };
+    mockedAxios.get.mockResolvedValue(mockResponse);
+
+    const result = await fetcher.fetch("https://example.com/file.txt");
+    expect(result.mimeType).toBe("text/plain");
+    expect(result.charset).toBe("iso-8859-1");
+  });
+
+  it("should set charset undefined if not present in content-type", async () => {
+    const fetcher = new HttpFetcher();
+    const mockResponse = {
+      data: "abc",
+      headers: { "content-type": "text/plain" },
+    };
+    mockedAxios.get.mockResolvedValue(mockResponse);
+
+    const result = await fetcher.fetch("https://example.com/file.txt");
+    expect(result.mimeType).toBe("text/plain");
+    expect(result.charset).toBeUndefined();
+  });
+
+  it("should extract encoding from content-encoding header", async () => {
+    const fetcher = new HttpFetcher();
+    const mockResponse = {
+      data: "abc",
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "content-encoding": "gzip",
+      },
+    };
+    mockedAxios.get.mockResolvedValue(mockResponse);
+
+    const result = await fetcher.fetch("https://example.com/file.txt");
+    expect(result.encoding).toBe("gzip");
+    expect(result.mimeType).toBe("text/plain");
+    expect(result.charset).toBe("utf-8");
+  });
+
+  it("should default mimeType to application/octet-stream if content-type header is missing", async () => {
+    const fetcher = new HttpFetcher();
+    const mockResponse = {
+      data: Buffer.from([1, 2, 3]),
+      headers: {},
+    };
+    mockedAxios.get.mockResolvedValue(mockResponse);
+
+    const result = await fetcher.fetch("https://example.com/file.bin");
+    expect(result.mimeType).toBe("application/octet-stream");
+    expect(result.charset).toBeUndefined();
   });
 
   it("should handle different content types", async () => {

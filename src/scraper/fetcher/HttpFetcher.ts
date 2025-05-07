@@ -2,6 +2,7 @@ import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 import { FETCHER_BASE_DELAY, FETCHER_MAX_RETRIES } from "../../utils/config";
 import { RedirectError, ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
+import { MimeTypeUtils } from "../../utils/mimeTypeUtils";
 import { FingerprintGenerator } from "./FingerprintGenerator";
 import type { ContentFetcher, FetchOptions, RawContent } from "./types";
 
@@ -58,11 +59,16 @@ export class HttpFetcher implements ContentFetcher {
 
         const response = await axios.get(source, config);
 
+        const contentTypeHeader = response.headers["content-type"];
+        const { mimeType, charset } = MimeTypeUtils.parseContentType(contentTypeHeader);
+        const contentEncoding = response.headers["content-encoding"];
+
         return {
           content: response.data,
-          mimeType: response.headers["content-type"] || "application/octet-stream",
+          mimeType,
+          charset,
+          encoding: contentEncoding,
           source: source,
-          encoding: response.headers["content-encoding"],
         } satisfies RawContent;
       } catch (error: unknown) {
         const axiosError = error as AxiosError;

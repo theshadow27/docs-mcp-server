@@ -67,26 +67,14 @@ Raw content fetched by a strategy's `fetcher` (e.g., HTML, Markdown) is processe
 
 ```mermaid
 graph TD
-    subgraph Strategy Execution
-        F[Fetcher Fetches RawContent]
-        CtxIn[Create Initial Context]
-        Pipe[Run Pipeline]
-        CtxOut[Get Final Context]
-        Doc[Create Document from Context]
-    end
-
-    subgraph ContentProcessingPipeline
-        direction LR
-        M1[Middleware 1] --> M2[Middleware 2] --> M3[...]
-    end
-
-    F --> CtxIn
-    CtxIn --> Pipe
-    Pipe -- Passes Context --> M1
-    M1 -- Passes Context --> M2
-    M2 -- Passes Context --> M3
-    M3 -- Returns Final Context --> CtxOut
-    CtxOut --> Doc
+    F[Fetcher fetches RawContent] --> RC[RawContent]
+    RC --> HP[HtmlPipeline]
+    RC --> MP[MarkdownPipeline]
+    RC --> OP[OtherPipeline]
+    HP --> PCP[ProcessedContent]
+    MP --> PCP
+    OP --> PCP
+    PCP --> S[Strategy]
 ```
 
 - **`ContentProcessingContext`**: An object passed through the pipeline, carrying the content (initially raw, potentially transformed), MIME type, source URL, extracted metadata, links, errors, and options. HTML processing also uses a `dom` property on the context to hold the parsed JSDOM object.

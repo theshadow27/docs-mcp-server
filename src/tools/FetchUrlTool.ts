@@ -4,18 +4,9 @@ import type {
   HttpFetcher,
   RawContent,
 } from "../scraper/fetcher";
-import { ContentProcessingPipeline } from "../scraper/middleware/ContentProcessorPipeline";
-import {
-  HtmlCheerioParserMiddleware,
-  HtmlMetadataExtractorMiddleware,
-  HtmlPlaywrightMiddleware,
-  HtmlSanitizerMiddleware,
-  HtmlToMarkdownMiddleware,
-  MarkdownMetadataExtractorMiddleware,
-} from "../scraper/middleware/components";
-import type { ContentProcessorMiddleware } from "../scraper/middleware/types";
-import type { ContentProcessingContext } from "../scraper/middleware/types";
-import { ScrapeMode, type ScraperOptions } from "../scraper/types";
+import { HtmlPipeline } from "../scraper/pipelines/HtmlPipeline";
+import { MarkdownPipeline } from "../scraper/pipelines/MarkdownPipeline";
+import { ScrapeMode } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { ToolError } from "./errors";
@@ -57,7 +48,6 @@ export class FetchUrlTool {
   private readonly fetchers: ContentFetcher[];
 
   constructor(httpFetcher: HttpFetcher, fileFetcher: FileFetcher) {
-    // Removed processor dependency
     this.fetchers = [httpFetcher, fileFetcher];
   }
 
@@ -68,12 +58,9 @@ export class FetchUrlTool {
    * @throws {ToolError} If fetching or processing fails
    */
   async execute(options: FetchUrlToolOptions): Promise<string> {
-    const { url, scrapeMode = ScrapeMode.Auto } = options; // Destructure scrapeMode with enum default
+    const { url, scrapeMode = ScrapeMode.Auto } = options;
 
-    // Check all fetchers first (helpful for testing and future extensions)
     const canFetchResults = this.fetchers.map((f) => f.canFetch(url));
-
-    // Find an appropriate fetcher for this URL
     const fetcherIndex = canFetchResults.findIndex((result) => result === true);
     if (fetcherIndex === -1) {
       throw new ToolError(
@@ -83,69 +70,46 @@ export class FetchUrlTool {
     }
 
     const fetcher = this.fetchers[fetcherIndex];
-
-    // Instantiate Playwright middleware locally for this execution
-    const playwrightMiddleware = new HtmlPlaywrightMiddleware();
+    const htmlPipeline = new HtmlPipeline();
+    const markdownPipeline = new MarkdownPipeline();
+    const pipelines = [htmlPipeline, markdownPipeline];
 
     try {
-      // Fetch the content
       logger.info(`📡 Fetching ${url}...`);
       const rawContent: RawContent = await fetcher.fetch(url, {
         followRedirects: options.followRedirects ?? true,
-        maxRetries: 3, // Keep retries for fetching
+        maxRetries: 3,
       });
 
-      // --- Start Middleware Pipeline ---
       logger.info("🔄 Processing content...");
-      const initialContext: ContentProcessingContext = {
-        content: rawContent.content,
-        contentType: rawContent.mimeType,
-        source: rawContent.source,
-        metadata: {},
-        links: [], // Links not needed for this tool's output
-        errors: [],
-        fetcher,
-        // Create a minimal ScraperOptions object for the context
-        options: {
-          url: url, // Use the input URL
-          library: "", // Not applicable for this tool
-          version: "", // Use empty string instead of undefined
-          // Default other options as needed by middleware
-          maxDepth: 0,
-          maxPages: 1,
-          maxConcurrency: 1,
-          scope: "subpages", // Default, though not used for single page fetch
-          followRedirects: options.followRedirects ?? true,
-          excludeSelectors: undefined, // Not currently configurable via this tool
-          ignoreErrors: false,
-          scrapeMode: scrapeMode, // Pass the scrapeMode
-        } satisfies ScraperOptions,
-      };
 
-      let pipeline: ContentProcessingPipeline;
-      if (initialContext.contentType.startsWith("text/html")) {
-        // Construct HTML pipeline similar to WebScraperStrategy
-        const htmlPipelineSteps: ContentProcessorMiddleware[] = [
-          playwrightMiddleware, // Use the instantiated middleware
-          new HtmlCheerioParserMiddleware(), // Always runs after content is finalized
-          new HtmlMetadataExtractorMiddleware(), // Keep for potential future use
-          // No Link Extractor needed for this tool
-          new HtmlSanitizerMiddleware(), // Element remover
-          new HtmlToMarkdownMiddleware(),
-        ];
-        pipeline = new ContentProcessingPipeline(htmlPipelineSteps);
-      } else if (
-        initialContext.contentType === "text/markdown" ||
-        initialContext.contentType === "text/plain"
-      ) {
-        pipeline = new ContentProcessingPipeline([
-          new MarkdownMetadataExtractorMiddleware(), // Extract title (though not used)
-          // No further processing needed for Markdown/Plain text for this tool
-        ]);
-      } else {
-        // If content type is not HTML or Markdown/Plain, return raw content as string
+      let processed: Awaited<ReturnType<(typeof htmlPipeline)["process"]>> | undefined;
+      for (const pipeline of pipelines) {
+        if (pipeline.canProcess(rawContent)) {
+          processed = await pipeline.process(
+            rawContent,
+            {
+              url,
+              library: "",
+              version: "",
+              maxDepth: 0,
+              maxPages: 1,
+              maxConcurrency: 1,
+              scope: "subpages",
+              followRedirects: options.followRedirects ?? true,
+              excludeSelectors: undefined,
+              ignoreErrors: false,
+              scrapeMode,
+            },
+            fetcher,
+          );
+          break;
+        }
+      }
+
+      if (!processed) {
         logger.warn(
-          `Unsupported content type "${initialContext.contentType}" for ${url}. Returning raw content.`,
+          `Unsupported content type "${rawContent.mimeType}" for ${url}. Returning raw content.`,
         );
         const contentString =
           typeof rawContent.content === "string"
@@ -154,15 +118,11 @@ export class FetchUrlTool {
         return contentString;
       }
 
-      const finalContext = await pipeline.run(initialContext);
-      // --- End Middleware Pipeline ---
-
-      // Log any processing errors
-      for (const err of finalContext.errors) {
+      for (const err of processed.errors) {
         logger.warn(`Processing error for ${url}: ${err.message}`);
       }
 
-      if (typeof finalContext.content !== "string" || !finalContext.content.trim()) {
+      if (typeof processed.textContent !== "string" || !processed.textContent.trim()) {
         throw new ToolError(
           `Processing resulted in empty content for ${url}`,
           this.constructor.name,
@@ -170,9 +130,8 @@ export class FetchUrlTool {
       }
 
       logger.info(`✅ Successfully processed ${url}`);
-      return finalContext.content; // Return the final processed content string
+      return processed.textContent;
     } catch (error) {
-      // Handle fetch errors and pipeline errors
       if (error instanceof ScraperError || error instanceof ToolError) {
         throw new ToolError(
           `Failed to fetch or process URL: ${error.message}`,
@@ -184,8 +143,8 @@ export class FetchUrlTool {
         this.constructor.name,
       );
     } finally {
-      // Ensure the browser is closed after execution
-      await playwrightMiddleware.closeBrowser();
+      await htmlPipeline.close();
+      await markdownPipeline.close();
     }
   }
 }

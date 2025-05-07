@@ -5,12 +5,21 @@
 export interface RawContent {
   /** Raw content as string or buffer */
   content: string | Buffer;
-  /** MIME type of the content */
+  /**
+   * MIME type of the content (e.g., "text/html", "application/json").
+   * Does not include parameters like charset.
+   */
   mimeType: string;
+  /**
+   * Character set of the content (e.g., "utf-8"), extracted from Content-Type header.
+   */
+  charset?: string;
+  /**
+   * Content encoding (e.g., "gzip", "deflate"), from Content-Encoding header.
+   */
+  encoding?: string;
   /** Original source location */
   source: string;
-  /** Character encoding if applicable */
-  encoding?: string;
 }
 
 /**
