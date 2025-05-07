@@ -1,6 +1,7 @@
 import { MimeTypeUtils } from "../../utils/mimeTypeUtils";
 import type { RawContent } from "../fetcher/types";
 import type { ContentFetcher } from "../fetcher/types";
+import { HtmlSanitizerMiddleware } from "../middleware";
 import { HtmlCheerioParserMiddleware } from "../middleware/HtmlCheerioParserMiddleware";
 import { HtmlLinkExtractorMiddleware } from "../middleware/HtmlLinkExtractorMiddleware";
 import { HtmlMetadataExtractorMiddleware } from "../middleware/HtmlMetadataExtractorMiddleware";
@@ -26,6 +27,7 @@ export class HtmlPipeline extends BasePipeline {
       new HtmlCheerioParserMiddleware(),
       new HtmlMetadataExtractorMiddleware(),
       new HtmlLinkExtractorMiddleware(),
+      new HtmlSanitizerMiddleware(),
       new HtmlToMarkdownMiddleware(),
     ];
   }
