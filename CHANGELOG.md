@@ -1,3 +1,17 @@
+# [1.13.0](https://github.com/arabold/docs-mcp-server/compare/v1.12.4...v1.13.0) (2025-05-08)
+
+
+### Bug Fixes
+
+* added missing HtmlSanitizerMiddleware back into the pipeline ([d926775](https://github.com/arabold/docs-mcp-server/commit/d926775d85069c30289ec781b581e76b2b4d6efc))
+* **embeddings:** handle colon in model name parsing ([#89](https://github.com/arabold/docs-mcp-server/issues/89)) ([0e73eb0](https://github.com/arabold/docs-mcp-server/commit/0e73eb04db7f7f2f2d626e194ea8feae829e2aab))
+* **store:** batch embedding creation to avoid token limit errors (closes [#93](https://github.com/arabold/docs-mcp-server/issues/93)) ([e86df97](https://github.com/arabold/docs-mcp-server/commit/e86df97ca1926836c1b8fc00a6147e5f7e462943))
+
+
+### Features
+
+* **scraper:** refactor pipelines, fetchers, and strategies ([#92](https://github.com/arabold/docs-mcp-server/issues/92), [#94](https://github.com/arabold/docs-mcp-server/issues/94)) ([9244d7e](https://github.com/arabold/docs-mcp-server/commit/9244d7e427a28820dcc62d9d8d699b659213caec))
+
 ## [1.12.4](https://github.com/arabold/docs-mcp-server/compare/v1.12.3...v1.12.4) (2025-05-05)
 
 
