@@ -58,7 +58,8 @@ export class ModelConfigurationError extends Error {
  */
 export function createEmbeddingModel(providerAndModel: string): Embeddings {
   // Parse provider and model name
-  const [providerOrModel, modelName] = providerAndModel.split(":");
+  const [providerOrModel, ...modelNameParts] = providerAndModel.split(":");
+  const modelName = modelNameParts.join(":");
   const provider = modelName ? (providerOrModel as EmbeddingProvider) : "openai";
   const model = modelName || providerOrModel;
 
