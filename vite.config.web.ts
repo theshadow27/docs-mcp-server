@@ -1,11 +1,15 @@
 import { defineConfig } from "vite";
 import path from "node:path";
 import tailwindcss from '@tailwindcss/vite'
+import packageJson from "./package.json" assert { type: "json" };
 
 // Vite configuration specifically for building frontend assets (CSS, JS)
 export default defineConfig({
   // No need for dts plugin for frontend assets
   plugins: [tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   resolve: {
     // Keep existing resolve extensions
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
