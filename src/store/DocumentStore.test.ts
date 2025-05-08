@@ -241,6 +241,48 @@ describe("DocumentStore", () => {
     });
   });
 
+  describe("addDocuments - Batching", () => {
+    it("should process embeddings in batches when document count exceeds EMBEDDING_BATCH_SIZE", async () => {
+      const { EMBEDDING_BATCH_SIZE } = await import("../utils/config");
+      const numDocuments = EMBEDDING_BATCH_SIZE + 5;
+      const documents = Array.from({ length: numDocuments }, (_, i) => ({
+        pageContent: `doc${i + 1} text`,
+        metadata: { title: `t${i + 1}`, url: `u1/${i + 1}`, path: [`p${i + 1}`] },
+      }));
+
+      const mockEmbeddingDim = VECTOR_DIMENSION;
+      const firstBatchEmbeddings = Array.from({ length: EMBEDDING_BATCH_SIZE }, () =>
+        new Array(mockEmbeddingDim).fill(0.1),
+      );
+      const secondBatchEmbeddings = Array.from(
+        { length: numDocuments - EMBEDDING_BATCH_SIZE },
+        () => new Array(mockEmbeddingDim).fill(0.2),
+      );
+
+      mockEmbedDocuments
+        .mockResolvedValueOnce(firstBatchEmbeddings)
+        .mockResolvedValueOnce(secondBatchEmbeddings);
+
+      // Mock insertDocument to return sequential rowids
+      for (let i = 0; i < numDocuments; i++) {
+        mockStatement.run.mockReturnValueOnce({
+          changes: 1,
+          lastInsertRowid: BigInt(i + 1),
+        });
+      }
+
+      await documentStore.addDocuments("test-lib-large-batch", "1.0.0", documents);
+
+      expect(mockEmbedDocuments).toHaveBeenCalledTimes(2);
+      expect((mockEmbedDocuments.mock.calls[0][0] as string[]).length).toBe(
+        EMBEDDING_BATCH_SIZE,
+      );
+      expect((mockEmbedDocuments.mock.calls[1][0] as string[]).length).toBe(
+        numDocuments - EMBEDDING_BATCH_SIZE,
+      );
+    });
+  });
+
   describe("Embedding Model Dimensions", () => {
     it("should accept a model that produces ${VECTOR_DIMENSION}-dimensional vectors", async () => {
       // Mock a ${VECTOR_DIMENSION}-dimensional vector
