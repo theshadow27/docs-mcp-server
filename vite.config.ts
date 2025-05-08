@@ -1,10 +1,13 @@
 import { defineConfig } from "vitest/config";
 import path from 'path';
-import packageJson from './package.json'; // Import package.json to read dependencies
+import packageJson from "./package.json" assert { type: "json" };
 
 export default defineConfig({
   plugins: [
   ],
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   resolve: {
     // Keep existing resolve extensions
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],

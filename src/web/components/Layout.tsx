@@ -5,14 +5,23 @@ import type { PropsWithChildren } from "@kitajs/html";
  */
 interface LayoutProps extends PropsWithChildren {
   title: string;
+  /** Optional version string to display next to the title. */
+  version?: string;
 }
+
+// Expose the build-time version constant for type safety
+declare const __APP_VERSION__: string | undefined;
 
 /**
  * Base HTML layout component for all pages.
  * Includes common head elements, header, and scripts.
- * @param props - Component props including title and children.
+ * @param props - Component props including title, version, and children.
  */
-const Layout = ({ title, children }: LayoutProps) => (
+const Layout = ({
+  title,
+  version = __APP_VERSION__,
+  children,
+}: LayoutProps) => (
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -52,6 +61,15 @@ const Layout = ({ title, children }: LayoutProps) => (
         <header class="mb-4">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
             <a href="/">MCP Docs</a>
+            {version ? (
+              <span
+                safe
+                class="ml-2 text-base font-normal text-gray-500 dark:text-gray-400 align-baseline"
+                title={`Version ${version}`}
+              >
+                v{version}
+              </span>
+            ) : null}
           </h1>
         </header>
 
