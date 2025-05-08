@@ -1,9 +1,9 @@
 import * as cheerio from "cheerio"; // Import cheerio
 import { type Mock, describe, expect, it, vi } from "vitest";
-import { logger } from "../../../utils/logger";
-import type { ScraperOptions } from "../../types";
-import type { ContentProcessingContext } from "../types";
+import { logger } from "../../utils/logger";
+import type { ScraperOptions } from "../types";
 import { HtmlSanitizerMiddleware } from "./HtmlSanitizerMiddleware";
+import type { MiddlewareContext } from "./types";
 
 // Suppress logger output during tests
 vi.mock("../../../utils/logger");
@@ -25,25 +25,21 @@ const createMockScraperOptions = (
   ignoreErrors: false,
 });
 
-// Helper to create a basic context, optionally with a pre-populated DOM
 const createMockContext = (
-  contentType: string,
-  htmlContent?: string, // Optional HTML to create a DOM from
+  htmlContent?: string,
   source = "http://example.com",
   options?: Partial<ScraperOptions>,
-): ContentProcessingContext => {
+): MiddlewareContext => {
   const fullOptions = { ...createMockScraperOptions(source), ...options };
-  const context: ContentProcessingContext = {
-    content: htmlContent || (contentType === "text/html" ? "" : "non-html"),
-    contentType,
+  const context: MiddlewareContext = {
+    content: htmlContent || "",
     source,
     metadata: {},
     links: [],
     errors: [],
     options: fullOptions,
   };
-  if (htmlContent && contentType.startsWith("text/html")) {
-    // Load HTML using Cheerio
+  if (htmlContent) {
     context.dom = cheerio.load(htmlContent);
   }
   return context;
@@ -58,7 +54,7 @@ describe("HtmlSanitizerMiddleware", () => {
         <main>Main content</main>
         <footer>Footer info</footer>
       </body></html>`;
-    const context = createMockContext("text/html", html);
+    const context = createMockContext(html);
     const next = vi.fn().mockResolvedValue(undefined);
 
     await middleware.process(context, next);
@@ -86,7 +82,7 @@ describe("HtmlSanitizerMiddleware", () => {
         <p id="keep-id">Keep ID</p>
       </body></html>`;
     // Pass excludeSelectors via options in context creation
-    const context = createMockContext("text/html", html, undefined, {
+    const context = createMockContext(html, undefined, {
       excludeSelectors: customSelectors,
     });
     const next = vi.fn().mockResolvedValue(undefined);
@@ -118,7 +114,7 @@ describe("HtmlSanitizerMiddleware", () => {
         <div class="remove-custom">Custom Remove</div>
         <p>Keep</p>
       </body></html>`;
-    const context = createMockContext("text/html", html, undefined, {
+    const context = createMockContext(html, undefined, {
       excludeSelectors: customSelectors,
     });
     const next = vi.fn().mockResolvedValue(undefined);
@@ -139,7 +135,7 @@ describe("HtmlSanitizerMiddleware", () => {
 
   it("should skip processing and warn if context.dom is missing for HTML content", async () => {
     const middleware = new HtmlSanitizerMiddleware();
-    const context = createMockContext("text/html"); // No HTML content, dom is undefined
+    const context = createMockContext(); // No HTML content, dom is undefined
     const next = vi.fn().mockResolvedValue(undefined);
     const warnSpy = vi.spyOn(logger, "warn");
 
@@ -156,7 +152,7 @@ describe("HtmlSanitizerMiddleware", () => {
 
   it("should skip processing if content type is not HTML", async () => {
     const middleware = new HtmlSanitizerMiddleware();
-    const context = createMockContext("text/plain", "<script>alert(1)</script>");
+    const context = createMockContext("<script>alert(1)</script>");
     const next = vi.fn().mockResolvedValue(undefined);
     const warnSpy = vi.spyOn(logger, "warn");
 
@@ -174,7 +170,7 @@ describe("HtmlSanitizerMiddleware", () => {
     const middleware = new HtmlSanitizerMiddleware();
     // Include an element that will be selected for removal (e.g., nav)
     const html = "<html><body><nav>Navigation</nav><p>Content</p></body></html>";
-    const context = createMockContext("text/html", html);
+    const context = createMockContext(html);
     const next = vi.fn().mockResolvedValue(undefined);
     const errorMsg = "Failed to remove element";
     const mockError = new Error(errorMsg);

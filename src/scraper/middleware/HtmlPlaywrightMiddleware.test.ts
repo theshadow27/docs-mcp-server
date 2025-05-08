@@ -1,7 +1,7 @@
 import { type MockedObject, afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import type { ScraperOptions } from "../../types";
-import type { ContentProcessingContext } from "../types"; // Adjusted path
+import type { ScraperOptions } from "../types";
 import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
+import type { MiddlewareContext } from "./types"; // Adjusted path
 
 // Suppress logger output during tests
 vi.mock("../../../utils/logger");
@@ -38,21 +38,18 @@ const createMockScraperOptions = (
 
 // Helper to create a basic context for pipeline tests
 const createPipelineTestContext = (
-  content: string | Buffer,
-  contentType: string,
+  content: string,
   source = "http://example.com",
   options?: Partial<ScraperOptions>,
-): ContentProcessingContext => {
+): MiddlewareContext => {
   const fullOptions = { ...createMockScraperOptions(source), ...options };
-  const context: ContentProcessingContext = {
+  const context: MiddlewareContext = {
     content,
-    contentType,
     source,
     metadata: {},
     links: [],
     errors: [],
     options: fullOptions,
-    // dom is added by the parser middleware (HtmlCheerioParserMiddleware)
   };
   return context;
 };
@@ -82,9 +79,8 @@ describe("HtmlPlaywrightMiddleware", () => {
       "<html><head><title>Initial</title></head><body><p>Hello</p><script>document.querySelector('p').textContent = 'Hello Playwright!';</script></body></html>";
     const context = createPipelineTestContext(
       initialHtml,
-      "text/html",
       // Using a unique domain helps isolate Playwright's network interception
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/test",
+      "https://example-f8b6e5ad.com/test",
     ); // Set a source URL for the context
 
     // Create a pipeline with only the Playwright middleware for this test
@@ -105,9 +101,8 @@ describe("HtmlPlaywrightMiddleware", () => {
     const invalidHtml = "<html><body><p>Mismatched tag</div></html>";
     const context = createPipelineTestContext(
       invalidHtml,
-      "text/html",
       // Using a unique domain helps isolate Playwright's network interception
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/test-invalid",
+      "https://example-f8b6e5ad.com/test-invalid",
     );
     const next = vi.fn(); // Mock the next function
     await playwrightMiddleware.process(context, next);
@@ -122,25 +117,11 @@ describe("HtmlPlaywrightMiddleware", () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it("should skip processing for non-HTML content and call next", async () => {
-    const markdown = "# Hello";
-    const context = createPipelineTestContext(markdown, "text/markdown");
-    const initialContent = context.content;
-    const next = vi.fn();
-    await playwrightMiddleware.process(context, next);
-
-    expect(context.content).toBe(initialContent); // Content should not change
-    expect(context.dom).toBeUndefined(); // DOM should not be set
-    expect(context.errors).toHaveLength(0);
-    expect(next).toHaveBeenCalled(); // Next should always be called
-  });
-
   it("should add error to context if Playwright page.goto fails and call next", async () => {
     const html = "<html><body>Good</body></html>";
     const context = createPipelineTestContext(
       html,
-      "text/html",
-      "https://f8b6e5ad-46ca-5934-bf4d-0409f8375e9a.com/goto-fail",
+      "https://example-f8b6e5ad.com/goto-fail",
     );
     const next = vi.fn();
 

@@ -1,5 +1,5 @@
-import { logger } from "../../../utils/logger";
-import type { ContentProcessingContext, ContentProcessorMiddleware } from "../types";
+import { logger } from "../../utils/logger";
+import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
 
 /**
  * Middleware to extract the title from HTML content using Cheerio.
@@ -12,20 +12,13 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
    * @param context The current processing context.
    * @param next Function to call the next middleware.
    */
-  async process(
-    context: ContentProcessingContext,
-    next: () => Promise<void>,
-  ): Promise<void> {
+  async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     // Check if Cheerio DOM exists from previous middleware
     const $ = context.dom;
     if (!$) {
-      // Log a warning if running on HTML content without a DOM
-      if (context.contentType.startsWith("text/html")) {
-        logger.warn(
-          `Skipping ${this.constructor.name}: context.dom is missing for HTML content. Ensure HtmlCheerioParserMiddleware runs before this.`,
-        );
-      }
-      // Otherwise, just proceed (might be non-HTML content)
+      logger.warn(
+        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
+      );
       await next();
       return;
     }
