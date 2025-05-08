@@ -52,6 +52,16 @@ describe("createEmbeddingModel", () => {
     });
   });
 
+  test("should correctly parse model names containing colons or slashes", () => {
+    const model = createEmbeddingModel(
+      "openai:jeffh/intfloat-multilingual-e5-large-instruct:f16",
+    );
+    expect(model).toBeInstanceOf(OpenAIEmbeddings);
+    expect(model).toMatchObject({
+      modelName: "jeffh/intfloat-multilingual-e5-large-instruct:f16",
+    });
+  });
+
   test("should create Google Vertex AI embeddings", () => {
     const model = createEmbeddingModel("vertex:text-embedding-004");
     expect(model).toBeInstanceOf(VertexAIEmbeddings);
