@@ -36,3 +36,8 @@ export const FETCHER_BASE_DELAY = 1000;
 export const SPLITTER_MIN_CHUNK_SIZE = 500;
 export const SPLITTER_PREFERRED_CHUNK_SIZE = 1500;
 export const SPLITTER_MAX_CHUNK_SIZE = 5000;
+
+/**
+ * Maximum number of documents to process in a single batch for embeddings.
+ */
+export const EMBEDDING_BATCH_SIZE = 300;

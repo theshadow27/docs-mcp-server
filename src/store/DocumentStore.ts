@@ -4,6 +4,7 @@ import Database, { type Database as DatabaseType } from "better-sqlite3";
 import semver from "semver";
 import * as sqliteVec from "sqlite-vec";
 import type { DocumentMetadata } from "../types";
+import { EMBEDDING_BATCH_SIZE } from "../utils/config";
 import { applyMigrations } from "./applyMigrations";
 import { ConnectionError, DimensionError, StoreError } from "./errors";
 import { VECTOR_DIMENSION } from "./types";
@@ -376,7 +377,14 @@ export class DocumentStore {
         const header = `<title>${doc.metadata.title}</title>\n<url>${doc.metadata.url}</url>\n<path>${doc.metadata.path.join(" / ")}</path>\n`;
         return `${header}${doc.pageContent}`;
       });
-      const rawEmbeddings = await this.embeddings.embedDocuments(texts);
+
+      // Batch embedding creation to avoid token limit errors
+      const rawEmbeddings: number[][] = [];
+      for (let i = 0; i < texts.length; i += EMBEDDING_BATCH_SIZE) {
+        const batchTexts = texts.slice(i, i + EMBEDDING_BATCH_SIZE);
+        const batchEmbeddings = await this.embeddings.embedDocuments(batchTexts);
+        rawEmbeddings.push(...batchEmbeddings);
+      }
       const paddedEmbeddings = rawEmbeddings.map((vector) => this.padVector(vector));
 
       // Insert documents in a transaction
