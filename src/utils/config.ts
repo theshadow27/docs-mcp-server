@@ -40,4 +40,4 @@ export const SPLITTER_MAX_CHUNK_SIZE = 5000;
 /**
  * Maximum number of documents to process in a single batch for embeddings.
  */
-export const EMBEDDING_BATCH_SIZE = 300;
+export const EMBEDDING_BATCH_SIZE = 100;

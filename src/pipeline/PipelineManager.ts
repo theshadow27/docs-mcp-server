@@ -106,7 +106,9 @@ export class PipelineManager {
 
     this.jobMap.set(jobId, job);
     this.jobQueue.push(jobId);
-    logger.info(`📝 Job enqueued: ${jobId} for ${library}@${version}`);
+    logger.info(
+      `📝 Job enqueued: ${jobId} for ${library}${version ? `@${version}` : ""}`,
+    );
 
     await this.callbacks.onJobStatusChange?.(job);
 
