@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Database } from "better-sqlite3";
+import { MIGRATION_MAX_RETRIES, MIGRATION_RETRY_DELAY_MS } from "../utils/config";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { StoreError } from "./errors";
@@ -64,7 +65,6 @@ export async function applyMigrations(db: Database): Promise<void> {
         const sql = fs.readFileSync(filePath, "utf8");
 
         // Execute migration and record it directly within the overall transaction
-        // The nested transaction is removed.
         try {
           db.exec(sql);
           const insertStmt = db.prepare(
@@ -89,8 +89,6 @@ export async function applyMigrations(db: Database): Promise<void> {
   });
 
   let retries = 0;
-  const MAX_MIGRATION_RETRIES = 5;
-  const MIGRATION_RETRY_DELAY_MS = 300;
 
   while (true) {
     try {
@@ -102,17 +100,17 @@ export async function applyMigrations(db: Database): Promise<void> {
       break; // Success
     } catch (error) {
       // biome-ignore lint/suspicious/noExplicitAny: error can be any
-      if ((error as any)?.code === "SQLITE_BUSY" && retries < MAX_MIGRATION_RETRIES) {
+      if ((error as any)?.code === "SQLITE_BUSY" && retries < MIGRATION_MAX_RETRIES) {
         retries++;
         logger.warn(
-          `⚠️ Migrations busy (SQLITE_BUSY), retrying attempt ${retries}/${MAX_MIGRATION_RETRIES} in ${MIGRATION_RETRY_DELAY_MS}ms...`,
+          `⚠️ Migrations busy (SQLITE_BUSY), retrying attempt ${retries}/${MIGRATION_MAX_RETRIES} in ${MIGRATION_RETRY_DELAY_MS}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, MIGRATION_RETRY_DELAY_MS));
       } else {
         // biome-ignore lint/suspicious/noExplicitAny: error can be any
         if ((error as any)?.code === "SQLITE_BUSY") {
           logger.error(
-            `❌ Migrations still busy after ${MAX_MIGRATION_RETRIES} retries. Giving up: ${error}`,
+            `❌ Migrations still busy after ${MIGRATION_MAX_RETRIES} retries. Giving up: ${error}`,
           );
         }
         // Ensure StoreError is thrown for consistent handling
