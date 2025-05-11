@@ -456,7 +456,7 @@ ${formattedResults.join("")}`,
           // Handle invalid status - perhaps return an error or ignore?
           // For simplicity, let's ignore invalid status for now and return all jobs.
           // Alternatively, could throw an McpError or return specific error content.
-          logger.warn(`Invalid status parameter received: ${statusParam}`);
+          logger.warn(`⚠️ Invalid status parameter received: ${statusParam}`);
         }
       }
 
@@ -490,7 +490,7 @@ ${formattedResults.join("")}`,
       // Validate jobId format if necessary (basic check)
       if (typeof jobId !== "string" || jobId.length === 0) {
         // Handle invalid jobId format - return empty or error
-        logger.warn(`Invalid jobId received in URI: ${jobId}`);
+        logger.warn(`⚠️ Invalid jobId received in URI: ${jobId}`);
         return { contents: [] }; // Return empty content for invalid ID format
       }
 

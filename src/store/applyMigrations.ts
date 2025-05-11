@@ -77,7 +77,7 @@ export function applyMigrations(db: Database): void {
           logger.debug(`Successfully applied migration: ${filename}`);
           appliedCount++;
         } catch (error) {
-          logger.error(`Failed to apply migration: ${filename} - ${error}`);
+          logger.error(`❌ Failed to apply migration: ${filename} - ${error}`);
           // Let the transaction implicitly rollback on error
           throw new StoreError(`Migration failed: ${filename} - ${error}`);
         }

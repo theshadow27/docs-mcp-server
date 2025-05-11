@@ -35,7 +35,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       ): Promise<string | null> => {
         if (!context.fetcher) {
           logger.warn(
-            `No fetcher available in context to fetch external script: ${scriptUrl}`,
+            `⚠️ No fetcher available in context to fetch external script: ${scriptUrl}`,
           );
           return null;
         }
@@ -65,7 +65,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
             !["application/octet-stream", "unknown/unknown", ""].includes(mimeTypeLower) // Allow empty MIME type as well
           ) {
             logger.warn(
-              `Skipping execution of external script ${scriptUrl} due to unexpected MIME type: ${rawContent.mimeType}`,
+              `⏭️ Skipping execution of external script ${scriptUrl} due to unexpected MIME type: ${rawContent.mimeType}`,
             );
             context.errors.push(
               new Error(
@@ -105,7 +105,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
           // fetcher.fetch is expected to throw on error (e.g., 404, network error)
           const message =
             fetchError instanceof Error ? fetchError.message : String(fetchError);
-          logger.warn(`Failed to fetch external script ${scriptUrl}: ${message}`); // Use warn for fetch failures like 404
+          logger.warn(`⚠️ Failed to fetch external script ${scriptUrl}: ${message}`); // Use warn for fetch failures like 404
           context.errors.push(
             new Error(`Failed to fetch external script ${scriptUrl}: ${message}`, {
               cause: fetchError,
@@ -133,7 +133,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
       if (result.errors.length > 0) {
         context.errors.push(...result.errors);
         logger.warn(
-          `Encountered ${result.errors.length} error(s) during sandbox execution for ${context.source}`,
+          `⚠️ Encountered ${result.errors.length} error(s) during sandbox execution for ${context.source}`,
         );
       }
 
@@ -150,7 +150,7 @@ export class HtmlJsExecutorMiddleware implements ContentProcessorMiddleware {
         cause: error,
       });
 
-      logger.error(processingError.message);
+      logger.error(`❌ ${processingError.message}`);
       context.errors.push(processingError);
       return;
     }

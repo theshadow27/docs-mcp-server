@@ -27,7 +27,7 @@ export class RemoveTool {
     const { library, version } = args;
 
     logger.info(
-      `Removing library: ${library}${version ? `, version: ${version}` : " (unversioned)"}`,
+      `🗑️ Removing library: ${library}${version ? `, version: ${version}` : " (unversioned)"}`,
     );
 
     try {
@@ -35,12 +35,12 @@ export class RemoveTool {
       await this.documentManagementService.removeAllDocuments(library, version);
 
       const message = `Successfully removed documents for ${library}${version ? `@${version}` : " (unversioned)"}.`;
-      logger.info(message);
+      logger.info(`✅ ${message}`);
       // Return a simple success object, the McpServer will format the final response
       return { message };
     } catch (error) {
       const errorMessage = `Failed to remove documents for ${library}${version ? `@${version}` : " (unversioned)"}: ${error instanceof Error ? error.message : String(error)}`;
-      logger.error(`Error removing library: ${errorMessage}`);
+      logger.error(`❌ Error removing library: ${errorMessage}`);
       // Re-throw the error for the McpServer to handle and format
       throw new ToolError(errorMessage, this.constructor.name);
     }

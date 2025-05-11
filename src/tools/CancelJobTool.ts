@@ -45,7 +45,7 @@ export class CancelJobTool {
       const job = await this.manager.getJob(input.jobId);
 
       if (!job) {
-        logger.warn(`[CancelJobTool] Job not found: ${input.jobId}`);
+        logger.warn(`❓ [CancelJobTool] Job not found: ${input.jobId}`);
         return {
           message: `Job with ID ${input.jobId} not found.`,
           success: false,
@@ -58,9 +58,7 @@ export class CancelJobTool {
         job.status === PipelineJobStatus.FAILED || // Use enum member
         job.status === PipelineJobStatus.CANCELLED // Use enum member
       ) {
-        logger.info(
-          `[CancelJobTool] Job ${input.jobId} is already in a final state: ${job.status}.`,
-        );
+        logger.debug(`Job ${input.jobId} is already in a final state: ${job.status}.`);
         return {
           message: `Job ${input.jobId} is already ${job.status}. No action taken.`,
           success: true, // Considered success as no cancellation needed
@@ -75,15 +73,15 @@ export class CancelJobTool {
       const updatedJob = await this.manager.getJob(input.jobId);
       const finalStatus = updatedJob?.status ?? "UNKNOWN (job disappeared?)";
 
-      logger.info(
-        `[CancelJobTool] Cancellation requested for job ${input.jobId}. Current status: ${finalStatus}`,
+      logger.debug(
+        `Cancellation requested for job ${input.jobId}. Current status: ${finalStatus}`,
       );
       return {
         message: `Cancellation requested for job ${input.jobId}. Current status: ${finalStatus}.`,
         success: true,
       };
     } catch (error) {
-      logger.error(`[CancelJobTool] Error cancelling job ${input.jobId}: ${error}`);
+      logger.error(`❌ Error cancelling job ${input.jobId}: ${error}`);
       return {
         message: `Failed to cancel job ${input.jobId}: ${
           error instanceof Error ? error.message : String(error)

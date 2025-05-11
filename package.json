@@ -4,9 +4,7 @@
   "description": "MCP server for fetching and searching documentation",
   "type": "module",
   "bin": {
-    "docs-server": "dist/server.js",
-    "docs-cli": "dist/cli.js",
-    "docs-web": "dist/web.js"
+    "docs-mcp-server": "dist/index.js"
   },
   "license": "MIT",
   "repository": {
@@ -24,16 +22,17 @@
   "scripts": {
     "prepare": "husky || true",
     "build": "vite build --config vite.config.web.ts && vite build",
-    "start": "node --enable-source-maps dist/server.js",
-    "dev:cli": "vite build && node --enable-source-maps dist/cli.js",
-    "dev:server": "vite-node --watch src/server.ts",
-    "dev:server:stdio": "vite-node --watch src/server.ts -- --protocol stdio",
-    "dev:server:http": "vite-node --watch src/server.ts -- --protocol http",
-    "dev:web": "npm-run-all --parallel watch:web web",
-    "watch:web": "vite build --config vite.config.web.ts --watch",
-    "cli": "node --enable-source-maps dist/cli.js",
-    "server": "vite-node --watch src/server.ts",
-    "web": "vite-node --watch src/web.ts",
+    "start": "node --enable-source-maps dist/index.js",
+    "cli": "node --enable-source-maps dist/index.js",
+    "server": "node --enable-source-maps dist/index.ts",
+    "web": "node --enable-source-maps dist/index.ts web",
+    "dev:cli": "vite-node src/index.ts",
+    "dev:server": "vite-node --watch src/index.ts",
+    "dev:server:stdio": "vite-node --watch src/index.ts -- --protocol stdio",
+    "dev:server:http": "vite-node --watch src/index.ts -- --protocol http",
+    "dev:web": "npm-run-all --parallel dev:web:assets dev:web:bin",
+    "dev:web:bin": "vite-node --watch src/index.ts web",
+    "dev:web:assets": "vite build --config vite.config.web.ts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

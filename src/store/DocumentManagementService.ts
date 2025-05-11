@@ -107,7 +107,7 @@ export class DocumentManagementService {
    */
 
   async shutdown(): Promise<void> {
-    logger.info("🔌 Shutting down store manager");
+    logger.debug("Shutting down store manager");
     await this.store.shutdown();
   }
 

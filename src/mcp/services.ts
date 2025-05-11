@@ -11,7 +11,7 @@ let pipelineManager: PipelineManager | undefined;
  */
 export async function initializeServices(): Promise<void> {
   if (docService || pipelineManager) {
-    logger.warn("Services already initialized.");
+    logger.warn("⚠️ Services already initialized.");
     return;
   }
 
@@ -25,7 +25,7 @@ export async function initializeServices(): Promise<void> {
     await pipelineManager.start();
     logger.debug("PipelineManager initialized and started.");
   } catch (error) {
-    logger.error(`Failed to initialize services: ${error}`);
+    logger.error(`❌ Failed to initialize services: ${error}`);
     // Attempt to shut down any services that might have been partially initialized
     await shutdownServices();
     throw error; // Re-throw the error to indicate initialization failure
@@ -39,12 +39,12 @@ export async function initializeServices(): Promise<void> {
 export async function shutdownServices(): Promise<void> {
   if (pipelineManager) {
     await pipelineManager.stop();
-    logger.info("PipelineManager stopped.");
+    logger.debug("PipelineManager stopped.");
     pipelineManager = undefined;
   }
   if (docService) {
     await docService.shutdown();
-    logger.info("DocumentManagementService shutdown.");
+    logger.debug("DocumentManagementService shutdown.");
     docService = undefined;
   }
 }

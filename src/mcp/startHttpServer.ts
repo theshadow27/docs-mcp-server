@@ -1,5 +1,4 @@
 import * as http from "node:http";
-import type { AddressInfo } from "node:net";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -68,7 +67,7 @@ export async function startHttpServer(
         });
 
         res.on("close", () => {
-          logger.info("Streamable HTTP request closed");
+          logger.debug("Streamable HTTP request closed");
           requestTransport.close();
           requestServer.close(); // Close the per-request server instance
         });
@@ -85,7 +84,7 @@ export async function startHttpServer(
         );
       }
     } catch (error) {
-      logger.error(`Error handling HTTP request: ${error}`);
+      logger.error(`❌ Error handling HTTP request: ${error}`);
       // Send an error response
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(
@@ -99,6 +98,17 @@ export async function startHttpServer(
   httpServer.listen(port, () => {
     logger.info(`🤖 Docs MCP server listening at http://127.0.0.1:${port}`);
   });
+
+  const originalClose = httpServer.close.bind(httpServer);
+  server.close = async () => {
+    logger.debug("Closing MCP server instance...");
+    httpServer.close();
+    for (const transport of Object.values(sseTransports)) {
+      await transport.close();
+    }
+    logger.debug("MCP server instance closed.");
+    await originalClose();
+  };
 
   // Return the server instance
   return server;

@@ -28,3 +28,15 @@ Keep `ARCHITECTURE.md` high-level:
 - ALWAYS adhere to the Conventional Commits specification for all Git commit messages.
 - ALWAYS prefix branch names with the type of work being done, such as `feature/`, `bugfix/`, `chore/`, etc.
 - ALWAYS include the issue number in the branch name, such as `feature/1234-issue-name`.
+
+## Typescript
+
+- NEVER use `any` type.
+- ALWAYS prefer a specific type or `unknown` if unsure.
+
+## Logging Guidelines
+
+- Use `console.*` for CLI user output (results, direct feedback).
+- Use `logger.info/warn/error` for meaningful application events; prefix with a relevant emoji.
+- Use `logger.debug` for detailed developer/tracing logs; no emoji prefix.
+- Prefer `logger.debug` over `logger.info` for granular internal steps to reduce log verbosity.

@@ -87,7 +87,7 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
     const $ = context.dom;
     if (!$) {
       logger.warn(
-        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware ran correctly.`,
+        `⏭️ Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware ran correctly.`,
       );
       await next();
       return;
@@ -104,7 +104,7 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
       if (!markdown) {
         // If conversion results in empty markdown, log a warning but treat as valid empty markdown
         const warnMsg = `HTML to Markdown conversion resulted in empty content for ${context.source}.`;
-        logger.warn(warnMsg);
+        logger.warn(`⚠️ ${warnMsg}`);
         context.content = "";
       } else {
         // Conversion successful and produced non-empty markdown
@@ -112,7 +112,9 @@ export class HtmlToMarkdownMiddleware implements ContentProcessorMiddleware {
         logger.debug(`Successfully converted HTML to Markdown for ${context.source}`);
       }
     } catch (error) {
-      logger.error(`Error converting HTML to Markdown for ${context.source}: ${error}`);
+      logger.error(
+        `❌ Error converting HTML to Markdown for ${context.source}: ${error}`,
+      );
       context.errors.push(
         new Error(
           `Failed to convert HTML to Markdown: ${error instanceof Error ? error.message : String(error)}`,

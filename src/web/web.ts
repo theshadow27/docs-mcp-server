@@ -2,14 +2,13 @@ import path from "node:path";
 import formBody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance } from "fastify";
-import { PipelineManager } from "../pipeline/PipelineManager";
-import { DocumentManagementService } from "../store/DocumentManagementService";
+import type { PipelineManager } from "../pipeline/PipelineManager";
+import type { DocumentManagementService } from "../store/DocumentManagementService";
 import { SearchTool } from "../tools";
 import { ListJobsTool } from "../tools/ListJobsTool";
 import { ListLibrariesTool } from "../tools/ListLibrariesTool";
 import { RemoveTool } from "../tools/RemoveTool";
 import { ScrapeTool } from "../tools/ScrapeTool";
-import { DEFAULT_WEB_PORT } from "../utils/config";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { registerIndexRoute } from "./routes/index";
@@ -21,9 +20,16 @@ import { registerLibrariesRoutes } from "./routes/libraries/list";
 /**
  * Initializes the Fastify web server instance.
  *
+ * @param port The port number for the web server.
+ * @param docService The document management service instance.
+ * @param pipelineManager The pipeline manager instance.
  * @returns The initialized Fastify server instance.
  */
-export async function startWebServer(port: number): Promise<FastifyInstance> {
+export async function startWebServer(
+  port: number,
+  docService: DocumentManagementService,
+  pipelineManager: PipelineManager,
+): Promise<FastifyInstance> {
   const server = Fastify({
     logger: false, // Use our own logger instead
   });
@@ -31,11 +37,7 @@ export async function startWebServer(port: number): Promise<FastifyInstance> {
   // Register plugins
   await server.register(formBody); // Register formbody to parse form data
 
-  // Instantiate services and tools
-  const docService = new DocumentManagementService();
-  await docService.initialize();
-  const pipelineManager = new PipelineManager(docService);
-  await pipelineManager.start(); // Start the manager to process jobs enqueued via web
+  // Instantiate tools using provided services
   const listLibrariesTool = new ListLibrariesTool(docService);
   const listJobsTool = new ListJobsTool(pipelineManager);
   const scrapeTool = new ScrapeTool(docService, pipelineManager);
@@ -57,12 +59,7 @@ export async function startWebServer(port: number): Promise<FastifyInstance> {
   registerLibrariesRoutes(server, listLibrariesTool, removeTool);
   registerLibraryDetailRoutes(server, listLibrariesTool, searchTool);
 
-  // Graceful shutdown
-  server.addHook("onClose", async () => {
-    logger.info("Shutting down document service...");
-    await docService.shutdown();
-    logger.info("Document service shut down.");
-  });
+  // Graceful shutdown of services will be handled by the caller (src/index.ts)
 
   try {
     const address = await server.listen({ port, host: "0.0.0.0" });

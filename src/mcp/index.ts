@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import { LogLevel, logger, setLogLevel } from "../utils/logger";
-import { getDocService, getPipelineManager, initializeServices } from "./services"; // Import get functions
+import { getDocService, getPipelineManager } from "./services";
 import { startHttpServer } from "./startHttpServer";
 import { startStdioServer } from "./startStdioServer";
 import { type McpServerTools, initializeTools } from "./tools";
@@ -15,11 +15,7 @@ let runningDocService: DocumentManagementService | null = null;
 
 export async function startServer(protocol: "stdio" | "http", port?: number) {
   try {
-    // Set the default log level for the server to ERROR
-    setLogLevel(LogLevel.ERROR);
-
-    // Initialize shared services
-    await initializeServices();
+    // Shared services should already be initialized
     runningDocService = getDocService(); // Get instance after initialization
     runningPipelineManager = getPipelineManager(); // Get instance after initialization
 
@@ -31,25 +27,18 @@ export async function startServer(protocol: "stdio" | "http", port?: number) {
       serverInstance = await startStdioServer(tools); // startStdioServer needs to return McpServer
     } else if (protocol === "http") {
       if (port === undefined) {
-        logger.error("HTTP protocol requires a port.");
+        logger.error("❌ HTTP protocol requires a port.");
         process.exit(1);
       }
       serverInstance = await startHttpServer(tools, port); // startHttpServer needs to return McpServer
     } else {
       // This case should be caught by src/server.ts, but handle defensively
-      logger.error(`Unknown protocol: ${protocol}`);
+      logger.error(`❌ Unknown protocol: ${protocol}`);
       process.exit(1);
     }
 
     // Capture the running server instance
     runningServer = serverInstance;
-
-    // Handle graceful shutdown on SIGINT
-    process.on("SIGINT", async () => {
-      logger.info("Received SIGINT. Shutting down gracefully...");
-      await stopServer();
-      process.exit(0);
-    });
   } catch (error) {
     logger.error(`❌ Fatal Error during server startup: ${error}`);
     // Attempt cleanup even if startup failed partially
@@ -59,50 +48,37 @@ export async function startServer(protocol: "stdio" | "http", port?: number) {
 }
 
 /**
- * Stops the MCP server and related services gracefully.
+ * Stops the MCP server instance gracefully.
+ * Shared services (PipelineManager, DocumentManagementService) are shut down
+ * separately by the caller (e.g., via shutdownServices() in src/index.ts).
  */
 export async function stopServer() {
-  logger.info("Shutting down MCP server and services...");
+  logger.debug("Attempting to close MCP Server instance...");
   let hadError = false;
   try {
-    if (runningPipelineManager) {
-      logger.debug("Stopping Pipeline Manager...");
-      await runningPipelineManager.stop();
-      logger.info("Pipeline Manager stopped.");
-    }
-  } catch (e) {
-    logger.error(`Error stopping Pipeline Manager: ${e}`);
-    hadError = true;
-  }
-  try {
-    if (runningDocService) {
-      logger.debug("Shutting down Document Service...");
-      await runningDocService.shutdown();
-      logger.info("Document Service shut down.");
-    }
-  } catch (e) {
-    logger.error(`Error shutting down Document Service: ${e}`);
-    hadError = true;
-  }
-  try {
     if (runningServer) {
-      logger.debug("Closing MCP Server connection...");
+      logger.debug("Closing MCP Server instance (McpServer/McpHttpServer)...");
       await runningServer.close();
-      logger.info("MCP Server connection closed.");
+      logger.debug("MCP Server instance closed.");
+    } else {
+      logger.debug("MCP Server instance was not running or already null.");
     }
   } catch (e) {
-    logger.error(`Error closing MCP Server: ${e}`);
+    logger.error(`❌ Error closing MCP Server instance: ${e}`);
     hadError = true;
   }
 
-  // Clear references
+  // Clear only the server reference; other services are managed by initializeServices/shutdownServices
+  runningServer = null;
+  // runningPipelineManager and runningDocService references in this module are just pointers
+  // to the singletons in services.ts. Their lifecycle is managed there.
+  // We can clear them here to be tidy, but their actual shutdown is separate.
   runningPipelineManager = null;
   runningDocService = null;
-  runningServer = null;
 
   if (hadError) {
-    logger.warn("Server shutdown completed with errors.");
+    logger.warn("⚠️ MCP Server instance close operation completed with errors.");
   } else {
-    logger.info("✅ Server shutdown complete.");
+    logger.info("✅ MCP Server instance close operation complete.");
   }
 }

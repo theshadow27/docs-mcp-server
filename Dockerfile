@@ -33,8 +33,6 @@ RUN ln -s /root/.cache/ms-playwright/chromium-1161 /root/.cache/ms-playwright/ch
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 
-RUN ln -s /app/dist/cli.js /app/docs-cli
-
 # Set data directory for the container
 ENV DOCS_MCP_STORE_PATH=/data
 
@@ -46,4 +44,4 @@ EXPOSE 6280
 EXPOSE 6281
 
 # Set the command to run the application
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/index.js"]

@@ -104,7 +104,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       renderedHtml = await page.content();
       logger.debug(`Playwright: Successfully rendered content for ${context.source}`);
     } catch (error) {
-      logger.error(`Playwright failed to render ${context.source}: ${error}`);
+      logger.error(`❌ Playwright failed to render ${context.source}: ${error}`);
       context.errors.push(
         error instanceof Error
           ? error
@@ -128,7 +128,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
     } else {
       // Log if Playwright ran but failed to render
       logger.warn(
-        `Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
+        `⚠️ Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
       );
     }
 

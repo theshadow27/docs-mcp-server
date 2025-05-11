@@ -92,7 +92,7 @@ export async function executeJsInSandbox(
         scriptSourceDescription = `external script (src=${scriptSrc})`;
         if (!options.fetchScriptContent) {
           logger.warn(
-            `Skipping ${scriptSourceDescription} in sandbox for ${url}: No fetchScriptContent callback provided.`,
+            `⏭️ Skipping ${scriptSourceDescription} in sandbox for ${url}: No fetchScriptContent callback provided.`,
           );
           continue;
         }
@@ -106,7 +106,7 @@ export async function executeJsInSandbox(
         } catch (urlError) {
           const message = urlError instanceof Error ? urlError.message : String(urlError);
           logger.warn(
-            `Skipping ${scriptSourceDescription}: Invalid URL format - ${message}`,
+            `⏭️ Skipping ${scriptSourceDescription}: Invalid URL format - ${message}`,
           );
           errors.push(
             new Error(`Invalid script URL ${scriptSrc} on page ${url}: ${message}`, {
@@ -121,7 +121,7 @@ export async function executeJsInSandbox(
           if (scriptContentToExecute === null) {
             // Fetch callback already logged the specific error and added to context.errors
             logger.warn(
-              `Skipping execution of ${scriptSourceDescription} from ${resolvedUrl} due to fetch failure or invalid content.`,
+              `⏭️ Skipping execution of ${scriptSourceDescription} from ${resolvedUrl} due to fetch failure or invalid content.`,
             );
             // Error should have been added by the callback, no need to add again here.
             continue;
@@ -134,7 +134,7 @@ export async function executeJsInSandbox(
           const message =
             fetchError instanceof Error ? fetchError.message : String(fetchError);
           logger.error(
-            `Error during fetch callback for ${scriptSourceDescription} from ${resolvedUrl}: ${message}`,
+            `❌ Error during fetch callback for ${scriptSourceDescription} from ${resolvedUrl}: ${message}`,
           );
           errors.push(
             new Error(`Fetch callback failed for script ${resolvedUrl}: ${message}`, {
@@ -170,7 +170,7 @@ export async function executeJsInSandbox(
               ? error
               : new Error(`Script execution failed: ${String(error)}`);
           logger.error(
-            `Error executing ${scriptSourceDescription} in sandbox for ${url}: ${executionError.message}`,
+            `❌ Error executing ${scriptSourceDescription} in sandbox for ${url}: ${executionError.message}`,
           );
           // Add context about which script failed
           const errorWithContext = new Error(
@@ -196,13 +196,13 @@ export async function executeJsInSandbox(
       error instanceof Error
         ? error
         : new Error(`Sandbox setup failed: ${String(error)}`);
-    logger.error(`Error setting up sandbox for ${url}: ${setupError.message}`);
+    logger.error(`❌ Error setting up sandbox for ${url}: ${setupError.message}`);
     // Always wrap the error to provide context
     const wrappedError = new Error(
       `Sandbox setup failed for ${url}: ${error instanceof Error ? error.message : String(error)}`,
       { cause: error },
     );
-    logger.error(wrappedError.message); // Log the wrapped error message
+    logger.error(`❌ ${wrappedError.message}`); // Log the wrapped error message
     errors.push(wrappedError);
     // If setup fails, return the original HTML and any errors
     return {

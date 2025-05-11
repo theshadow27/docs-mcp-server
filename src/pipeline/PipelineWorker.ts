@@ -58,7 +58,7 @@ export class PipelineWorker {
               );
             } catch (docError) {
               logger.error(
-                `[${jobId}] Failed to store document ${progress.document.metadata.url}: ${docError}`,
+                `❌ [${jobId}] Failed to store document ${progress.document.metadata.url}: ${docError}`,
               );
               // Report document-specific errors via manager's callback
               await callbacks.onJobError?.(
@@ -84,7 +84,7 @@ export class PipelineWorker {
       logger.debug(`[${jobId}] Worker finished job successfully.`);
     } catch (error) {
       // Re-throw error to be caught by the manager in _runJob
-      logger.warn(`[${jobId}] Worker encountered error: ${error}`);
+      logger.warn(`⚠️ [${jobId}] Worker encountered error: ${error}`);
       throw error;
     }
     // Note: The manager (_runJob) is responsible for updating final job status (COMPLETED/FAILED/CANCELLED)

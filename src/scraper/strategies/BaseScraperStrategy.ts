@@ -153,7 +153,7 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
       // Use variable
       // Check for cancellation at the start of each loop iteration
       if (signal?.aborted) {
-        logger.info("Scraping cancelled by signal.");
+        logger.debug("Scraping cancelled by signal.");
         throw new CancellationError("Scraping cancelled by signal");
       }
 

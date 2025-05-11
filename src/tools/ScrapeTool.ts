@@ -147,7 +147,7 @@ export class ScrapeTool {
           pagesScraped: finalPagesScraped,
         };
       } catch (error) {
-        logger.error(`Job ${jobId} failed or was cancelled: ${error}`);
+        logger.error(`❌ Job ${jobId} failed or was cancelled: ${error}`);
         throw error; // Re-throw so the caller knows it failed
       }
       // No finally block needed to stop manager, as it's managed externally
