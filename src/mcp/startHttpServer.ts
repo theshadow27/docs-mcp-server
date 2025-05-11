@@ -96,7 +96,7 @@ export async function startHttpServer(
   });
 
   httpServer.listen(port, () => {
-    logger.info(`🤖 Docs MCP server listening at http://127.0.0.1:${port}`);
+    logger.info(`🤖 MCP server listening at http://127.0.0.1:${port}`);
   });
 
   const originalClose = httpServer.close.bind(httpServer);

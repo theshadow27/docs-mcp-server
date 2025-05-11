@@ -2,25 +2,23 @@ import "dotenv/config";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
-import { LogLevel, logger, setLogLevel } from "../utils/logger";
-import { getDocService, getPipelineManager } from "./services";
+import { logger } from "../utils/logger";
 import { startHttpServer } from "./startHttpServer";
 import { startStdioServer } from "./startStdioServer";
 import { type McpServerTools, initializeTools } from "./tools";
 
 // Variables to hold server instances for cleanup
 let runningServer: McpServer | null = null;
-let runningPipelineManager: PipelineManager | null = null;
-let runningDocService: DocumentManagementService | null = null;
 
-export async function startServer(protocol: "stdio" | "http", port?: number) {
+export async function startServer(
+  protocol: "stdio" | "http",
+  docService: DocumentManagementService, // NEW PARAM
+  pipelineManager: PipelineManager, // NEW PARAM
+  port?: number, // Existing optional param
+) {
   try {
-    // Shared services should already be initialized
-    runningDocService = getDocService(); // Get instance after initialization
-    runningPipelineManager = getPipelineManager(); // Get instance after initialization
-
     // Initialize and get shared tools
-    const tools: McpServerTools = await initializeTools(); // initializeTools now gets services internally
+    const tools: McpServerTools = await initializeTools(docService, pipelineManager); // Pass instances
 
     let serverInstance: McpServer;
     if (protocol === "stdio") {
@@ -50,7 +48,7 @@ export async function startServer(protocol: "stdio" | "http", port?: number) {
 /**
  * Stops the MCP server instance gracefully.
  * Shared services (PipelineManager, DocumentManagementService) are shut down
- * separately by the caller (e.g., via shutdownServices() in src/index.ts).
+ * separately by the caller (e.g., src/index.ts).
  */
 export async function stopServer() {
   logger.debug("Attempting to close MCP Server instance...");
@@ -68,17 +66,12 @@ export async function stopServer() {
     hadError = true;
   }
 
-  // Clear only the server reference; other services are managed by initializeServices/shutdownServices
   runningServer = null;
-  // runningPipelineManager and runningDocService references in this module are just pointers
-  // to the singletons in services.ts. Their lifecycle is managed there.
-  // We can clear them here to be tidy, but their actual shutdown is separate.
-  runningPipelineManager = null;
-  runningDocService = null;
+  // DocumentManagementService and PipelineManager instances are managed and shut down by src/index.ts.
 
   if (hadError) {
-    logger.warn("⚠️ MCP Server instance close operation completed with errors.");
+    logger.warn("⚠️ MCP Server instance stopped with errors.");
   } else {
-    logger.info("✅ MCP Server instance close operation complete.");
+    logger.info("✅ MCP Server instance stopped.");
   }
 }

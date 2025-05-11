@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 import path from 'path';
-import packageJson from "./package.json" assert { type: "json" };
+import packageJson from "./package.json";
 
 export default defineConfig({
   plugins: [

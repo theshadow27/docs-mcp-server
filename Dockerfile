@@ -44,4 +44,4 @@ EXPOSE 6280
 EXPOSE 6281
 
 # Set the command to run the application
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["node", "dist/index.js"]
