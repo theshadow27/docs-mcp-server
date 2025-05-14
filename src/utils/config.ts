@@ -41,3 +41,13 @@ export const SPLITTER_MAX_CHUNK_SIZE = 5000;
  * Maximum number of documents to process in a single batch for embeddings.
  */
 export const EMBEDDING_BATCH_SIZE = 100;
+
+/**
+ * Maximum number of retries for database migrations if busy.
+ */
+export const MIGRATION_MAX_RETRIES = 5;
+
+/**
+ * Delay in milliseconds between migration retry attempts.
+ */
+export const MIGRATION_RETRY_DELAY_MS = 300;

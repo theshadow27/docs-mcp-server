@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Database } from "better-sqlite3";
+import { MIGRATION_MAX_RETRIES, MIGRATION_RETRY_DELAY_MS } from "../utils/config";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { StoreError } from "./errors";
@@ -41,8 +42,8 @@ function getAppliedMigrations(db: Database): Set<string> {
  * @param db The better-sqlite3 database instance.
  * @throws {StoreError} If any migration fails.
  */
-export function applyMigrations(db: Database): void {
-  try {
+export async function applyMigrations(db: Database): Promise<void> {
+  const overallTransaction = db.transaction(() => {
     logger.debug("Applying database migrations...");
     ensureMigrationsTable(db);
     const appliedMigrations = getAppliedMigrations(db);
@@ -63,23 +64,19 @@ export function applyMigrations(db: Database): void {
         const filePath = path.join(MIGRATIONS_DIR, filename);
         const sql = fs.readFileSync(filePath, "utf8");
 
-        // Run migration within a transaction
-        const transaction = db.transaction(() => {
+        // Execute migration and record it directly within the overall transaction
+        try {
           db.exec(sql);
           const insertStmt = db.prepare(
             `INSERT INTO ${MIGRATIONS_TABLE} (id) VALUES (?)`,
           );
           insertStmt.run(filename);
-        });
-
-        try {
-          transaction();
           logger.debug(`Successfully applied migration: ${filename}`);
           appliedCount++;
         } catch (error) {
-          logger.error(`Failed to apply migration: ${filename} - ${error}`);
-          // Let the transaction implicitly rollback on error
-          throw new StoreError(`Migration failed: ${filename} - ${error}`);
+          logger.error(`❌ Failed to apply migration: ${filename} - ${error}`);
+          // Re-throw to ensure the overall transaction rolls back
+          throw new StoreError(`Migration failed: ${filename}`, error);
         }
       }
     }
@@ -89,11 +86,39 @@ export function applyMigrations(db: Database): void {
     } else {
       logger.debug("Database schema is up to date.");
     }
-  } catch (error) {
-    // Ensure StoreError is thrown for consistent handling
-    if (error instanceof StoreError) {
-      throw error;
+  });
+
+  let retries = 0;
+
+  while (true) {
+    try {
+      // Start a single IMMEDIATE transaction for the entire migration process
+      overallTransaction.immediate(); // Execute the encompassing transaction
+      logger.debug(
+        "Migrations applied successfully or schema up to date after potential retries.",
+      );
+      break; // Success
+    } catch (error) {
+      // biome-ignore lint/suspicious/noExplicitAny: error can be any
+      if ((error as any)?.code === "SQLITE_BUSY" && retries < MIGRATION_MAX_RETRIES) {
+        retries++;
+        logger.warn(
+          `⚠️ Migrations busy (SQLITE_BUSY), retrying attempt ${retries}/${MIGRATION_MAX_RETRIES} in ${MIGRATION_RETRY_DELAY_MS}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, MIGRATION_RETRY_DELAY_MS));
+      } else {
+        // biome-ignore lint/suspicious/noExplicitAny: error can be any
+        if ((error as any)?.code === "SQLITE_BUSY") {
+          logger.error(
+            `❌ Migrations still busy after ${MIGRATION_MAX_RETRIES} retries. Giving up: ${error}`,
+          );
+        }
+        // Ensure StoreError is thrown for consistent handling
+        if (error instanceof StoreError) {
+          throw error;
+        }
+        throw new StoreError("Failed during migration process", error);
+      }
     }
-    throw new StoreError("Failed during migration process", error);
   }
 }
