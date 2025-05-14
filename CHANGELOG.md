@@ -1,3 +1,15 @@
+# [1.14.0](https://github.com/arabold/docs-mcp-server/compare/v1.13.0...v1.14.0) (2025-05-10)
+
+
+### Bug Fixes
+
+* reduce embeddings batch size to avoid token errors ([a25f04c](https://github.com/arabold/docs-mcp-server/commit/a25f04c668278fedcf66586efbc9b79d914627d0)), closes [#106](https://github.com/arabold/docs-mcp-server/issues/106)
+
+
+### Features
+
+* **web:** display build version in UI title using __APP_VERSION__ from package.json ([59d6306](https://github.com/arabold/docs-mcp-server/commit/59d630667c86f769109af3a6222a532effee8688))
+
 # [1.13.0](https://github.com/arabold/docs-mcp-server/compare/v1.12.4...v1.13.0) (2025-05-08)
 
 
