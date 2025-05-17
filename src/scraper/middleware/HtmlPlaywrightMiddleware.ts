@@ -1,4 +1,4 @@
-import { type Browser, type Page, chromium } from "playwright";
+import { type Browser, type BrowserContext, type Page, chromium } from "playwright";
 import { logger } from "../../utils/logger";
 import { ScrapeMode } from "../types";
 import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
@@ -8,6 +8,9 @@ import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
  * *if* the scrapeMode option requires it ('playwright' or 'auto').
  * It updates `context.content` with the rendered HTML if Playwright runs.
  * Subsequent middleware (e.g., HtmlCheerioParserMiddleware) should handle parsing this content.
+ *
+ * This middleware also supports URLs with embedded credentials (user:password@host) and ensures
+ * credentials are used for all same-origin resource requests (not just the main page) via HTTP Basic Auth.
  */
 export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
   private browser: Browser | null = null;
@@ -28,7 +31,6 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
         this.browser = null;
       });
     }
-
     return this.browser;
   }
 
@@ -44,11 +46,21 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
     }
   }
 
+  /**
+   * Processes the context using Playwright, rendering dynamic content and propagating credentials for all same-origin requests.
+   *
+   * - Parses credentials from the URL (if present).
+   * - Uses browser.newContext({ httpCredentials }) for HTTP Basic Auth on the main page and subresources.
+   * - Injects Authorization header for all same-origin requests if credentials are present and not already set.
+   *
+   * @param context The middleware context containing the HTML and source URL.
+   * @param next The next middleware function in the pipeline.
+   */
   async process(context: MiddlewareContext, next: () => Promise<void>): Promise<void> {
     // Always process, content type is handled by pipeline selection
 
     // Determine if Playwright should run based on scrapeMode
-    const scrapeMode = context.options?.scrapeMode ?? ScrapeMode.Auto; // Default to Auto
+    const scrapeMode = context.options?.scrapeMode ?? ScrapeMode.Auto;
     const shouldRunPlaywright =
       scrapeMode === ScrapeMode.Playwright || scrapeMode === ScrapeMode.Auto;
 
@@ -60,47 +72,86 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       return;
     }
 
-    // --- Playwright Execution Logic ---
     logger.debug(
       `Running Playwright rendering for ${context.source} (scrapeMode: '${scrapeMode}')`,
     );
 
     let page: Page | null = null;
+    let browserContext: BrowserContext | null = null;
     let renderedHtml: string | null = null;
+
+    // --- Credential Extraction ---
+    let credentials: { username: string; password: string } | null = null;
+    let origin: string | null = null;
+    try {
+      const url = new URL(context.source);
+      origin = url.origin;
+      if (url.username && url.password) {
+        credentials = { username: url.username, password: url.password };
+        logger.debug(
+          `Playwright: Detected credentials for ${origin} (username: ${url.username})`,
+        );
+      }
+    } catch (e) {
+      logger.warn(`⚠️ Could not parse URL for credential extraction: ${context.source}`);
+    }
 
     try {
       const browser = await this.ensureBrowser();
-      page = await browser.newPage();
+      if (credentials) {
+        browserContext = await browser.newContext({ httpCredentials: credentials });
+        page = await browserContext.newPage();
+      } else {
+        page = await browser.newPage();
+      }
       logger.debug(`Playwright: Processing ${context.source}`);
 
-      // Block unnecessary resources
-      await page.route("**/*", (route) => {
-        if (route.request().url() === context.source) {
+      // Block unnecessary resources and inject credentials for same-origin requests
+      await page.route("**/*", async (route) => {
+        const reqUrl = route.request().url();
+        const reqOrigin = (() => {
+          try {
+            return new URL(reqUrl).origin;
+          } catch {
+            return null;
+          }
+        })();
+        // Serve the initial HTML for the main page
+        if (reqUrl === context.source) {
           return route.fulfill({
             status: 200,
             contentType: "text/html",
             body: context.content,
           });
         }
-
+        // Abort non-essential resources
         const resourceType = route.request().resourceType();
         if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
           return route.abort();
+        }
+        // Inject Authorization header for same-origin requests if credentials are present
+        if (
+          credentials &&
+          origin &&
+          reqOrigin === origin &&
+          !route.request().headers().authorization
+        ) {
+          const basic = Buffer.from(
+            `${credentials.username}:${credentials.password}`,
+          ).toString("base64");
+          const headers = {
+            ...route.request().headers(),
+            Authorization: `Basic ${basic}`,
+          };
+          return route.continue({ headers });
         }
         return route.continue();
       });
 
       // Load initial HTML content
-      // Use 'domcontentloaded' as scripts might need the initial DOM structure
-      // Use 'networkidle' if waiting for async data fetches is critical, but slower.
-      await page.goto(context.source, {
-        waitUntil: "load",
-      });
+      await page.goto(context.source, { waitUntil: "load" });
+      await page.waitForSelector("body");
 
-      // Optionally, add a small delay or wait for a specific element if needed
-      // await page.waitForTimeout(100); // Example: wait 100ms
-
-      // Get the fully rendered HTML
       renderedHtml = await page.content();
       logger.debug(`Playwright: Successfully rendered content for ${context.source}`);
     } catch (error) {
@@ -111,28 +162,27 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
           : new Error(`Playwright rendering failed: ${String(error)}`),
       );
     } finally {
-      // Ensure page is closed even if subsequent steps fail
+      // Ensure page/context are closed even if subsequent steps fail
       if (page) {
         await page.unroute("**/*");
         await page.close();
       }
+      if (browserContext) {
+        await browserContext.close();
+      }
     }
-    // --- End Playwright Execution Logic ---
 
-    // Update context content *only if* Playwright ran and succeeded
     if (renderedHtml !== null) {
       context.content = renderedHtml;
       logger.debug(
         `Playwright middleware updated content for ${context.source}. Proceeding.`,
       );
     } else {
-      // Log if Playwright ran but failed to render
       logger.warn(
         `⚠️ Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
       );
     }
 
-    // Proceed to the next middleware regardless of Playwright success/failure
     await next();
   }
 }
