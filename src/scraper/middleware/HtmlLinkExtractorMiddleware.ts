@@ -17,7 +17,7 @@ export class HtmlLinkExtractorMiddleware implements ContentProcessorMiddleware {
     const $ = context.dom;
     if (!$) {
       logger.warn(
-        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
+        `⏭️ Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
       );
       await next();
       return;
@@ -49,7 +49,7 @@ export class HtmlLinkExtractorMiddleware implements ContentProcessorMiddleware {
         `Extracted ${context.links.length} unique, valid links from ${context.source}`,
       );
     } catch (error) {
-      logger.error(`Error extracting links from ${context.source}: ${error}`);
+      logger.error(`❌ Error extracting links from ${context.source}: ${error}`);
       context.errors.push(
         new Error(
           `Failed to extract links from HTML: ${error instanceof Error ? error.message : String(error)}`,

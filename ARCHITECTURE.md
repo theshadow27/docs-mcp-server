@@ -21,8 +21,7 @@ Default configuration values for the server and its components (e.g., pipeline c
 
 ```
 src/
-├── cli.ts                           # CLI interface implementation
-├── server.ts                        # MCP server entry point (uses mcp/index.ts)
+├── index.ts                         # Unified CLI, MCP Server, and Web entry point
 ├── mcp/                             # MCP server implementation details
 ├── pipeline/                        # Asynchronous job processing pipeline
 │   ├── PipelineManager.ts           # Manages job queue, concurrency, state
@@ -312,8 +311,8 @@ The web interface provides a GUI for interacting with the server, monitoring job
 
 The web interface is organized into logical parts:
 
-- **Entry Point (`src/web.ts`):** Server initialization and environment setup.
-- **Core Server (`src/web/web.ts`):** Configures Fastify, registers plugins, instantiates services/tools, and maps routes to handlers.
+- **Entry Point:** Now part of `src/index.ts`. When the `web` command is used, `src/index.ts` calls `startWebServer` from `src/web/web.ts`.
+- **Core Server (`src/web/web.ts`):** Configures Fastify, registers plugins, instantiates services/tools (using shared instances provided by `src/index.ts`), and maps routes to handlers.
 - **Routes (`src/web/routes/`):** Contains route handler modules, organized into subdirectories by feature (e.g., `jobs/`, `libraries/`). These handlers fetch data using the core Tools and compose the UI using components. The root `index.tsx` defines the main page structure.
 - **Components (`src/web/components/`):** Contains reusable JSX components (e.g., Layout, JobItem, LibraryList, Alert) responsible for rendering specific parts of the UI. These components receive data as props from the route handlers.
 
@@ -323,10 +322,12 @@ This structure separates routing and data fetching logic (in `routes/`) from pre
 
 ```mermaid
 graph TD
-    subgraph "User Interfaces"
-        CLI("CLI: src/cli.ts")
-        MCP("MCP Server: src/server.ts")
-        WEB("Web Interface: src/web.ts")
+    subgraph "Entry Point"
+        direction LR
+        EntryPoint["src/index.ts (Unified CLI)"]
+        EntryPoint -- "No command or MCP options" --> McpMode["MCP Server Mode"]
+        EntryPoint -- "web command" --> WebMode["Web Interface Mode"]
+        EntryPoint -- "Other CLI commands" --> CliCommandMode["CLI Command Mode"]
     end
 
     subgraph "Core Tools"
@@ -340,33 +341,35 @@ graph TD
     end
 
     subgraph "Core Services"
-        Pipeline("Pipeline Manager")
-        Scraper("Scraper Service")
-        Store("Document Mgmt Service")
-        Retriever("Document Retriever Service")
+        PipelineSvc("Pipeline Manager")
+        ScraperSvc("Scraper Service")
+        StoreSvc("Document Mgmt Service")
+        RetrieverSvc("Document Retriever Service")
     end
 
-    CLI --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
-    MCP --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+    CliCommandMode --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
+    McpMode -- "Uses MCP tools from src/mcp/tools.ts" --> T_Scrape & T_Search & T_Jobs & T_Libs & T_Remove & T_Fetch & T_Find
 
-    subgraph "Web Server (src/web/web.ts)"
-        Routes("Route Handlers: src/web/routes/*.tsx")
+    subgraph "Web Server Logic (invoked by WebMode)"
+        WebCore("Core Web Server: src/web/web.ts")
+        WebRoutes("Route Handlers: src/web/routes/*.tsx")
     end
 
-    WEB --> Routes
-    Routes -- "Calls Tools" --> T_Jobs & T_Libs
+    WebMode --> WebCore
+    WebCore --> WebRoutes
+    WebRoutes -- "Calls Tools" --> T_Jobs & T_Libs & T_Scrape & T_Search & T_Remove & T_Find
 
-    T_Scrape --> Pipeline
-    T_Jobs --> Pipeline
-    T_Libs --> Store
-    T_Search --> Retriever
-    T_Remove --> Store
-    T_Fetch --> Scraper
-    T_Find --> Store
+    T_Scrape --> PipelineSvc
+    T_Jobs --> PipelineSvc
+    T_Libs --> StoreSvc
+    T_Search --> RetrieverSvc
+    T_Remove --> StoreSvc
+    T_Fetch --> ScraperSvc
+    T_Find --> StoreSvc
 
-    Pipeline --> Scraper
-    Pipeline --> Store
-    Retriever --> Store
+    PipelineSvc --> ScraperSvc
+    PipelineSvc --> StoreSvc
+    RetrieverSvc --> StoreSvc
 ```
 
 #### AlpineJS and HTMX Interaction Pattern
@@ -397,17 +400,23 @@ The web interface leverages HTMX for dynamic updates, allowing partial page refr
 
 ### Interface-Specific Adapters
 
-#### CLI (cli.ts)
+#### Unified Entry Point (`src/index.ts`)
 
-- Uses Commander.js for command-line argument parsing
-- Converts command-line arguments to tool options
-- Formats tool results for console output
-- Handles CLI-specific error reporting
+- Uses Commander.js for parsing all command-line arguments.
+- **CLI Mode:** If a specific CLI command (e.g., `scrape`, `search`, `list`, `web`) is provided, it executes the corresponding logic.
+  - For general CLI commands, it converts arguments to tool options, calls the appropriate tool from the `tools/` directory, and formats results for console output.
+  - For the `web` command, it starts the Web Interface by calling `startWebServer` from `src/web/web.ts`.
+- **Default MCP Server Mode:** If no command is specified, it defaults to starting the MCP server.
+  - It uses global options like `--protocol` and `--port` to configure the MCP server.
+  - It calls `startServer` from `src/mcp/index.ts` to launch the MCP server (stdio or HTTP).
+- Handles shared service initialization (`DocumentManagementService`, `PipelineManager`) for all modes.
+- Manages graceful shutdown for all running components (CLI tools, MCP server, Web server).
 
-#### MCP Server (index.ts)
+#### MCP Server Logic (`src/mcp/index.ts` and `src/mcp/tools.ts`)
 
-- Implements MCP protocol for AI interaction
-- Wraps tool functions in MCP tool definitions
+- Implements the MCP protocol for AI interaction when `src/index.ts` starts it in MCP Server Mode.
+- `src/mcp/tools.ts` defines the MCP-specific tool schemas and maps them to the core tool functionalities from the `tools/` directory.
+- `src/mcp/index.ts` (specifically `startStdioServer` and `startHttpServer`) instantiates the `@modelcontextprotocol/sdk McpServer` and registers the defined MCP tools.
 - Formats results as MCP responses
 - Provides progress feedback through MCP protocol (Note: Currently reports job start via message, detailed progress TBD)
 
@@ -542,8 +551,8 @@ When adding new functionality:
 1. Implement core logic in a new tool under `tools/`
 2. Consider data relationships and context requirements
 3. Design for efficient retrieval patterns
-4. Add CLI command in `cli.ts`
-5. Add MCP tool in `index.ts`
+4. Add CLI command in `src/index.ts` using Commander.js.
+5. Define the MCP tool schema and logic in `src/mcp/tools.ts` and ensure it's registered with the `McpServer` instance in `src/mcp/index.ts`.
 6. Maintain consistent error handling and progress reporting
 
 When adding new scraping capabilities:

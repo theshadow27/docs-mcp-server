@@ -82,7 +82,7 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
     const $ = context.dom;
     if (!$) {
       logger.warn(
-        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
+        `⏭️ Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
       );
       await next();
       return;
@@ -110,7 +110,7 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
           // Log invalid selectors but continue with others
           // Cheerio is generally more tolerant of invalid selectors than querySelectorAll
           logger.warn(
-            `Potentially invalid selector "${selector}" during element removal: ${selectorError}`,
+            `⚠️ Potentially invalid selector "${selector}" during element removal: ${selectorError}`,
           );
           context.errors.push(
             new Error(`Invalid selector "${selector}": ${selectorError}`),
@@ -121,7 +121,9 @@ export class HtmlSanitizerMiddleware implements ContentProcessorMiddleware {
 
       // The context.dom object ($) has been modified in place.
     } catch (error) {
-      logger.error(`Error during HTML element removal for ${context.source}: ${error}`);
+      logger.error(
+        `❌ Error during HTML element removal for ${context.source}: ${error}`,
+      );
       context.errors.push(
         error instanceof Error
           ? error

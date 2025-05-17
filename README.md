@@ -103,6 +103,8 @@ This method provides a persistent local setup by running the server and web inte
 
     Restart your AI assistant application after updating the configuration.
 
+    Note: The Docker Compose setup runs the Docs MCP Server in HTTP mode (via SSE) by design, as it's intended as a standalone, connectable instance. It does not support stdio communication.
+
 6.  **Access the Web Interface:**
     The web interface will be available at `http://localhost:6281`.
 
@@ -131,7 +133,7 @@ Once the Docs MCP Server is running, you can use the Web Interface to **add new 
 4.  **Click "Queue Job":** The server will start a background job to fetch, process, and index the documentation. You can monitor its progress in the "Job Queue" section of the Web UI.
 5.  **Repeat:** Repeat steps 3-4 for every library whose documentation you want the server to manage.
 
-**That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI's by clicking on the library name in the "Indexed Documenation" section.
+**That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI by clicking on the library name in the "Indexed Documenation" section.
 
 ## Alternative: Using Docker
 
@@ -159,7 +161,7 @@ This approach is easy, straightforward, and doesn't require cloning the reposito
            "ghcr.io/arabold/docs-mcp-server:latest"
          ],
          "env": {
-           "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
+           "OPENAI_API_KEY": "sk-proj-..." // Required if using OpenAI (default)
          },
          "disabled": false,
          "autoApprove": []
@@ -187,7 +189,9 @@ docker run -i --rm \
   -e OPENAI_API_KEY="your-key-here" \
   -e DOCS_MCP_EMBEDDING_MODEL="text-embedding-3-small" \
   -v docs-mcp-data:/data \
-  ghcr.io/arabold/docs-mcp-server:latest
+  ghcr.io/arabold/docs-mcp-server:latest # Runs MCP server (stdio by default)
+  # To run MCP server in HTTP mode on port 6280, append to the line above:
+  # --protocol http --port 6280
 
 # Example 2: Using OpenAI-compatible API (like Ollama)
 docker run -i --rm \
@@ -199,7 +203,7 @@ docker run -i --rm \
 
 # Example 3a: Using Google Cloud Vertex AI embeddings
 docker run -i --rm \
-  -e OPENAI_API_KEY="your-openai-key" \  # Keep for fallback to OpenAI
+  -e OPENAI_API_KEY="your-openai-key" \  # For OpenAI provider
   -e DOCS_MCP_EMBEDDING_MODEL="vertex:text-embedding-004" \
   -e GOOGLE_APPLICATION_CREDENTIALS="/app/gcp-key.json" \
   -v docs-mcp-data:/data \
@@ -208,7 +212,7 @@ docker run -i --rm \
 
 # Example 3b: Using Google Generative AI (Gemini) embeddings
 docker run -i --rm \
-  -e OPENAI_API_KEY="your-openai-key" \  # Keep for fallback to OpenAI
+  -e OPENAI_API_KEY="your-openai-key" \  # For OpenAI provider
   -e DOCS_MCP_EMBEDDING_MODEL="gemini:embedding-001" \
   -e GOOGLE_API_KEY="your-google-api-key" \
   -v docs-mcp-data:/data \
@@ -246,7 +250,7 @@ docker run --rm \
   -v docs-mcp-data:/data \
   -p 6281:6281 \
   ghcr.io/arabold/docs-mcp-server:latest \
-  docs-web
+  web --port 6281
 ```
 
 Make sure to:
@@ -257,17 +261,27 @@ Make sure to:
 
 ### Using the CLI
 
-You can use the CLI to manage documentation directly via Docker.
+You can use the CLI to manage documentation directly via Docker by passing CLI commands after the image name:
 
 ```bash
 docker run --rm \
   -e OPENAI_API_KEY="your-openai-api-key-here" \
   -v docs-mcp-data:/data \
   ghcr.io/arabold/docs-mcp-server:latest \
-  docs-cli <command> [options]
+  <command> [options] # e.g., list, scrape <library> <url>, search <library> <query>
 ```
 
-Make sure to use the same volume name (`docs-mcp-data` in this example) as you did for the server. Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed using `-e` flags, just like with the server.
+Example:
+
+```bash
+docker run --rm \
+  -e OPENAI_API_KEY="your-openai-api-key-here" \
+  -v docs-mcp-data:/data \
+  ghcr.io/arabold/docs-mcp-server:latest \
+  list
+```
+
+Make sure to use the same volume name (`docs-mcp-data` in this example) as your MCP server container if you want them to share data. Any of the configuration environment variables (see [Configuration](#configuration) above) can be passed using `-e` flags.
 
 The main commands available are:
 
@@ -278,7 +292,7 @@ The main commands available are:
 - `fetch-url`: Fetches a single URL and converts to Markdown.
 - `find-version`: Finds the best matching version for a library.
 
-See the [CLI Command Reference](#cli-command-reference) below for detailed command usage.
+For detailed command usage, run the CLI with the --help flag (e.g., `docker run ... ghcr.io/arabold/docs-mcp-server:latest --help`).
 
 ## Alternative: Using npx
 
@@ -295,9 +309,12 @@ This approach is useful when you need local file access (e.g., indexing document
      "mcpServers": {
        "docs-mcp-server": {
          "command": "npx",
-         "args": ["-y", "--package=@arabold/docs-mcp-server", "docs-server"],
+         "args": ["-y", "@arabold/docs-mcp-server"],
+         // This will run the default MCP server (stdio).
+         // To run in HTTP mode, add arguments: e.g.
+         // "args": ["-y", "@arabold/docs-mcp-server", "--protocol", "http", "--port", "6280"],
          "env": {
-           "OPENAI_API_KEY": "sk-proj-..." // Required: Replace with your key
+           "OPENAI_API_KEY": "sk-proj-..." // Required if using OpenAI (default)
          },
          "disabled": false,
          "autoApprove": []
@@ -312,27 +329,33 @@ This approach is useful when you need local file access (e.g., indexing document
 
 ### Launching Web Interface
 
-If you're running the server with `npx`, use `npx` for the web interface as well:
+If you're running the MCP server with `npx` (as shown above, it runs by default), use `npx` for the web interface as well:
 
 ```bash
-npx -y --package=@arabold/docs-mcp-server docs-web --port 6281
+npx -y @arabold/docs-mcp-server web --port 6281
 ```
 
-You can specify a different port using the `--port` flag.
+You can specify a different port for the web interface using its `--port` flag.
 
 The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and web interface.
 
 ### Using the CLI
 
-If you're running the server with npx, use `npx` for the CLI as well:
+If you're running the MCP server with `npx`, you can also use `npx` for CLI commands:
 
 ```bash
-npx -y --package=@arabold/docs-mcp-server docs-cli <command> [options]
+npx -y @arabold/docs-mcp-server <command> [options]
 ```
 
-The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency between server and CLI.
+Example:
 
-See the [CLI Command Reference](#cli-command-reference) below for detailed command usage.
+```bash
+npx -y @arabold/docs-mcp-server list
+```
+
+The `npx` approach will use the default data directory on your system (typically in your home directory), ensuring consistency.
+
+For detailed command usage, run the CLI with the --help flag (e.g., `npx -y @arabold/docs-mcp-server --help`).
 
 ## Configuration
 
@@ -342,11 +365,11 @@ The following environment variables are supported to configure the embedding mod
 
 - `DOCS_MCP_EMBEDDING_MODEL`: **Optional.** Format: `provider:model_name` or just `model_name` (defaults to `text-embedding-3-small`). Supported providers and their required environment variables:
 
-  - `openai` (default): Uses OpenAI's embedding models
+  - `openai` (default provider): Uses OpenAI's embedding models.
 
-    - `OPENAI_API_KEY`: **Required.** Your OpenAI API key
+    - `OPENAI_API_KEY`: Your OpenAI API key. **Required if `openai` is the active provider.**
     - `OPENAI_ORG_ID`: **Optional.** Your OpenAI Organization ID
-    - `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI-compatible APIs (e.g., Ollama, Azure OpenAI)
+    - `OPENAI_API_BASE`: **Optional.** Custom base URL for OpenAI-compatible APIs (e.g., Ollama).
 
   - `vertex`: Uses Google Cloud Vertex AI embeddings
 
@@ -376,7 +399,7 @@ For OpenAI-compatible APIs (like Ollama), use the `openai` provider with `OPENAI
 
 ## Development
 
-This section covers running the server/CLI directly from the source code for development purposes. The primary usage method is now via the public Docker image as described in "Method 2".
+This section covers running the server/CLI directly from the source code for development purposes. The primary usage method is via the public Docker image (`ghcr.io/arabold/docs-mcp-server:latest`), as detailed in the "Alternative: Using Docker" section, or via Docker Compose as described in the "Recommended: Docker Desktop" section.
 
 ### Running from Source
 
@@ -402,16 +425,43 @@ This method is useful for contributing to the project or running un-published ve
     Create and configure your `.env` file as described in the [Configuration](#configuration) section. This is crucial for providing the `OPENAI_API_KEY`.
 
 5.  **Run:**
-    - **Server (Development Mode):** `npm run dev:server` (builds, watches, and restarts)
-    - **Server (Production Mode):** `npm run start` (runs pre-built code)
-    - **CLI:** `npm run cli -- <command> [options]` or `node dist/cli.js <command> [options]`
+    - **Default MCP Server (Development):**
+      - Stdio mode (default): `npm run dev:server`
+      - HTTP mode: `npm run dev:server:http` (uses default port)
+      - Custom HTTP: `vite-node src/index.ts -- --protocol http --port <your_port>`
+    - **Web Interface (Development):** `npm run dev:web`
+      - This starts the web server (e.g., on port 6281) and watches for asset changes.
+    - **CLI Commands (Development):** `npm run dev:cli -- <command> [options]`
+      - Example: `npm run dev:cli -- list`
+      - Example: `vite-node src/index.ts scrape <library> <url>`
+    - **Production Mode (after `npm run build`):**
+      - Default MCP Server (stdio): `npm run start` (or `node dist/index.js`)
+      - MCP Server (HTTP): `npm run start -- --protocol http --port <your_port>` (or `node dist/index.js --protocol http --port <your_port>`)
+      - Web Interface: `npm run web -- --port <web_port>` (or `node dist/index.js web --port <web_port>`)
+      - CLI Commands: `npm run cli -- <command> [options]` (or `node dist/index.js <command> [options]`)
 
 ### Testing
 
-Since MCP servers communicate over stdio when run directly via Node.js, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script after building:
+Since MCP servers communicate over stdio when run directly via Node.js (or `vite-node`), debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
+
+After building the project (`npm run build`):
 
 ```bash
-npx @modelcontextprotocol/inspector node dist/server.js
+# For stdio mode (default)
+npx @modelcontextprotocol/inspector node dist/index.js
+
+# For HTTP mode (e.g., on port 6280)
+npx @modelcontextprotocol/inspector node dist/index.js -- --protocol http --port 6280
+```
+
+If using `vite-node` for development:
+
+```bash
+# For stdio mode (default)
+npx @modelcontextprotocol/inspector vite-node src/index.ts
+
+# For HTTP mode (e.g., on port 6280)
+npx @modelcontextprotocol/inspector vite-node src/index.ts -- --protocol http --port 6280
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.

@@ -18,7 +18,7 @@ export async function startStdioServer(tools: McpServerTools): Promise<McpServer
   // Start server with Stdio transport
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info("🤖 Docs MCP server listening on stdio");
+  logger.info("🤖 MCP server listening on stdio");
 
   // Return the server instance
   return server;

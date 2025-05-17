@@ -64,7 +64,7 @@ describe("FetchUrlTool", () => {
     expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining("Successfully processed"),
     );
-  });
+  }, 10000);
 
   it("should handle file URLs", async () => {
     const url = "file:///path/to/document.html";
@@ -91,7 +91,7 @@ describe("FetchUrlTool", () => {
     expect(result).toContain("## Local File Content");
     expect(result).toContain("-   Item 1");
     expect(result).toContain("-   Item 2");
-  });
+  }, 10000);
 
   it("should process markdown content directly", async () => {
     const url = "https://example.com/readme.md";

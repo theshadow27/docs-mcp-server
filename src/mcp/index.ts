@@ -2,54 +2,41 @@ import "dotenv/config";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
-import { LogLevel, logger, setLogLevel } from "../utils/logger";
-import { getDocService, getPipelineManager, initializeServices } from "./services"; // Import get functions
+import { logger } from "../utils/logger";
 import { startHttpServer } from "./startHttpServer";
 import { startStdioServer } from "./startStdioServer";
 import { type McpServerTools, initializeTools } from "./tools";
 
 // Variables to hold server instances for cleanup
 let runningServer: McpServer | null = null;
-let runningPipelineManager: PipelineManager | null = null;
-let runningDocService: DocumentManagementService | null = null;
 
-export async function startServer(protocol: "stdio" | "http", port?: number) {
+export async function startServer(
+  protocol: "stdio" | "http",
+  docService: DocumentManagementService, // NEW PARAM
+  pipelineManager: PipelineManager, // NEW PARAM
+  port?: number, // Existing optional param
+) {
   try {
-    // Set the default log level for the server to ERROR
-    setLogLevel(LogLevel.ERROR);
-
-    // Initialize shared services
-    await initializeServices();
-    runningDocService = getDocService(); // Get instance after initialization
-    runningPipelineManager = getPipelineManager(); // Get instance after initialization
-
     // Initialize and get shared tools
-    const tools: McpServerTools = await initializeTools(); // initializeTools now gets services internally
+    const tools: McpServerTools = await initializeTools(docService, pipelineManager); // Pass instances
 
     let serverInstance: McpServer;
     if (protocol === "stdio") {
       serverInstance = await startStdioServer(tools); // startStdioServer needs to return McpServer
     } else if (protocol === "http") {
       if (port === undefined) {
-        logger.error("HTTP protocol requires a port.");
+        logger.error("❌ HTTP protocol requires a port.");
         process.exit(1);
       }
       serverInstance = await startHttpServer(tools, port); // startHttpServer needs to return McpServer
     } else {
       // This case should be caught by src/server.ts, but handle defensively
-      logger.error(`Unknown protocol: ${protocol}`);
+      logger.error(`❌ Unknown protocol: ${protocol}`);
       process.exit(1);
     }
 
     // Capture the running server instance
     runningServer = serverInstance;
-
-    // Handle graceful shutdown on SIGINT
-    process.on("SIGINT", async () => {
-      logger.info("Received SIGINT. Shutting down gracefully...");
-      await stopServer();
-      process.exit(0);
-    });
   } catch (error) {
     logger.error(`❌ Fatal Error during server startup: ${error}`);
     // Attempt cleanup even if startup failed partially
@@ -59,50 +46,32 @@ export async function startServer(protocol: "stdio" | "http", port?: number) {
 }
 
 /**
- * Stops the MCP server and related services gracefully.
+ * Stops the MCP server instance gracefully.
+ * Shared services (PipelineManager, DocumentManagementService) are shut down
+ * separately by the caller (e.g., src/index.ts).
  */
 export async function stopServer() {
-  logger.info("Shutting down MCP server and services...");
+  logger.debug("Attempting to close MCP Server instance...");
   let hadError = false;
   try {
-    if (runningPipelineManager) {
-      logger.debug("Stopping Pipeline Manager...");
-      await runningPipelineManager.stop();
-      logger.info("Pipeline Manager stopped.");
-    }
-  } catch (e) {
-    logger.error(`Error stopping Pipeline Manager: ${e}`);
-    hadError = true;
-  }
-  try {
-    if (runningDocService) {
-      logger.debug("Shutting down Document Service...");
-      await runningDocService.shutdown();
-      logger.info("Document Service shut down.");
-    }
-  } catch (e) {
-    logger.error(`Error shutting down Document Service: ${e}`);
-    hadError = true;
-  }
-  try {
     if (runningServer) {
-      logger.debug("Closing MCP Server connection...");
+      logger.debug("Closing MCP Server instance (McpServer/McpHttpServer)...");
       await runningServer.close();
-      logger.info("MCP Server connection closed.");
+      logger.debug("MCP Server instance closed.");
+    } else {
+      logger.debug("MCP Server instance was not running or already null.");
     }
   } catch (e) {
-    logger.error(`Error closing MCP Server: ${e}`);
+    logger.error(`❌ Error closing MCP Server instance: ${e}`);
     hadError = true;
   }
 
-  // Clear references
-  runningPipelineManager = null;
-  runningDocService = null;
   runningServer = null;
+  // DocumentManagementService and PipelineManager instances are managed and shut down by src/index.ts.
 
   if (hadError) {
-    logger.warn("Server shutdown completed with errors.");
+    logger.warn("⚠️ MCP Server instance stopped with errors.");
   } else {
-    logger.info("✅ Server shutdown complete.");
+    logger.info("✅ MCP Server instance stopped.");
   }
 }

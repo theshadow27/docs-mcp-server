@@ -89,7 +89,7 @@ export class HttpFetcher implements ContentFetcher {
         ) {
           const delay = baseDelay * 2 ** attempt;
           logger.warn(
-            `Attempt ${attempt + 1}/${
+            `⚠️ Attempt ${attempt + 1}/${
               maxRetries + 1
             } failed for ${source} (Status: ${status}, Code: ${code}). Retrying in ${delay}ms...`,
           );

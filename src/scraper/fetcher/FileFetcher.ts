@@ -14,7 +14,7 @@ export class FileFetcher implements ContentFetcher {
 
   async fetch(source: string, options?: FetchOptions): Promise<RawContent> {
     const filePath = source.replace(/^file:\/\//, "");
-    logger.info(`Fetching file: ${filePath}`);
+    logger.info(`📄 Fetching file: ${filePath}`);
 
     try {
       const content = await fs.readFile(filePath);

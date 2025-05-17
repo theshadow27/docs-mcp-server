@@ -57,13 +57,13 @@ export class LocalFileStrategy extends BaseScraperStrategy {
 
     if (!processed) {
       logger.warn(
-        `Unsupported content type "${rawContent.mimeType}" for file ${filePath}. Skipping processing.`,
+        `⚠️ Unsupported content type "${rawContent.mimeType}" for file ${filePath}. Skipping processing.`,
       );
       return { document: undefined, links: [] };
     }
 
     for (const err of processed.errors) {
-      logger.warn(`Processing error for ${filePath}: ${err.message}`);
+      logger.warn(`⚠️ Processing error for ${filePath}: ${err.message}`);
     }
 
     return {

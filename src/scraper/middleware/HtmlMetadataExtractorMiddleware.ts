@@ -17,7 +17,7 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
     const $ = context.dom;
     if (!$) {
       logger.warn(
-        `Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
+        `⏭️ Skipping ${this.constructor.name}: context.dom is missing. Ensure HtmlCheerioParserMiddleware runs before this.`,
       );
       await next();
       return;
@@ -42,7 +42,7 @@ export class HtmlMetadataExtractorMiddleware implements ContentProcessorMiddlewa
       context.metadata.title = title;
       logger.debug(`Extracted title: "${title}" from ${context.source}`);
     } catch (error) {
-      logger.error(`Error extracting metadata from ${context.source}: ${error}`);
+      logger.error(`❌ Error extracting metadata from ${context.source}: ${error}`);
       context.errors.push(
         new Error(
           `Failed to extract metadata from HTML: ${error instanceof Error ? error.message : String(error)}`,

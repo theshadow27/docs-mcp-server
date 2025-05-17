@@ -21,7 +21,9 @@ export class HtmlCheerioParserMiddleware implements ContentProcessorMiddleware {
       // Proceed to the next middleware
       await next();
     } catch (error) {
-      logger.error(`Failed to parse HTML with Cheerio for ${context.source}: ${error}`);
+      logger.error(
+        `❌ Failed to parse HTML with Cheerio for ${context.source}: ${error}`,
+      );
       context.errors.push(
         error instanceof Error
           ? error

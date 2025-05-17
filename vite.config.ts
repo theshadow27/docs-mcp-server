@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 import path from 'path';
-import packageJson from "./package.json" assert { type: "json" };
+import packageJson from "./package.json";
 
 export default defineConfig({
   plugins: [
@@ -22,12 +22,10 @@ export default defineConfig({
     lib: {
       // Define entry points using path.resolve for robustness
       entry: {
-        server: path.resolve(__dirname, 'src/server.ts'),
-        cli: path.resolve(__dirname, 'src/cli.ts'),
-        web: path.resolve(__dirname, 'src/web.ts'),
+        index: path.resolve(__dirname, 'src/index.ts'),
       },
       formats: ['es'], // Output ESM format only
-      // Output filenames will be based on entry keys (server.js, cli.js, web.js)
+      // Output filename will be based on the entry key (index.js)
       // fileName: (format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
