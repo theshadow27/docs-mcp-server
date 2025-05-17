@@ -29,10 +29,10 @@ const VersionDetailsRow = ({
   const versionLabel = version.version || "Unversioned";
   const versionParam = version.version || "unversioned"; // Use consistent param for URL
 
-  // Generate unique IDs for the row, ensuring it's a valid CSS selector
-  // Replace periods and other potentially invalid characters with hyphens
+  // Sanitize both libraryName and versionParam for valid CSS selector
+  const sanitizedLibraryName = libraryName.replace(/[^a-zA-Z0-9-_]/g, "-");
   const sanitizedVersionParam = versionParam.replace(/[^a-zA-Z0-9-_]/g, "-");
-  const rowId = `row-${libraryName}-${sanitizedVersionParam}`;
+  const rowId = `row-${sanitizedLibraryName}-${sanitizedVersionParam}`;
 
   // Define state-specific button classes for Alpine toggling
   const defaultStateClasses =
@@ -101,7 +101,7 @@ const VersionDetailsRow = ({
               timeoutId = setTimeout(() => { confirming = false; timeoutId = null; }, 3000);
             }
           "
-          hx-delete={`/api/libraries/${libraryName}/versions/${versionParam}`}
+          hx-delete={`/api/libraries/${encodeURIComponent(libraryName)}/versions/${encodeURIComponent(versionParam)}`}
           hx-target={`#${rowId}`}
           hx-swap="outerHTML"
           hx-trigger="confirmed-delete" // Listen for the standard browser event
