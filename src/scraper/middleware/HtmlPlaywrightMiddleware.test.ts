@@ -152,4 +152,42 @@ describe("HtmlPlaywrightMiddleware", () => {
 
     launchSpy.mockRestore(); // Restore the launch spy
   });
+
+  it("should support URLs with embedded credentials (user:password@host)", async () => {
+    const urlWithCreds = "https://user:password@example.com/";
+    const initialHtml = "<html><body><p>Test</p></body></html>";
+    const context = createPipelineTestContext(initialHtml, urlWithCreds);
+    const next = vi.fn();
+
+    // Spy on Playwright's browser/context/page
+    const pageSpy = {
+      route: vi.fn().mockResolvedValue(undefined),
+      unroute: vi.fn().mockResolvedValue(undefined),
+      goto: vi.fn().mockResolvedValue(undefined),
+      waitForSelector: vi.fn().mockResolvedValue(undefined), // <-- Add this line
+      content: vi.fn().mockResolvedValue(initialHtml),
+      close: vi.fn().mockResolvedValue(undefined),
+    } as unknown as MockedObject<Page>;
+    const contextSpy = {
+      newPage: vi.fn().mockResolvedValue(pageSpy),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    const browserSpy = {
+      newContext: vi.fn().mockResolvedValue(contextSpy),
+      isConnected: vi.fn().mockReturnValue(true),
+      on: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
+    } as unknown as MockedObject<Browser>;
+    const launchSpy = vi.spyOn(chromium, "launch").mockResolvedValue(browserSpy);
+
+    await playwrightMiddleware.process(context, next);
+
+    // Ensure Playwright's page.goto was called with the correct URL (including credentials)
+    expect(pageSpy.goto).toHaveBeenCalledWith(urlWithCreds, expect.any(Object));
+    expect(context.errors).toHaveLength(0);
+    expect(context.content).toContain("<p>Test</p>");
+    expect(next).toHaveBeenCalled();
+
+    launchSpy.mockRestore();
+  });
 });

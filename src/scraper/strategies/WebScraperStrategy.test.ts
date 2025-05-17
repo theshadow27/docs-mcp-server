@@ -460,4 +460,36 @@ describe("WebScraperStrategy", () => {
       ]),
     );
   });
+
+  it("should support scraping for URLs with embedded credentials (user:password@host)", async () => {
+    // Use a Playwright scrapeMode and a URL with credentials
+    const urlWithCreds = "https://user:password@example.com/";
+    options.url = urlWithCreds;
+    options.scrapeMode = ScrapeMode.Playwright;
+    const expectedMarkdown = "# Playwright Content";
+    const expectedTitle = "Playwright Test";
+
+    // Mock Playwright middleware by patching the pipeline's process method
+    // (Assume HtmlPipeline is used and Playwright middleware is in the chain)
+    // We'll mock the fetch to simulate Playwright output
+    mockFetchFn.mockResolvedValue({
+      content: `<html><head><title>${expectedTitle}</title></head><body><h1>Playwright Content</h1></body></html>`,
+      mimeType: "text/html",
+      source: urlWithCreds,
+    });
+
+    const progressCallback = vi.fn();
+    await strategy.scrape(options, progressCallback);
+
+    // Ensure fetch was called with the credentialed URL
+    expect(mockFetchFn).toHaveBeenCalledWith(
+      urlWithCreds,
+      expect.objectContaining({ followRedirects: true }),
+    );
+    // Ensure a document was produced with the expected markdown and title
+    const docCall = progressCallback.mock.calls.find((call) => call[0].document);
+    expect(docCall).toBeDefined();
+    expect(docCall![0].document.content).toContain(expectedMarkdown);
+    expect(docCall![0].document.metadata.title).toBe(expectedTitle);
+  });
 });
