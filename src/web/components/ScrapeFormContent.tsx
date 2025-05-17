@@ -1,4 +1,6 @@
 import { ScrapeMode } from "../../scraper/types"; // Adjusted import path
+import Alert from "./Alert";
+import Tooltip from "./Tooltip";
 
 /**
  * Renders the form fields for queuing a new scrape job.
@@ -14,29 +16,63 @@ const ScrapeFormContent = () => (
       hx-target="#job-response"
       hx-swap="innerHTML"
       class="space-y-2"
+      x-data="{
+        url: '',
+        hasPath: false,
+        checkUrlPath() {
+          try {
+            const url = new URL(this.url);
+            this.hasPath = url.pathname !== '/' && url.pathname !== '';
+          } catch (e) {
+            this.hasPath = false;
+          }
+        }
+      }"
     >
       <div>
-        <label
-          for="url"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          URL
-        </label>
+        <div class="flex items-center">
+          <label
+            for="url"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            URL
+          </label>
+          <Tooltip text="Enter the URL of the documentation you want to scrape. This will be the starting point for the scraper." />
+        </div>
         <input
           type="url"
           name="url"
           id="url"
           required
+          x-model="url"
+          x-on:input="checkUrlPath"
+          x-on:paste="$nextTick(() => checkUrlPath())"
           class="mt-0.5 block w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
+        <div
+          x-show="hasPath"
+          x-cloak
+          x-transition:enter="transition ease-out duration-300"
+          x-transition:enter-start="opacity-0 transform -translate-y-2"
+          x-transition:enter-end="opacity-100 transform translate-y-0"
+          class="mt-2"
+        >
+          <Alert
+            type="info"
+            message="By default, only subpages under the given URL will be scraped. To scrape the whole website, adjust the 'Scope' option in Advanced Options."
+          />
+        </div>
       </div>
       <div>
-        <label
-          for="library"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Library Name
-        </label>
+        <div class="flex items-center">
+          <label
+            for="library"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Library Name
+          </label>
+          <Tooltip text="The name of the library you're documenting. This will be used when searching." />
+        </div>
         <input
           type="text"
           name="library"
@@ -46,12 +82,15 @@ const ScrapeFormContent = () => (
         />
       </div>
       <div>
-        <label
-          for="version"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          Version (optional)
-        </label>
+        <div class="flex items-center">
+          <label
+            for="version"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Version (optional)
+          </label>
+          <Tooltip text="Specify the version of the library documentation you're indexing. This allows for version-specific searches." />
+        </div>
         <input
           type="text"
           name="version"
@@ -67,12 +106,15 @@ const ScrapeFormContent = () => (
         </summary>
         <div class="mt-2 space-y-2">
           <div>
-            <label
-              for="maxPages"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Max Pages
-            </label>
+            <div class="flex items-center">
+              <label
+                for="maxPages"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Max Pages
+              </label>
+              <Tooltip text="The maximum number of pages to scrape. Default is 1000. Setting this too high may result in longer processing times." />
+            </div>
             <input
               type="number"
               name="maxPages"
@@ -83,12 +125,15 @@ const ScrapeFormContent = () => (
             />
           </div>
           <div>
-            <label
-              for="maxDepth"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Max Depth
-            </label>
+            <div class="flex items-center">
+              <label
+                for="maxDepth"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Max Depth
+              </label>
+              <Tooltip text="How many links deep the scraper should follow. Default is 3. Higher values capture more content but increase processing time." />
+            </div>
             <input
               type="number"
               name="maxDepth"
@@ -99,12 +144,32 @@ const ScrapeFormContent = () => (
             />
           </div>
           <div>
-            <label
-              for="scope"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Scope
-            </label>
+            <div class="flex items-center">
+              <label
+                for="scope"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Scope
+              </label>
+              <Tooltip
+                text={
+                  <div>
+                    Controls which pages are scraped:
+                    <ul class="list-disc pl-5">
+                      <li>'Subpages' only scrapes under the given URL path,</li>
+                      <li>
+                        'Hostname' scrapes all content on the same host (e.g.,
+                        all of docs.example.com),
+                      </li>
+                      <li>
+                        'Domain' scrapes all content on the domain and its
+                        subdomains (e.g., all of example.com).
+                      </li>
+                    </ul>
+                  </div>
+                }
+              />
+            </div>
             <select
               name="scope"
               id="scope"
@@ -118,12 +183,31 @@ const ScrapeFormContent = () => (
             </select>
           </div>
           <div>
-            <label
-              for="scrapeMode"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Scrape Mode
-            </label>
+            <div class="flex items-center">
+              <label
+                for="scrapeMode"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Scrape Mode
+              </label>
+              <Tooltip
+                text={
+                  <div>
+                    <ul class="list-disc pl-5">
+                      <li>'Auto' automatically selects the best method,</li>
+                      <li>
+                        'Fetch' uses simple HTTP requests (faster but may miss
+                        dynamic content),
+                      </li>
+                      <li>
+                        'Playwright' uses a headless browser (slower but better
+                        for JS-heavy sites).
+                      </li>
+                    </ul>
+                  </div>
+                }
+              />
+            </div>
             <select
               name="scrapeMode"
               id="scrapeMode"
