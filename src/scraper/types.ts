@@ -57,6 +57,14 @@ export interface ScraperOptions {
   scrapeMode?: ScrapeMode;
   /** Optional AbortSignal for cancellation */
   signal?: AbortSignal;
+  /**
+   * Patterns for including URLs during scraping. If not set, all are included by default.
+   */
+  includePatterns?: string[];
+  /**
+   * Patterns for excluding URLs during scraping. Exclude takes precedence over include.
+   */
+  excludePatterns?: string[];
 }
 
 /**

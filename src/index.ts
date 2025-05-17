@@ -214,6 +214,18 @@ async function main() {
         },
         ScrapeMode.Auto,
       )
+      .option(
+        "--include-pattern <pattern>",
+        "Glob or regex pattern for URLs to include (can be specified multiple times). Regex patterns must be wrapped in slashes, e.g. /pattern/.",
+        (val: string, prev: string[] = []) => prev.concat([val]),
+        [] as string[],
+      )
+      .option(
+        "--exclude-pattern <pattern>",
+        "Glob or regex pattern for URLs to exclude (can be specified multiple times, takes precedence over include). Regex patterns must be wrapped in slashes, e.g. /pattern/.",
+        (val: string, prev: string[] = []) => prev.concat([val]),
+        [] as string[],
+      )
       .action(async (library, url, options) => {
         commandExecuted = true; // Ensure this is set for CLI commands
         const docService = new DocumentManagementService();
@@ -235,6 +247,14 @@ async function main() {
               scope: options.scope,
               followRedirects: options.followRedirects,
               scrapeMode: options.scrapeMode,
+              includePatterns:
+                Array.isArray(options.includePattern) && options.includePattern.length > 0
+                  ? options.includePattern
+                  : undefined,
+              excludePatterns:
+                Array.isArray(options.excludePattern) && options.excludePattern.length > 0
+                  ? options.excludePattern
+                  : undefined,
             },
           });
           if ("pagesScraped" in result)

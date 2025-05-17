@@ -36,6 +36,8 @@ export function registerNewJobRoutes(
           scrapeMode?: ScrapeMode;
           followRedirects?: "on" | undefined; // Checkbox value is 'on' if checked
           ignoreErrors?: "on" | undefined;
+          includePatterns?: string;
+          excludePatterns?: string;
         };
       }>,
       reply
@@ -56,6 +58,15 @@ export function registerNewJobRoutes(
           );
         }
 
+        // Parse includePatterns and excludePatterns from textarea input
+        function parsePatterns(input?: string): string[] | undefined {
+          if (!input) return undefined;
+          return input
+            .split(/\n|,/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        }
+
         // Prepare options for ScrapeTool
         const scrapeOptions = {
           url: body.url,
@@ -74,6 +85,8 @@ export function registerNewJobRoutes(
             // Checkboxes send 'on' when checked, otherwise undefined
             followRedirects: body.followRedirects === "on",
             ignoreErrors: body.ignoreErrors === "on",
+            includePatterns: parsePatterns(body.includePatterns),
+            excludePatterns: parsePatterns(body.excludePatterns),
           },
         };
 
