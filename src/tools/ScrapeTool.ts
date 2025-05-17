@@ -40,6 +40,16 @@ export interface ScrapeToolOptions {
      * @default ScrapeMode.Auto
      */
     scrapeMode?: ScrapeMode;
+    /**
+     * Patterns for including URLs during scraping. If not set, all are included by default.
+     * Regex patterns must be wrapped in slashes, e.g. /pattern/.
+     */
+    includePatterns?: string[];
+    /**
+     * Patterns for excluding URLs during scraping. Exclude takes precedence over include.
+     * Regex patterns must be wrapped in slashes, e.g. /pattern/.
+     */
+    excludePatterns?: string[];
   };
   /** If false, returns jobId immediately without waiting. Defaults to true. */
   waitForCompletion?: boolean;
@@ -131,6 +141,8 @@ export class ScrapeTool {
       maxConcurrency: scraperOptions?.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
       ignoreErrors: scraperOptions?.ignoreErrors ?? true,
       scrapeMode: scraperOptions?.scrapeMode ?? ScrapeMode.Auto, // Pass scrapeMode enum
+      includePatterns: scraperOptions?.includePatterns,
+      excludePatterns: scraperOptions?.excludePatterns,
     });
 
     // Conditionally wait for completion

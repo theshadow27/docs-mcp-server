@@ -185,6 +185,42 @@ const ScrapeFormContent = () => (
           <div>
             <div class="flex items-center">
               <label
+                for="includePatterns"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Include Patterns
+              </label>
+              <Tooltip text="Glob or regex patterns for URLs to include. One per line or comma-separated. Regex patterns must be wrapped in slashes, e.g. /pattern/." />
+            </div>
+            <textarea
+              name="includePatterns"
+              id="includePatterns"
+              rows="2"
+              placeholder="e.g. docs/* or /api\/v1.*/"
+              class="mt-0.5 block w-full max-w-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            ></textarea>
+          </div>
+          <div>
+            <div class="flex items-center">
+              <label
+                for="excludePatterns"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Exclude Patterns
+              </label>
+              <Tooltip text="Glob or regex patterns for URLs to exclude. One per line or comma-separated. Exclude takes precedence over include. Regex patterns must be wrapped in slashes, e.g. /pattern/." />
+            </div>
+            <textarea
+              name="excludePatterns"
+              id="excludePatterns"
+              rows="2"
+              placeholder="e.g. private/* or /internal/"
+              class="mt-0.5 block w-full max-w-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            ></textarea>
+          </div>
+          <div>
+            <div class="flex items-center">
+              <label
                 for="scrapeMode"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >

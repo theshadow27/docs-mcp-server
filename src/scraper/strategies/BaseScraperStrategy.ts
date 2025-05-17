@@ -4,6 +4,8 @@ import type { Document, ProgressCallback } from "../../types";
 import { logger } from "../../utils/logger";
 import { type UrlNormalizerOptions, normalizeUrl } from "../../utils/url";
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
+import { shouldIncludeUrl } from "../utils/patternMatcher";
+import { isInScope } from "../utils/scope";
 
 // Define defaults for optional options
 const DEFAULT_MAX_PAGES = 100;
@@ -29,6 +31,23 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
 
   constructor(options: BaseScraperStrategyOptions = {}) {
     this.options = options;
+  }
+
+  /**
+   * Determines if a URL should be processed based on scope and include/exclude patterns in ScraperOptions.
+   * Scope is checked first, then patterns.
+   */
+  protected shouldProcessUrl(url: string, options: ScraperOptions): boolean {
+    if (options.scope) {
+      try {
+        const base = new URL(options.url);
+        const target = new URL(url);
+        if (!isInScope(base, target, options.scope)) return false;
+      } catch {
+        return false;
+      }
+    }
+    return shouldIncludeUrl(url, options.includePatterns, options.excludePatterns);
   }
 
   /**
@@ -94,6 +113,10 @@ export abstract class BaseScraperStrategy implements ScraperStrategy {
             .map((value) => {
               try {
                 const targetUrl = new URL(value, baseUrl);
+                // Filter using shouldProcessUrl
+                if (!this.shouldProcessUrl(targetUrl.href, options)) {
+                  return null;
+                }
                 return {
                   url: targetUrl.href,
                   depth: item.depth + 1,

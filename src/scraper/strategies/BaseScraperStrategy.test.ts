@@ -280,4 +280,163 @@ describe("BaseScraperStrategy", () => {
     // Total calls: /, A, B, C, D, E, X = 7
     expect(strategy.processItem).toHaveBeenCalledTimes(7);
   });
+
+  describe("URL filtering with includePatterns and excludePatterns", () => {
+    beforeEach(() => {
+      strategy = new TestScraperStrategy();
+      strategy.processItem.mockClear();
+    });
+
+    it("should only process URLs matching includePatterns (glob)", async () => {
+      const options: ScraperOptions = {
+        url: "https://example.com/docs/start",
+        library: "test",
+        version: "1.0.0",
+        maxPages: 5,
+        maxDepth: 1,
+        includePatterns: ["docs/*"],
+      };
+      const progressCallback = vi.fn();
+      strategy.processItem.mockImplementation(async (item: QueueItem) => {
+        if (item.url === "https://example.com/docs/start") {
+          return {
+            document: { content: "main", metadata: {} },
+            links: [
+              "https://example.com/docs/intro",
+              "https://example.com/docs/other",
+              "https://example.com/api/should-not-include",
+            ],
+          };
+        }
+        return { document: { content: "sub", metadata: {} }, links: [] };
+      });
+      await strategy.scrape(options, progressCallback);
+      const processedUrls = strategy.processItem.mock.calls.map((call) => call[0].url);
+      expect(processedUrls).toContain("https://example.com/docs/start");
+      expect(processedUrls).toContain("https://example.com/docs/intro");
+      expect(processedUrls).toContain("https://example.com/docs/other");
+      expect(processedUrls).not.toContain("https://example.com/api/should-not-include");
+    });
+
+    it("should only process URLs matching includePatterns (regex)", async () => {
+      const options: ScraperOptions = {
+        url: "https://example.com/docs/start",
+        library: "test",
+        version: "1.0.0",
+        maxPages: 5,
+        maxDepth: 1,
+        includePatterns: ["/docs\\/intro.*/"],
+      };
+      const progressCallback = vi.fn();
+      strategy.processItem.mockImplementation(async (item: QueueItem) => {
+        if (item.url === "https://example.com/docs/start") {
+          return {
+            document: { content: "main", metadata: {} },
+            links: [
+              "https://example.com/docs/intro",
+              "https://example.com/docs/intro2",
+              "https://example.com/docs/other",
+            ],
+          };
+        }
+        return { document: { content: "sub", metadata: {} }, links: [] };
+      });
+      await strategy.scrape(options, progressCallback);
+      const processedUrls = strategy.processItem.mock.calls.map((call) => call[0].url);
+      expect(processedUrls).toContain("https://example.com/docs/intro");
+      expect(processedUrls).toContain("https://example.com/docs/intro2");
+      expect(processedUrls).not.toContain("https://example.com/docs/other");
+    });
+
+    it("should exclude URLs matching excludePatterns (glob)", async () => {
+      const options: ScraperOptions = {
+        url: "https://example.com/docs/start",
+        library: "test",
+        version: "1.0.0",
+        maxPages: 5,
+        maxDepth: 1,
+        excludePatterns: ["docs/private/*"],
+      };
+      const progressCallback = vi.fn();
+      strategy.processItem.mockImplementation(async (item: QueueItem) => {
+        if (item.url === "https://example.com/docs/start") {
+          return {
+            document: { content: "main", metadata: {} },
+            links: [
+              "https://example.com/docs/intro",
+              "https://example.com/docs/private/secret",
+              "https://example.com/docs/other",
+            ],
+          };
+        }
+        return { document: { content: "sub", metadata: {} }, links: [] };
+      });
+      await strategy.scrape(options, progressCallback);
+      const processedUrls = strategy.processItem.mock.calls.map((call) => call[0].url);
+      expect(processedUrls).toContain("https://example.com/docs/intro");
+      expect(processedUrls).toContain("https://example.com/docs/other");
+      expect(processedUrls).not.toContain("https://example.com/docs/private/secret");
+    });
+
+    it("should exclude URLs matching excludePatterns (regex)", async () => {
+      const options: ScraperOptions = {
+        url: "https://example.com/docs/start",
+        library: "test",
+        version: "1.0.0",
+        maxPages: 5,
+        maxDepth: 1,
+        excludePatterns: ["/private/"],
+      };
+      const progressCallback = vi.fn();
+      strategy.processItem.mockImplementation(async (item: QueueItem) => {
+        if (item.url === "https://example.com/docs/start") {
+          return {
+            document: { content: "main", metadata: {} },
+            links: [
+              "https://example.com/docs/intro",
+              "https://example.com/docs/private/secret",
+              "https://example.com/docs/other",
+            ],
+          };
+        }
+        return { document: { content: "sub", metadata: {} }, links: [] };
+      });
+      await strategy.scrape(options, progressCallback);
+      const processedUrls = strategy.processItem.mock.calls.map((call) => call[0].url);
+      expect(processedUrls).toContain("https://example.com/docs/intro");
+      expect(processedUrls).toContain("https://example.com/docs/other");
+      expect(processedUrls).not.toContain("https://example.com/docs/private/secret");
+    });
+
+    it("should apply excludePatterns precedence over includePatterns", async () => {
+      const options: ScraperOptions = {
+        url: "https://example.com/docs/start",
+        library: "test",
+        version: "1.0.0",
+        maxPages: 5,
+        maxDepth: 1,
+        includePatterns: ["docs/*"],
+        excludePatterns: ["docs/private/*"],
+      };
+      const progressCallback = vi.fn();
+      strategy.processItem.mockImplementation(async (item: QueueItem) => {
+        if (item.url === "https://example.com/docs/start") {
+          return {
+            document: { content: "main", metadata: {} },
+            links: [
+              "https://example.com/docs/intro",
+              "https://example.com/docs/private/secret",
+              "https://example.com/docs/other",
+            ],
+          };
+        }
+        return { document: { content: "sub", metadata: {} }, links: [] };
+      });
+      await strategy.scrape(options, progressCallback);
+      const processedUrls = strategy.processItem.mock.calls.map((call) => call[0].url);
+      expect(processedUrls).toContain("https://example.com/docs/intro");
+      expect(processedUrls).toContain("https://example.com/docs/other");
+      expect(processedUrls).not.toContain("https://example.com/docs/private/secret");
+    });
+  });
 });
