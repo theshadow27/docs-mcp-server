@@ -70,13 +70,43 @@ export class PipelineManager {
   }
 
   /**
-   * Enqueues a new document processing job.
+   * Finds jobs by library, version, and optional status.
+   */
+  findJobsByLibraryVersion(
+    library: string,
+    version: string,
+    statuses?: PipelineJobStatus[],
+  ): PipelineJob[] {
+    return Array.from(this.jobMap.values()).filter(
+      (job) =>
+        job.library === library &&
+        job.version === version &&
+        (!statuses || statuses.includes(job.status)),
+    );
+  }
+
+  /**
+   * Enqueues a new document processing job, aborting any existing QUEUED/RUNNING job for the same library+version (including unversioned).
    */
   async enqueueJob(
     library: string,
-    version: string,
+    version: string | undefined | null,
     options: ScraperOptions,
   ): Promise<string> {
+    // Normalize version: treat undefined/null as "" (unversioned)
+    const normalizedVersion = version ?? "";
+    // Abort any existing QUEUED or RUNNING job for the same library+version
+    const duplicateJobs = this.findJobsByLibraryVersion(library, normalizedVersion, [
+      PipelineJobStatus.QUEUED,
+      PipelineJobStatus.RUNNING,
+    ]);
+    for (const job of duplicateJobs) {
+      logger.info(
+        `🚫 Aborting duplicate job for ${library}@${normalizedVersion}: ${job.id}`,
+      );
+      await this.cancelJob(job.id);
+    }
+
     const jobId = uuidv4();
     const abortController = new AbortController();
     let resolveCompletion!: () => void;
@@ -90,7 +120,7 @@ export class PipelineManager {
     const job: PipelineJob = {
       id: jobId,
       library,
-      version,
+      version: normalizedVersion,
       options,
       status: PipelineJobStatus.QUEUED,
       progress: null,
@@ -107,7 +137,7 @@ export class PipelineManager {
     this.jobMap.set(jobId, job);
     this.jobQueue.push(jobId);
     logger.info(
-      `📝 Job enqueued: ${jobId} for ${library}${version ? `@${version}` : ""}`,
+      `📝 Job enqueued: ${jobId} for ${library}${normalizedVersion ? `@${normalizedVersion}` : " (unversioned)"}`,
     );
 
     await this.callbacks.onJobStatusChange?.(job);
