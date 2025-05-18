@@ -26,6 +26,7 @@ import {
   DEFAULT_WEB_PORT,
 } from "./utils/config";
 import { LogLevel, logger, setLogLevel } from "./utils/logger";
+import { getProjectRoot } from "./utils/paths";
 import { startWebServer, stopWebServer } from "./web/web";
 
 /**
@@ -47,8 +48,9 @@ function ensurePlaywrightBrowsersInstalled(): void {
       "Playwright browsers not found. Installing Chromium browser for dynamic scraping (this may take a minute)...",
     );
     try {
-      execSync("npx playwright install --no-shell --with-deps chromium", {
+      execSync("npx -y playwright install --no-shell --with-deps chromium", {
         stdio: "inherit",
+        cwd: getProjectRoot(),
       });
     } catch (installErr) {
       // eslint-disable-next-line no-console
