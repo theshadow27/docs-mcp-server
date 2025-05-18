@@ -38,7 +38,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
     "format": "biome format . --write",
-    "postinstall": "npx playwright install --no-shell --with-deps chromium"
+    "postinstall": "echo 'Skipping Playwright browser install. See README.md for details.'"
   },
   "dependencies": {
     "@fastify/formbody": "^8.0.2",
