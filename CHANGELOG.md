@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/arabold/docs-mcp-server/compare/v1.15.0...v1.15.1) (2025-05-18)
+
+
+### Bug Fixes
+
+* **playwright:** ensure Playwright is installed from the correct project path ([f45f530](https://github.com/arabold/docs-mcp-server/commit/f45f5300e30a36e59e2f9c0423fbf0e7eee88c76))
+
 # [1.15.0](https://github.com/arabold/docs-mcp-server/compare/v1.14.0...v1.15.0) (2025-05-18)
 
 
