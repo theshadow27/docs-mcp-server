@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import "dotenv/config";
 import { Command } from "commander";
 import type { FastifyInstance } from "fastify";
@@ -25,6 +27,40 @@ import {
 } from "./utils/config";
 import { LogLevel, logger, setLogLevel } from "./utils/logger";
 import { startWebServer, stopWebServer } from "./web/web";
+
+/**
+ * Ensures that the Playwright browsers are installed.
+ */
+function ensurePlaywrightBrowsersInstalled(): void {
+  try {
+    // Dynamically require Playwright and check for Chromium browser
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const playwright = require("playwright");
+    const chromiumPath = playwright.chromium.executablePath();
+    if (!chromiumPath || !existsSync(chromiumPath)) {
+      throw new Error("Playwright Chromium browser not found");
+    }
+  } catch (err) {
+    // Not installed or not found, attempt to install
+    // eslint-disable-next-line no-console
+    console.warn(
+      "Playwright browsers not found. Installing Chromium browser for dynamic scraping (this may take a minute)...",
+    );
+    try {
+      execSync("npx playwright install --no-shell --with-deps chromium", {
+        stdio: "inherit",
+      });
+    } catch (installErr) {
+      // eslint-disable-next-line no-console
+      console.error(
+        "\u274C Failed to install Playwright browsers automatically. Please run:\n  npx playwright install --no-shell --with-deps chromium\nand try again.",
+      );
+      process.exit(1);
+    }
+  }
+}
+
+ensurePlaywrightBrowsersInstalled();
 
 const formatOutput = (data: unknown) => JSON.stringify(data, null, 2);
 
