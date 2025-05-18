@@ -1,3 +1,22 @@
+# [1.15.0](https://github.com/arabold/docs-mcp-server/compare/v1.14.0...v1.15.0) (2025-05-18)
+
+
+### Bug Fixes
+
+* **playwright:** auto-install Playwright browsers at startup if missing ([090f5e1](https://github.com/arabold/docs-mcp-server/commit/090f5e19953a59653e35e1bc90d3625589455cf0))
+* **smithery:** removed smithery config file ([0c4c30c](https://github.com/arabold/docs-mcp-server/commit/0c4c30c080c6a5f69a15e03bad7b6089b33ef781))
+* **store:** wrap migrations in immediate transaction with retries ([63f7485](https://github.com/arabold/docs-mcp-server/commit/63f7485e0b9dffc40476eaa432daeafce8907625)), closes [#108](https://github.com/arabold/docs-mcp-server/issues/108)
+* **web:** sanitize and encode library/version for delete (fixes [#100](https://github.com/arabold/docs-mcp-server/issues/100)) ([3182733](https://github.com/arabold/docs-mcp-server/commit/318273384ad54df888ee06a9025da9b9116fe5f7))
+
+
+### Features
+
+* **queue:** improve job deduplication, safe deletion, and test coverage ([ff529cc](https://github.com/arabold/docs-mcp-server/commit/ff529cc161cfa0b2fc5a1d3960932470723482a3)), closes [#111](https://github.com/arabold/docs-mcp-server/issues/111)
+* **scraper/playwright:** improve page loading reliability by waiting for body element ([46f106c](https://github.com/arabold/docs-mcp-server/commit/46f106c0c8313c310b45eee49fcc1a8dff29e787)), closes [#116](https://github.com/arabold/docs-mcp-server/issues/116)
+* **scraper:** add robust URL filtering with glob/regex patterns ([d81aaf1](https://github.com/arabold/docs-mcp-server/commit/d81aaf11c166b19d01ffe8951127647132b19e38)), closes [#97](https://github.com/arabold/docs-mcp-server/issues/97)
+* simplify npx setup by merging binaries ([f4ce7a4](https://github.com/arabold/docs-mcp-server/commit/f4ce7a4468bba2788072d090131d363654ee794d)), closes [#105](https://github.com/arabold/docs-mcp-server/issues/105)
+* **web:** improve scrape form user experience with tooltips, animated alerts, and better spacing ([edcc7e2](https://github.com/arabold/docs-mcp-server/commit/edcc7e2a755fd93c1917cac4b605dda176cf15aa))
+
 # [1.14.0](https://github.com/arabold/docs-mcp-server/compare/v1.13.0...v1.14.0) (2025-05-10)
 
 
