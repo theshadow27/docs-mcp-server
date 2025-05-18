@@ -403,6 +403,12 @@ This section covers running the server/CLI directly from the source code for dev
 
 ### Running from Source
 
+> **Note:** Playwright browsers are not installed automatically during `npm install`. If you need to run tests or use features that require Playwright, run:
+>
+> ```bash
+> npx playwright install --no-shell --with-deps chromium
+> ```
+
 This provides an isolated environment and exposes the server via HTTP endpoints.
 
 This method is useful for contributing to the project or running un-published versions.
