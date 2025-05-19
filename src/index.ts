@@ -43,19 +43,18 @@ function ensurePlaywrightBrowsersInstalled(): void {
     }
   } catch (err) {
     // Not installed or not found, attempt to install
-    // eslint-disable-next-line no-console
-    console.warn(
+    logger.debug(
       "Playwright browsers not found. Installing Chromium browser for dynamic scraping (this may take a minute)...",
     );
     try {
-      execSync("npx -y playwright install --no-shell --with-deps chromium", {
+      // `npm exec` avoids playwright warning about being installed globally
+      execSync("npm exec -y playwright install --no-shell --with-deps chromium", {
         stdio: "inherit",
         cwd: getProjectRoot(),
       });
     } catch (installErr) {
-      // eslint-disable-next-line no-console
       console.error(
-        "\u274C Failed to install Playwright browsers automatically. Please run:\n  npx playwright install --no-shell --with-deps chromium\nand try again.",
+        "❌ Failed to install Playwright browsers automatically. Please run:\n  npx playwright install --no-shell --with-deps chromium\nand try again.",
       );
       process.exit(1);
     }
