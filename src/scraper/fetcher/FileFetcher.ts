@@ -19,8 +19,7 @@ export class FileFetcher implements ContentFetcher {
     try {
       const content = await fs.readFile(filePath);
       const ext = path.extname(filePath).toLowerCase();
-      const mimeType = this.getMimeType(ext);
-
+      const mimeType = this.getMimeType(ext, content);
       return {
         content,
         mimeType,
@@ -38,16 +37,32 @@ export class FileFetcher implements ContentFetcher {
     }
   }
 
-  private getMimeType(ext: string): string {
+  /**
+   * Returns the MIME type for a file extension, optionally inspecting content for binary detection.
+   * For known text extensions, always returns the text MIME type.
+   * For unknown extensions, checks for null bytes in the first 8000 bytes to detect binary files.
+   */
+  private getMimeType(ext: string, content?: Buffer): string {
     switch (ext) {
       case ".html":
       case ".htm":
+      case ".htmx":
         return "text/html";
       case ".md":
+      case ".mdx":
+      case ".markdown":
         return "text/markdown";
       case ".txt":
+      case ".text":
         return "text/plain";
       default:
+        if (content) {
+          // Fast null byte check using Buffer.indexOf
+          const maxCheck = Math.min(content.length, 8000);
+          if (content.subarray(0, maxCheck).indexOf(0) !== -1) {
+            return "application/octet-stream";
+          }
+        }
         return "application/octet-stream";
     }
   }

@@ -208,4 +208,43 @@ describe("LocalFileStrategy", () => {
       }),
     );
   });
+
+  it("should skip binary/unsupported files and only process supported text files", async () => {
+    const strategy = new LocalFileStrategy();
+    const options: ScraperOptions = {
+      url: "file:///testdir",
+      library: "test",
+      version: "1.0",
+      maxPages: 10,
+      maxDepth: 1,
+      maxConcurrency: 1,
+    };
+    const progressCallback = vi.fn();
+    // Simulate a binary file (with null bytes) and an image file
+    vol.fromJSON(
+      {
+        "/testdir/file1.md": "# File 1", // supported
+        "/testdir/file2.png": Buffer.from([
+          0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00,
+        ]).toString("binary"), // PNG signature + null bytes
+        "/testdir/file3.txt": "File 3", // supported
+        "/testdir/file4.bin": Buffer.from([0x00, 0x01, 0x02, 0x03, 0x00]).toString(
+          "binary",
+        ), // binary with null bytes
+        "/testdir/file5.html": "<html><body>File 5</body></html>", // supported
+      },
+      "/",
+    );
+
+    await strategy.scrape(options, progressCallback);
+    // Only .md, .txt, and .html should be processed
+    expect(progressCallback).toHaveBeenCalledTimes(3);
+    const calledUrls = progressCallback.mock.calls.map((call) => call[0].currentUrl);
+    expect(calledUrls).toContain("file:///testdir/file1.md");
+    expect(calledUrls).toContain("file:///testdir/file3.txt");
+    expect(calledUrls).toContain("file:///testdir/file5.html");
+    // Should NOT process binary/image files
+    expect(calledUrls).not.toContain("file:///testdir/file2.png");
+    expect(calledUrls).not.toContain("file:///testdir/file4.bin");
+  });
 });
