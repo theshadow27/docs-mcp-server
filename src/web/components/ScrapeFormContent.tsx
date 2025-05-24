@@ -37,7 +37,21 @@ const ScrapeFormContent = () => (
           >
             URL
           </label>
-          <Tooltip text="Enter the URL of the documentation you want to scrape. This will be the starting point for the scraper." />
+          <Tooltip
+            text={
+              <div>
+                <p>Enter the URL of the documentation you want to scrape.</p>
+                <p class="mt-2">
+                  For local files/folders, you must use the <code>file://</code>{" "}
+                  prefix and ensure the path is accessible to the server.
+                </p>
+                <p class="mt-2">
+                  If running in Docker, <b>mount the folder</b> (see README for
+                  details).
+                </p>
+              </div>
+            }
+          />
         </div>
         <input
           type="url"
@@ -50,7 +64,7 @@ const ScrapeFormContent = () => (
           class="mt-0.5 block w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         />
         <div
-          x-show="hasPath"
+          x-show="hasPath && !(url.startsWith('file://'))"
           x-cloak
           x-transition:enter="transition ease-out duration-300"
           x-transition:enter-start="opacity-0 transform -translate-y-2"

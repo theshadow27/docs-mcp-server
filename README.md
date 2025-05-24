@@ -135,6 +135,36 @@ Once the Docs MCP Server is running, you can use the Web Interface to **add new 
 
 **That's it!** Once a job completes successfully, the documentation for that library and version becomes available for searching through your connected AI coding assistant (using the `search_docs` tool) or directly in the Web UI by clicking on the library name in the "Indexed Documenation" section.
 
+## Scraping Local Files and Folders
+
+You can index documentation from your local filesystem by using a `file://` URL as the source. This works in both the Web UI and CLI.
+
+**Examples:**
+
+- Web: `https://react.dev/reference/react`
+- Local file: `file:///Users/me/docs/index.html`
+- Local folder: `file:///Users/me/docs/my-library`
+
+**Requirements:**
+
+- All files with a MIME type of `text/*` are processed. This includes HTML, Markdown, plain text, and source code files such as `.js`, `.ts`, `.tsx`, `.css`, etc. Binary files, PDFs, images, and other non-text formats are ignored.
+- You must use the `file://` prefix for local files/folders.
+- The path must be accessible to the server process.
+- **If running in Docker or Docker Compose:**
+  - You must mount the local folder into the container and use the container path in your `file://` URL.
+  - Example Docker run:
+    ```bash
+    docker run --rm \
+      -e OPENAI_API_KEY="your-key" \
+      -v /absolute/path/to/docs:/docs:ro \
+      -v docs-mcp-data:/data \
+      ghcr.io/arabold/docs-mcp-server:latest \
+      scrape mylib file:///docs/my-library
+    ```
+  - In the Web UI, enter the path as `file:///docs/my-library` (matching the container path).
+
+See the tooltips in the Web UI and CLI help for more details.
+
 ## Alternative: Using Docker
 
 > **Note:** The published Docker images now support both x86_64 (amd64) and Mac Silicon (arm64) platforms.
