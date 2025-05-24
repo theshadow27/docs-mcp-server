@@ -1,4 +1,5 @@
 import { type Browser, type BrowserContext, type Page, chromium } from "playwright";
+import { DEFAULT_PAGE_TIMEOUT } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { ScrapeMode } from "../types";
 import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
@@ -59,9 +60,6 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       '[class*="loader"]',
       '[id*="loading"]',
       '[class*="preload"]',
-      ".spinner",
-      ".loading",
-      ".loader",
       "#loading",
       '[aria-label*="loading" i]',
       '[aria-label*="spinner" i]',
@@ -76,7 +74,10 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
         if (isVisible) {
           waitPromises.push(
             page
-              .waitForSelector(selector, { state: "hidden", timeout: 5000 })
+              .waitForSelector(selector, {
+                state: "hidden",
+                timeout: DEFAULT_PAGE_TIMEOUT,
+              })
               .catch(() => {}),
           );
         }
