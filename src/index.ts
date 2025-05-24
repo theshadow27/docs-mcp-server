@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import "dotenv/config";
 import { Command } from "commander";
 import type { FastifyInstance } from "fastify";
+import { chromium, devices } from "playwright";
 import packageJson from "../package.json";
 import { startServer as startMcpServer, stopServer as stopMcpServer } from "./mcp";
 import { PipelineManager } from "./pipeline/PipelineManager";
@@ -44,8 +45,7 @@ function ensurePlaywrightBrowsersInstalled(): void {
   try {
     // Dynamically require Playwright and check for Chromium browser
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const playwright = require("playwright");
-    const chromiumPath = playwright.chromium.executablePath();
+    const chromiumPath = chromium.executablePath();
     if (!chromiumPath || !existsSync(chromiumPath)) {
       throw new Error("Playwright Chromium browser not found");
     }
@@ -55,9 +55,9 @@ function ensurePlaywrightBrowsersInstalled(): void {
       "Playwright browsers not found. Installing Chromium browser for dynamic scraping (this may take a minute)...",
     );
     try {
-      // `npm exec` avoids playwright warning about being installed globally
+      logger.debug("Installing Playwright Chromium browser...");
       execSync("npm exec -y playwright install --no-shell --with-deps chromium", {
-        stdio: "inherit",
+        stdio: "ignore", // Suppress output
         cwd: getProjectRoot(),
       });
     } catch (installErr) {
