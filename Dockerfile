@@ -27,8 +27,18 @@ COPY db            db
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# Install Playwright browsers (only if needed for runtime)
-RUN npx playwright install --no-shell --with-deps chromium
+# Install system Chromium and required dependencies
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends chromium \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* \
+  && CHROMIUM_PATH=$(command -v chromium || command -v chromium-browser) \
+  && if [ -z "$CHROMIUM_PATH" ]; then echo "Chromium executable not found!" && exit 1; fi \
+  && if [ "$CHROMIUM_PATH" != "/usr/bin/chromium" ]; then echo "Unexpected Chromium path: $CHROMIUM_PATH" && exit 1; fi \
+  && echo "Chromium installed at $CHROMIUM_PATH"
+
+# Set Playwright to use system Chromium (hardcoded path, as ENV cannot use shell vars)
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist

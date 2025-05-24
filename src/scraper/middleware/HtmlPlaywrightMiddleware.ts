@@ -23,10 +23,15 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
   private async ensureBrowser(): Promise<Browser> {
     if (!this.browser || !this.browser.isConnected()) {
       const launchArgs = process.env.PLAYWRIGHT_LAUNCH_ARGS?.split(" ") ?? [];
+      const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
       logger.debug(
         `Launching new Playwright browser instance (Chromium) with args: ${launchArgs.join(" ") || "none"}...`,
       );
-      this.browser = await chromium.launch({ channel: "chromium", args: launchArgs });
+      this.browser = await chromium.launch({
+        channel: "chromium",
+        args: launchArgs,
+        executablePath: executablePath,
+      });
       this.browser.on("disconnected", () => {
         logger.debug("Playwright browser instance disconnected.");
         this.browser = null;
