@@ -30,9 +30,17 @@ import { getProjectRoot } from "./utils/paths";
 import { startWebServer, stopWebServer } from "./web/web";
 
 /**
- * Ensures that the Playwright browsers are installed.
+ * Ensures that the Playwright browsers are installed, unless a system Chromium path is set.
  */
 function ensurePlaywrightBrowsersInstalled(): void {
+  // If PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set, skip install
+  const chromiumEnvPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  if (chromiumEnvPath && existsSync(chromiumEnvPath)) {
+    logger.debug(
+      `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set to '${chromiumEnvPath}', skipping Playwright browser install.`,
+    );
+    return;
+  }
   try {
     // Dynamically require Playwright and check for Chromium browser
     // eslint-disable-next-line @typescript-eslint/no-var-requires

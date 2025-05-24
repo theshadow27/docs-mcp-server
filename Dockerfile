@@ -27,8 +27,14 @@ COPY db            db
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# Install Playwright browsers (only if needed for runtime)
-RUN npx playwright install --no-shell --with-deps chromium
+# Install system Chromium and required dependencies
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends chromium \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/*
+
+# Set Playwright to use system Chromium
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
