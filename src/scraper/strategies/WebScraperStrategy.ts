@@ -91,20 +91,20 @@ export class WebScraperStrategy extends BaseScraperStrategy {
 
       if (!processed) {
         logger.warn(
-          `⚠️ Unsupported content type "${rawContent.mimeType}" for URL ${url}. Skipping processing.`,
+          `⚠️  Unsupported content type "${rawContent.mimeType}" for URL ${url}. Skipping processing.`,
         );
         return { document: undefined, links: [] };
       }
 
       // Log errors from pipeline
       for (const err of processed.errors) {
-        logger.warn(`⚠️ Processing error for ${url}: ${err.message}`);
+        logger.warn(`⚠️  Processing error for ${url}: ${err.message}`);
       }
 
       // Check if content processing resulted in usable content
       if (!processed.textContent || !processed.textContent.trim()) {
         logger.warn(
-          `⚠️ No processable content found for ${url} after pipeline execution.`,
+          `⚠️  No processable content found for ${url} after pipeline execution.`,
         );
         return { document: undefined, links: processed.links };
       }

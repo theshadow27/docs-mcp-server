@@ -247,4 +247,92 @@ describe("LocalFileStrategy", () => {
     expect(calledUrls).not.toContain("file:///testdir/file2.png");
     expect(calledUrls).not.toContain("file:///testdir/file4.bin");
   });
+
+  it("should respect include and exclude patterns for local crawling", async () => {
+    const strategy = new LocalFileStrategy();
+    const options: ScraperOptions = {
+      url: "file:///testdir",
+      library: "test",
+      version: "1.0",
+      maxPages: 10,
+      maxDepth: 1,
+      includePatterns: ["/file1.md", "/file3.txt"],
+      excludePatterns: ["/file3.txt"], // exclude takes precedence
+    };
+    const progressCallback = vi.fn();
+    vol.fromJSON(
+      {
+        "/testdir/file1.md": "# File 1", // should be included
+        "/testdir/file2.html": "<html><body>File 2</body></html>", // should be excluded (not in include)
+        "/testdir/file3.txt": "File 3", // should be excluded (in exclude)
+      },
+      "/",
+    );
+    await strategy.scrape(options, progressCallback);
+    // Only file1.md should be processed
+    expect(progressCallback).toHaveBeenCalledTimes(1);
+    const calledUrls = progressCallback.mock.calls.map((call) => call[0].currentUrl);
+    expect(calledUrls).toContain("file:///testdir/file1.md");
+    expect(calledUrls).not.toContain("file:///testdir/file2.html");
+    expect(calledUrls).not.toContain("file:///testdir/file3.txt");
+  });
+
+  it("should process files and folders with spaces in their names (percent-encoded in file:// URL)", async () => {
+    const strategy = new LocalFileStrategy();
+    const options: ScraperOptions = {
+      url: "file:///test%20dir/space%20file.md",
+      library: "test",
+      version: "1.0",
+      maxPages: 1,
+      maxDepth: 0,
+    };
+    const progressCallback = vi.fn();
+    vol.fromJSON(
+      {
+        "/test dir/space file.md": "# Space File\n\nThis file has spaces in its name.",
+      },
+      "/",
+    );
+    await strategy.scrape(options, progressCallback);
+    expect(progressCallback).toHaveBeenCalledTimes(1);
+    expect(progressCallback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pagesScraped: 1,
+        currentUrl: "file:///test%20dir/space%20file.md",
+        document: expect.objectContaining({
+          content: "# Space File\n\nThis file has spaces in its name.",
+          metadata: expect.objectContaining({
+            url: "file:///test%20dir/space%20file.md",
+            title: "Space File",
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("should decode percent-encoded file paths (spaces as %20) for local crawling", async () => {
+    const strategy = new LocalFileStrategy();
+    const options: ScraperOptions = {
+      url: "file:///test%20dir", // percent-encoded space
+      library: "test",
+      version: "1.0",
+      maxPages: 10,
+      maxDepth: 1,
+      maxConcurrency: 1,
+    };
+    const progressCallback = vi.fn();
+    vol.fromJSON(
+      {
+        "/test dir/file with space.md": "# File With Space",
+        "/test dir/normal.md": "# Normal File",
+      },
+      "/",
+    );
+    await strategy.scrape(options, progressCallback);
+    // Both files should be processed
+    expect(progressCallback).toHaveBeenCalledTimes(2);
+    const calledUrls = progressCallback.mock.calls.map((call) => call[0].currentUrl);
+    expect(calledUrls).toContain("file:///test%20dir/file%20with%20space.md");
+    expect(calledUrls).toContain("file:///test%20dir/normal.md");
+  });
 });

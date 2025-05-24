@@ -46,7 +46,7 @@ export class PipelineManager {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      logger.warn("⚠️ PipelineManager is already running.");
+      logger.warn("⚠️  PipelineManager is already running.");
       return;
     }
     this.isRunning = true;
@@ -61,7 +61,7 @@ export class PipelineManager {
    */
   async stop(): Promise<void> {
     if (!this.isRunning) {
-      logger.warn("⚠️ PipelineManager is not running.");
+      logger.warn("⚠️  PipelineManager is not running.");
       return;
     }
     this.isRunning = false;
@@ -214,7 +214,7 @@ export class PipelineManager {
       case PipelineJobStatus.CANCELLED:
       case PipelineJobStatus.CANCELLING:
         logger.warn(
-          `⚠️ Job ${jobId} cannot be cancelled in its current state: ${job.status}`,
+          `⚠️  Job ${jobId} cannot be cancelled in its current state: ${job.status}`,
         );
         break;
 

@@ -138,7 +138,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
         );
       }
     } catch (e) {
-      logger.warn(`⚠️ Could not parse URL for credential extraction: ${context.source}`);
+      logger.warn(`⚠️  Could not parse URL for credential extraction: ${context.source}`);
     }
 
     try {
@@ -226,7 +226,7 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       );
     } else {
       logger.warn(
-        `⚠️ Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
+        `⚠️  Playwright rendering resulted in null content for ${context.source}. Proceeding without content update.`,
       );
     }
 

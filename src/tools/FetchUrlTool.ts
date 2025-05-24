@@ -109,7 +109,7 @@ export class FetchUrlTool {
 
       if (!processed) {
         logger.warn(
-          `⚠️ Unsupported content type "${rawContent.mimeType}" for ${url}. Returning raw content.`,
+          `⚠️  Unsupported content type "${rawContent.mimeType}" for ${url}. Returning raw content.`,
         );
         const contentString =
           typeof rawContent.content === "string"
@@ -119,7 +119,7 @@ export class FetchUrlTool {
       }
 
       for (const err of processed.errors) {
-        logger.warn(`⚠️ Processing error for ${url}: ${err.message}`);
+        logger.warn(`⚠️  Processing error for ${url}: ${err.message}`);
       }
 
       if (typeof processed.textContent !== "string" || !processed.textContent.trim()) {
