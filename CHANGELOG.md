@@ -1,3 +1,14 @@
+# [1.16.0](https://github.com/arabold/docs-mcp-server/compare/v1.15.1...v1.16.0) (2025-05-24)
+
+
+### Features
+
+* **aws:** support AWS_PROFILE for credentials fallback (task 125) and add test coverage ([96194f5](https://github.com/arabold/docs-mcp-server/commit/96194f56839ab678cafa44f6d581acdc6c553290))
+* **ci:** publish multi-arch Docker images (x86_64/amd64 and arm64) for Mac Silicon support ([a282c7f](https://github.com/arabold/docs-mcp-server/commit/a282c7f4c9cc7c0e88e31327f8bcd37bd75ba588)), closes [#127](https://github.com/arabold/docs-mcp-server/issues/127)
+* **docker:** use system Chromium instead of Playwright's bundled browser ([5be058b](https://github.com/arabold/docs-mcp-server/commit/5be058b545afed0d2a79a4a91ccdef7759d716c3)), closes [#124](https://github.com/arabold/docs-mcp-server/issues/124)
+* **local-file-support:** improve local file support in server and web interface ([50074f5](https://github.com/arabold/docs-mcp-server/commit/50074f54290178b2c2795edf46b6fbb2de570940)), closes [#128](https://github.com/arabold/docs-mcp-server/issues/128)
+* **scraper:** robust encoding, BOM, and binary/text detection ([45b3f94](https://github.com/arabold/docs-mcp-server/commit/45b3f9490359239cfb5e2d31573591cd76d08f2a)), closes [#129](https://github.com/arabold/docs-mcp-server/issues/129)
+
 ## [1.15.1](https://github.com/arabold/docs-mcp-server/compare/v1.15.0...v1.15.1) (2025-05-18)
 
 
