@@ -1,4 +1,5 @@
 import { type Browser, type BrowserContext, type Page, chromium } from "playwright";
+import { DEFAULT_PAGE_TIMEOUT } from "../../utils/config";
 import { logger } from "../../utils/logger";
 import { ScrapeMode } from "../types";
 import type { ContentProcessorMiddleware, MiddlewareContext } from "./types";
@@ -47,11 +48,55 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
   }
 
   /**
+   * Waits for common loading indicators (spinners, loaders) that are currently visible to disappear from the page.
+   * Only waits for selectors that are present and visible at the time of check.
+   *
+   * @param page The Playwright page instance to operate on.
+   */
+  private async waitForLoadingToComplete(page: Page): Promise<void> {
+    const commonLoadingSelectors = [
+      '[class*="loading"]',
+      '[class*="spinner"]',
+      '[class*="loader"]',
+      '[id*="loading"]',
+      '[class*="preload"]',
+      "#loading",
+      '[aria-label*="loading" i]',
+      '[aria-label*="spinner" i]',
+    ];
+
+    // Wait for all visible loading indicators in parallel
+    const waitPromises: Promise<unknown>[] = [];
+    for (const selector of commonLoadingSelectors) {
+      try {
+        // Use page.isVisible to check if any matching element is visible (legacy API, but works for any visible match)
+        const isVisible = await page.isVisible(selector).catch(() => false);
+        if (isVisible) {
+          waitPromises.push(
+            page
+              .waitForSelector(selector, {
+                state: "hidden",
+                timeout: DEFAULT_PAGE_TIMEOUT,
+              })
+              .catch(() => {}),
+          );
+        }
+      } catch {
+        // Ignore errors (e.g., selector not found or timeout)
+      }
+    }
+    if (waitPromises.length > 0) {
+      await Promise.all(waitPromises);
+    }
+  }
+
+  /**
    * Processes the context using Playwright, rendering dynamic content and propagating credentials for all same-origin requests.
    *
    * - Parses credentials from the URL (if present).
    * - Uses browser.newContext({ httpCredentials }) for HTTP Basic Auth on the main page and subresources.
    * - Injects Authorization header for all same-origin requests if credentials are present and not already set.
+   * - Waits for common loading indicators to disappear before extracting HTML.
    *
    * @param context The middleware context containing the HTML and source URL.
    * @param next The next middleware function in the pipeline.
@@ -151,6 +196,8 @@ export class HtmlPlaywrightMiddleware implements ContentProcessorMiddleware {
       // Load initial HTML content
       await page.goto(context.source, { waitUntil: "load" });
       await page.waitForSelector("body");
+      await this.waitForLoadingToComplete(page);
+      // await page.waitForLoadState("networkidle");
 
       renderedHtml = await page.content();
       logger.debug(`Playwright: Successfully rendered content for ${context.source}`);

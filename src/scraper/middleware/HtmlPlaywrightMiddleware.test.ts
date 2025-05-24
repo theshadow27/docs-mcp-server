@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio";
 import { type MockedObject, afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { ScraperOptions } from "../types";
 import { HtmlPlaywrightMiddleware } from "./HtmlPlaywrightMiddleware";
@@ -189,5 +190,69 @@ describe("HtmlPlaywrightMiddleware", () => {
     expect(next).toHaveBeenCalled();
 
     launchSpy.mockRestore();
+  });
+
+  it("waits for visible loading indicators to disappear before extracting HTML", async () => {
+    // Arrange: HTML with a visible spinner and a delayed script to hide it
+    const initialHtml = `
+      <html><body>
+        <div class="spinner">Loading...</div>
+        <div id="content" style="display:none">Loaded!</div>
+        <script>
+          setTimeout(() => {
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('content').style.display = '';
+          }, 100);
+        </script>
+      </body></html>
+    `;
+    const context = createPipelineTestContext(initialHtml, "https://example.com/spinner");
+    const next = vi.fn();
+
+    await playwrightMiddleware.process(context, next);
+
+    // Use Cheerio to parse the resulting HTML
+    const $ = cheerio.load(context.content);
+    // Spinner should still exist, but be hidden
+    const spinner = $(".spinner");
+    expect(spinner.length).toBe(1);
+    expect(spinner.attr("style")).toMatch(/display:\s*none/);
+    // Content should be visible (no display:none)
+    const content = $("#content");
+    expect(content.length).toBe(1);
+    expect(content.attr("style") || "").not.toMatch(/display\s*:\s*none/);
+    expect(content.text()).toContain("Loaded!");
+    expect(context.errors).toHaveLength(0);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("should not wait if loading indicators are present but hidden on page load", async () => {
+    // Arrange: HTML with a spinner that is hidden from the start
+    const initialHtml = `
+      <html><body>
+        <div class="spinner" style="display:none">Loading...</div>
+        <div id="content">Loaded immediately!</div>
+      </body></html>
+    `;
+    const context = createPipelineTestContext(
+      initialHtml,
+      "https://example.com/hidden-spinner",
+    );
+    const next = vi.fn();
+
+    await playwrightMiddleware.process(context, next);
+
+    // Use Cheerio to parse the resulting HTML
+    const $ = cheerio.load(context.content);
+    // Spinner should exist and be hidden
+    const spinner = $(".spinner");
+    expect(spinner.length).toBe(1);
+    expect(spinner.attr("style")).toMatch(/display\s*:\s*none/);
+    // Content should be visible
+    const content = $("#content");
+    expect(content.length).toBe(1);
+    expect(content.text()).toContain("Loaded immediately!");
+    expect(context.errors).toHaveLength(0);
+    expect(next).toHaveBeenCalled();
   });
 });
