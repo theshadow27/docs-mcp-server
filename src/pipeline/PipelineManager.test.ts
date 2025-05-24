@@ -30,7 +30,6 @@ vi.mock("../utils/logger");
 
 describe("PipelineManager", () => {
   let mockStore: Partial<DocumentManagementService>;
-  let mockScraperService: Partial<ScraperService>;
   let mockWorkerInstance: { executeJob: Mock };
   let manager: PipelineManager;
   let mockCallbacks: PipelineManagerCallbacks;
@@ -40,10 +39,6 @@ describe("PipelineManager", () => {
     vi.useFakeTimers(); // Use fake timers for controlling async queue processing
 
     mockStore = {
-      // Add mock methods if manager interacts directly (it shouldn't now)
-    };
-
-    mockScraperService = {
       // Add mock methods if manager interacts directly (it shouldn't now)
     };
 
