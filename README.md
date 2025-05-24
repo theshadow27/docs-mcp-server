@@ -137,6 +137,8 @@ Once the Docs MCP Server is running, you can use the Web Interface to **add new 
 
 ## Alternative: Using Docker
 
+> **Note:** The published Docker images now support both x86_64 (amd64) and Mac Silicon (arm64) platforms.
+
 This approach is easy, straightforward, and doesn't require cloning the repository.
 
 1. **Ensure Docker is installed and running.**
