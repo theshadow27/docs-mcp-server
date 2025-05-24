@@ -201,7 +201,15 @@ async function main() {
     // --- Scrape Command ---
     program
       .command("scrape <library> <url>")
-      .description("Scrape and index documentation from a URL")
+      .description(
+        "Scrape and index documentation from a URL or local folder.\n\n" +
+          "To scrape local files or folders, use a file:// URL.\n" +
+          "Examples:\n" +
+          "  scrape mylib https://react.dev/reference/react\n" +
+          "  scrape mylib file:///Users/me/docs/index.html\n" +
+          "  scrape mylib file:///Users/me/docs/my-library\n" +
+          "\nNote: For local files/folders, you must use the file:// prefix. If running in Docker, mount the folder and use the container path. See README for details.",
+      )
       .option("-v, --version <string>", "Version of the library (optional)")
       .option(
         "-p, --max-pages <number>",

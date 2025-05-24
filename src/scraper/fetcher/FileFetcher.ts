@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import * as mime from "mime-types";
 import { ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
 import type { ContentFetcher, FetchOptions, RawContent } from "./types";
@@ -12,14 +13,19 @@ export class FileFetcher implements ContentFetcher {
     return source.startsWith("file://");
   }
 
+  /**
+   * Fetches the content of a file given a file:// URL, decoding percent-encoded paths as needed.
+   * Only HTML and Markdown files are processed.
+   */
   async fetch(source: string, options?: FetchOptions): Promise<RawContent> {
-    const filePath = source.replace(/^file:\/\//, "");
-    logger.info(`📄 Fetching file: ${filePath}`);
+    // Always decode the file path from file:// URL
+    const rawPath = source.replace("file://", "");
+    const filePath = decodeURIComponent(rawPath);
 
     try {
       const content = await fs.readFile(filePath);
       const ext = path.extname(filePath).toLowerCase();
-      const mimeType = this.getMimeType(ext, content);
+      const mimeType = mime.lookup(ext) || "application/octet-stream";
       return {
         content,
         mimeType,
@@ -34,36 +40,6 @@ export class FileFetcher implements ContentFetcher {
         false,
         error instanceof Error ? error : undefined,
       );
-    }
-  }
-
-  /**
-   * Returns the MIME type for a file extension, optionally inspecting content for binary detection.
-   * For known text extensions, always returns the text MIME type.
-   * For unknown extensions, checks for null bytes in the first 8000 bytes to detect binary files.
-   */
-  private getMimeType(ext: string, content?: Buffer): string {
-    switch (ext) {
-      case ".html":
-      case ".htm":
-      case ".htmx":
-        return "text/html";
-      case ".md":
-      case ".mdx":
-      case ".markdown":
-        return "text/markdown";
-      case ".txt":
-      case ".text":
-        return "text/plain";
-      default:
-        if (content) {
-          // Fast null byte check using Buffer.indexOf
-          const maxCheck = Math.min(content.length, 8000);
-          if (content.subarray(0, maxCheck).indexOf(0) !== -1) {
-            return "application/octet-stream";
-          }
-        }
-        return "application/octet-stream";
     }
   }
 }
