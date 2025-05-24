@@ -33,29 +33,6 @@ export class LocalFileStrategy extends BaseScraperStrategy {
     return url.startsWith("file://");
   }
 
-  /**
-   * Recursively crawls a local directory, applying include/exclude filters and decoding percent-encoded paths.
-   * This helper does not return any value.
-   */
-  private async crawlDirectory(
-    dirUrl: string,
-    options: ScraperOptions,
-    progressCallback: ProgressCallback<ScraperProgress>,
-    depth: number,
-    visited: Set<string>,
-  ): Promise<void> {
-    const rawPath = dirUrl.replace("file://", "");
-    const dirPath = decodeURIComponent(rawPath);
-    const contents = await fs.readdir(dirPath);
-    for (const name of contents) {
-      const itemUrl = `file://${path.join(dirPath, name)}`;
-      if (this.shouldProcessUrl(itemUrl, options)) {
-        // Instead of returning, enqueue or process as needed
-        // ...existing logic...
-      }
-    }
-  }
-
   protected async processItem(
     item: QueueItem,
     options: ScraperOptions,
