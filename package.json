@@ -66,6 +66,7 @@
     "fuse.js": "^7.1.0",
     "header-generator": "^2.1.66",
     "htmx.org": "^1.9.12",
+    "iconv-lite": "^0.6.3",
     "jsdom": "^26.1.0",
     "langchain": "0.3.19",
     "minimatch": "^10.0.1",
