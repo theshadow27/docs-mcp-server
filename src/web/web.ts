@@ -5,6 +5,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { PipelineManager } from "../pipeline/PipelineManager";
 import type { DocumentManagementService } from "../store/DocumentManagementService";
 import { SearchTool } from "../tools";
+import { CancelJobTool } from "../tools/CancelJobTool";
 import { ListJobsTool } from "../tools/ListJobsTool";
 import { ListLibrariesTool } from "../tools/ListLibrariesTool";
 import { RemoveTool } from "../tools/RemoveTool";
@@ -12,6 +13,7 @@ import { ScrapeTool } from "../tools/ScrapeTool";
 import { logger } from "../utils/logger";
 import { getProjectRoot } from "../utils/paths";
 import { registerIndexRoute } from "./routes/index";
+import { registerCancelJobRoute } from "./routes/jobs/cancel";
 import { registerJobListRoutes } from "./routes/jobs/list";
 import { registerNewJobRoutes } from "./routes/jobs/new";
 import { registerLibraryDetailRoutes } from "./routes/libraries/detail";
@@ -41,8 +43,9 @@ export async function startWebServer(
   const listLibrariesTool = new ListLibrariesTool(docService);
   const listJobsTool = new ListJobsTool(pipelineManager);
   const scrapeTool = new ScrapeTool(docService, pipelineManager);
-  const removeTool = new RemoveTool(docService);
+  const removeTool = new RemoveTool(docService, pipelineManager);
   const searchTool = new SearchTool(docService);
+  const cancelJobTool = new CancelJobTool(pipelineManager);
 
   // Register static file serving
   await server.register(fastifyStatic, {
@@ -56,6 +59,7 @@ export async function startWebServer(
   registerIndexRoute(server); // Register the root route first
   registerJobListRoutes(server, listJobsTool);
   registerNewJobRoutes(server, scrapeTool);
+  registerCancelJobRoute(server, cancelJobTool);
   registerLibrariesRoutes(server, listLibrariesTool, removeTool);
   registerLibraryDetailRoutes(server, listLibrariesTool, searchTool);
 

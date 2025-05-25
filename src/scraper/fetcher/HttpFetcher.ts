@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
+import { CancellationError } from "../../pipeline/errors";
 import { FETCHER_BASE_DELAY, FETCHER_MAX_RETRIES } from "../../utils/config";
 import { RedirectError, ScraperError } from "../../utils/errors";
 import { logger } from "../../utils/logger";
@@ -74,6 +75,12 @@ export class HttpFetcher implements ContentFetcher {
         const axiosError = error as AxiosError;
         const status = axiosError.response?.status;
         const code = axiosError.code;
+
+        // Handle abort/cancel: do not retry, throw CancellationError
+        if (options?.signal?.aborted || code === "ERR_CANCELED") {
+          // Throw with isError = false to indicate cancellation is not an error
+          throw new CancellationError("HTTP fetch cancelled");
+        }
 
         // Handle redirect errors (status codes 301, 302, 303, 307, 308)
         if (!followRedirects && status && status >= 300 && status < 400) {

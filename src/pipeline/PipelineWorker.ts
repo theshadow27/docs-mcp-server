@@ -77,7 +77,7 @@ export class PipelineWorker {
 
       // Check signal one last time after scrape finishes
       if (signal.aborted) {
-        throw new CancellationError("Job cancelled shortly after scraping finished");
+        throw new CancellationError("Job cancelled");
       }
 
       // If successful and not cancelled, the manager will handle status update
