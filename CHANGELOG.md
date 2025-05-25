@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/arabold/docs-mcp-server/compare/v1.16.0...v1.16.1) (2025-05-25)
+
+
+### Bug Fixes
+
+* **playwright:** disable output when installing Chromium browser ([9fb5540](https://github.com/arabold/docs-mcp-server/commit/9fb5540931d502ff8e2a07033e14350b5c5f3b5b))
+
 # [1.16.0](https://github.com/arabold/docs-mcp-server/compare/v1.15.1...v1.16.0) (2025-05-24)
 
 
