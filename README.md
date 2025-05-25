@@ -101,6 +101,8 @@ To stop, run `docker compose down`.
 
 Once a job completes, the docs are searchable via your AI assistant or the Web UI.
 
+![Docs MCP Server Web Interface](docs/docs-mcp-server.png)
+
 ## Scraping Local Files and Folders
 
 You can index documentation from your local filesystem by using a `file://` URL as the source. This works in both the Web UI and CLI.
