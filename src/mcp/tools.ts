@@ -47,6 +47,7 @@ export async function initializeTools(
     listJobs: new ListJobsTool(pipelineManager),
     getJobInfo: new GetJobInfoTool(pipelineManager),
     cancelJob: new CancelJobTool(pipelineManager),
+    // clearCompletedJobs: new ClearCompletedJobsTool(pipelineManager),
     remove: new RemoveTool(docService, pipelineManager),
     fetchUrl: new FetchUrlTool(new HttpFetcher(), new FileFetcher()),
   };

@@ -170,13 +170,27 @@ export class PipelineManager {
 
   /**
    * Returns a promise that resolves when the specified job completes, fails, or is cancelled.
+   * For cancelled jobs, this resolves successfully rather than rejecting.
    */
   async waitForJobCompletion(jobId: string): Promise<void> {
     const job = this.jobMap.get(jobId);
     if (!job) {
       throw new PipelineStateError(`Job not found: ${jobId}`);
     }
-    await job.completionPromise;
+
+    try {
+      await job.completionPromise;
+    } catch (error) {
+      // If the job was cancelled, treat it as successful completion
+      if (
+        error instanceof CancellationError ||
+        job.status === PipelineJobStatus.CANCELLED
+      ) {
+        return; // Resolve successfully for cancelled jobs
+      }
+      // Re-throw other errors (failed jobs)
+      throw error;
+    }
   }
 
   /**
@@ -222,6 +236,43 @@ export class PipelineManager {
         logger.error(`❌ Unhandled job status for cancellation: ${job.status}`);
         break;
     }
+  }
+
+  /**
+   * Removes all jobs that are in a final state (completed, cancelled, or failed).
+   * Only removes jobs that are not currently in the queue or actively running.
+   * @returns The number of jobs that were cleared.
+   */
+  async clearCompletedJobs(): Promise<number> {
+    const completedStatuses = [
+      PipelineJobStatus.COMPLETED,
+      PipelineJobStatus.CANCELLED,
+      PipelineJobStatus.FAILED,
+    ];
+
+    let clearedCount = 0;
+    const jobsToRemove: string[] = [];
+
+    // Find all jobs that can be cleared
+    for (const [jobId, job] of this.jobMap.entries()) {
+      if (completedStatuses.includes(job.status)) {
+        jobsToRemove.push(jobId);
+        clearedCount++;
+      }
+    }
+
+    // Remove the jobs from the map
+    for (const jobId of jobsToRemove) {
+      this.jobMap.delete(jobId);
+    }
+
+    if (clearedCount > 0) {
+      logger.info(`🧹 Cleared ${clearedCount} completed job(s) from the queue`);
+    } else {
+      logger.debug("No completed jobs to clear");
+    }
+
+    return clearedCount;
   }
 
   // --- Private Methods ---
@@ -302,14 +353,14 @@ export class PipelineManager {
         // Explicitly check for CancellationError or if the signal was aborted
         job.status = PipelineJobStatus.CANCELLED;
         job.finishedAt = new Date();
-        // Use the caught error if it's a CancellationError, otherwise create a new one
-        job.error =
+        // Don't set job.error for cancellations - cancellation is not an error condition
+        const cancellationError =
           error instanceof CancellationError
             ? error
             : new CancellationError("Job cancelled by signal");
-        logger.info(`🚫 Job execution cancelled: ${jobId}: ${job.error.message}`);
+        logger.info(`🚫 Job execution cancelled: ${jobId}: ${cancellationError.message}`);
         await this.callbacks.onJobStatusChange?.(job);
-        job.rejectCompletion(job.error);
+        job.rejectCompletion(cancellationError);
       } else {
         // Handle other errors
         job.status = PipelineJobStatus.FAILED;
