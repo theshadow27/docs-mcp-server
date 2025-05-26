@@ -1,6 +1,7 @@
 import type { JobInfo } from "../../tools/GetJobInfoTool";
 import { PipelineJobStatus } from "../../pipeline/types";
 import VersionBadge from "./VersionBadge"; // Adjusted import path
+import LoadingSpinner from "./LoadingSpinner";
 
 /**
  * Props for the JobItem component.
@@ -11,6 +12,7 @@ interface JobItemProps {
 
 /**
  * Renders a single job item with its details and status.
+ * Includes a cancel button with loading spinner for QUEUED/RUNNING jobs.
  * @param props - Component props including the job information.
  */
 const JobItem = ({ job }: JobItemProps) => (
@@ -48,57 +50,41 @@ const JobItem = ({ job }: JobItemProps) => (
               type="button"
               class="font-medium rounded-lg text-xs p-1 text-center inline-flex items-center transition-colors duration-150 ease-in-out border border-gray-300 bg-white text-red-600 hover:bg-red-50 focus:ring-4 focus:outline-none focus:ring-red-100 dark:border-gray-600 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-gray-700 dark:focus:ring-red-900"
               title="Stop this job"
-              x-data={`{
-                get confirming() { return $store.jobStates['${job.id}']?.confirming || false },
-                get isStopping() { return $store.jobStates['${job.id}']?.isStopping || false },
-                get timeoutId() { return $store.jobStates['${job.id}']?.timeoutId || null },
-                setConfirming(value) { 
-                  if (!$store.jobStates['${job.id}']) $store.jobStates['${job.id}'] = {};
-                  $store.jobStates['${job.id}'].confirming = value;
-                },
-                setStopping(value) { 
-                  if (!$store.jobStates['${job.id}']) $store.jobStates['${job.id}'] = {};
-                  $store.jobStates['${job.id}'].isStopping = value;
-                },
-                setTimeoutId(value) { 
-                  if (!$store.jobStates['${job.id}']) $store.jobStates['${job.id}'] = {};
-                  $store.jobStates['${job.id}'].timeoutId = value;
-                }
-              }`}
-              x-bind:class="confirming ? 'bg-red-100 border-red-300 text-red-700' : ''"
-              x-bind:disabled="isStopping"
-              {...{
-                "x-on:click.prevent.stop": `
-                if (isStopping) return;
-                if (confirming) {
-                  if (timeoutId) {
-                    clearTimeout(timeoutId);
-                    setTimeoutId(null);
-                  }
-                  setStopping(true);
-                  fetch(\`/api/jobs/${job.id}/cancel\`, {
+              x-data="{}"
+              x-on:click={`
+                if ($store.confirmingAction.type === 'job-cancel' && $store.confirmingAction.id === '${job.id}') {
+                  $store.confirmingAction.isStopping = true;
+                  fetch('/api/jobs/' + '${job.id}' + '/cancel', {
                     method: 'POST',
                     headers: { 'Accept': 'application/json' },
                   })
                     .then(r => r.json())
                     .then(() => {
-                      setStopping(false);
-                      setConfirming(false);
+                      $store.confirmingAction.type = null;
+                      $store.confirmingAction.id = null;
+                      $store.confirmingAction.isStopping = false;
+                      if ($store.confirmingAction.timeoutId) { clearTimeout($store.confirmingAction.timeoutId); $store.confirmingAction.timeoutId = null; }
                       document.dispatchEvent(new CustomEvent('job-list-refresh'));
                     })
-                    .catch(() => { setStopping(false); setConfirming(false); });
+                    .catch(() => { $store.confirmingAction.isStopping = false; });
                 } else {
-                  setConfirming(true);
-                  const id = setTimeout(() => { 
-                    setConfirming(false); 
-                    setTimeoutId(null); 
+                  if ($store.confirmingAction.timeoutId) { clearTimeout($store.confirmingAction.timeoutId); $store.confirmingAction.timeoutId = null; }
+                  $store.confirmingAction.type = 'job-cancel';
+                  $store.confirmingAction.id = '${job.id}';
+                  $store.confirmingAction.isStopping = false;
+                  $store.confirmingAction.timeoutId = setTimeout(() => {
+                    $store.confirmingAction.type = null;
+                    $store.confirmingAction.id = null;
+                    $store.confirmingAction.isStopping = false;
+                    $store.confirmingAction.timeoutId = null;
                   }, 3000);
-                  setTimeoutId(id);
                 }
-              `,
-              }}
+              `}
+              x-bind:disabled={`$store.confirmingAction.type === 'job-cancel' && $store.confirmingAction.id === '${job.id}' && $store.confirmingAction.isStopping`}
             >
-              <span x-show="!confirming && !isStopping">
+              <span
+                x-show={`$store.confirmingAction.type !== 'job-cancel' || $store.confirmingAction.id !== '${job.id}' || $store.confirmingAction.isStopping`}
+              >
                 {/* Red Stop Icon */}
                 <svg
                   class="w-4 h-4"
@@ -108,9 +94,19 @@ const JobItem = ({ job }: JobItemProps) => (
                 >
                   <rect x="5" y="5" width="10" height="10" rx="2" />
                 </svg>
+                <span class="sr-only">Stop job</span>
               </span>
-              <span x-show="confirming && !isStopping" class="px-2">
+              <span
+                x-show={`$store.confirmingAction.type === 'job-cancel' && $store.confirmingAction.id === '${job.id}' && !$store.confirmingAction.isStopping`}
+                class="px-2"
+              >
                 Cancel?
+              </span>
+              <span
+                x-show={`$store.confirmingAction.type === 'job-cancel' && $store.confirmingAction.id === '${job.id}' && $store.confirmingAction.isStopping`}
+              >
+                <LoadingSpinner />
+                <span class="sr-only">Stopping...</span>
               </span>
             </button>
           )}
