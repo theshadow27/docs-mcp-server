@@ -469,14 +469,33 @@ async function main() {
         },
         ScrapeMode.Auto,
       )
+      .option(
+        "--header <name:value>",
+        "Custom HTTP header to send with the request (can be specified multiple times)",
+        (val: string, prev: string[] = []) => prev.concat([val]),
+        [] as string[],
+      )
       .action(async (url, options) => {
         commandExecuted = true; // Ensure this is set
+        // Parse headers from CLI options
+        const headers: Record<string, string> = {};
+        if (Array.isArray(options.header)) {
+          for (const entry of options.header) {
+            const idx = entry.indexOf(":");
+            if (idx > 0) {
+              const name = entry.slice(0, idx).trim();
+              const value = entry.slice(idx + 1).trim();
+              if (name) headers[name] = value;
+            }
+          }
+        }
         // FetchUrlTool does not require DocumentManagementService or PipelineManager
         const fetchUrlTool = new FetchUrlTool(new HttpFetcher(), new FileFetcher());
         const content = await fetchUrlTool.execute({
           url,
           followRedirects: options.followRedirects,
           scrapeMode: options.scrapeMode,
+          headers: Object.keys(headers).length > 0 ? headers : undefined,
         });
         console.log(content);
       });
