@@ -166,6 +166,7 @@ async function main() {
       .option("--verbose", "Enable verbose (debug) logging", false)
       .option("--silent", "Disable all logging except errors", false)
       .enablePositionalOptions()
+      .showHelpAfterError(true)
       .option(
         "--protocol <type>",
         "Protocol for MCP server (stdio or http)",
