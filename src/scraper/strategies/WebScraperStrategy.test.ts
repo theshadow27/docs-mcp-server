@@ -492,4 +492,29 @@ describe("WebScraperStrategy", () => {
     expect(docCall![0].document.content).toContain(expectedMarkdown);
     expect(docCall![0].document.metadata.title).toBe(expectedTitle);
   }, 10000); // Set timeout to 10 seconds for Playwright test
+
+  it("should forward custom headers to HttpFetcher", async () => {
+    const progressCallback = vi.fn();
+    const testUrl = "https://example.com";
+    options.url = testUrl;
+    options.headers = {
+      Authorization: "Bearer test-token",
+      "X-Test-Header": "test-value",
+    };
+    mockFetchFn.mockResolvedValue({
+      content: "<html><body>Header Test</body></html>",
+      mimeType: "text/html",
+      source: testUrl,
+    });
+    await strategy.scrape(options, progressCallback);
+    expect(mockFetchFn).toHaveBeenCalledWith(
+      testUrl,
+      expect.objectContaining({
+        headers: {
+          Authorization: "Bearer test-token",
+          "X-Test-Header": "test-value",
+        },
+      }),
+    );
+  });
 });

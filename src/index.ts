@@ -206,7 +206,6 @@ async function main() {
         await new Promise(() => {}); // Keep alive
       });
 
-    // ... (All other CLI command definitions: scrape, search, list, find-version, remove, fetch-url - remain unchanged) ...
     // --- Scrape Command ---
     program
       .command("scrape <library> <url>")
@@ -280,6 +279,12 @@ async function main() {
         (val: string, prev: string[] = []) => prev.concat([val]),
         [] as string[],
       )
+      .option(
+        "--header <name:value>",
+        "Custom HTTP header to send with each request (can be specified multiple times)",
+        (val: string, prev: string[] = []) => prev.concat([val]),
+        [] as string[],
+      )
       .action(async (library, url, options) => {
         commandExecuted = true; // Ensure this is set for CLI commands
         const docService = new DocumentManagementService();
@@ -289,6 +294,20 @@ async function main() {
           pipelineManager = new PipelineManager(docService);
           await pipelineManager.start();
           const scrapeTool = new ScrapeTool(docService, pipelineManager);
+
+          // Parse headers from CLI options
+          const headers: Record<string, string> = {};
+          if (Array.isArray(options.header)) {
+            for (const entry of options.header) {
+              const idx = entry.indexOf(":");
+              if (idx > 0) {
+                const name = entry.slice(0, idx).trim();
+                const value = entry.slice(idx + 1).trim();
+                if (name) headers[name] = value;
+              }
+            }
+          }
+
           const result = await scrapeTool.execute({
             url,
             library,
@@ -309,6 +328,7 @@ async function main() {
                 Array.isArray(options.excludePattern) && options.excludePattern.length > 0
                   ? options.excludePattern
                   : undefined,
+              headers: Object.keys(headers).length > 0 ? headers : undefined,
             },
           });
           if ("pagesScraped" in result)
@@ -449,14 +469,33 @@ async function main() {
         },
         ScrapeMode.Auto,
       )
+      .option(
+        "--header <name:value>",
+        "Custom HTTP header to send with the request (can be specified multiple times)",
+        (val: string, prev: string[] = []) => prev.concat([val]),
+        [] as string[],
+      )
       .action(async (url, options) => {
         commandExecuted = true; // Ensure this is set
+        // Parse headers from CLI options
+        const headers: Record<string, string> = {};
+        if (Array.isArray(options.header)) {
+          for (const entry of options.header) {
+            const idx = entry.indexOf(":");
+            if (idx > 0) {
+              const name = entry.slice(0, idx).trim();
+              const value = entry.slice(idx + 1).trim();
+              if (name) headers[name] = value;
+            }
+          }
+        }
         // FetchUrlTool does not require DocumentManagementService or PipelineManager
         const fetchUrlTool = new FetchUrlTool(new HttpFetcher(), new FileFetcher());
         const content = await fetchUrlTool.execute({
           url,
           followRedirects: options.followRedirects,
           scrapeMode: options.scrapeMode,
+          headers: Object.keys(headers).length > 0 ? headers : undefined,
         });
         console.log(content);
       });
