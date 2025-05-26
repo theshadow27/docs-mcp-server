@@ -238,6 +238,43 @@ export class PipelineManager {
     }
   }
 
+  /**
+   * Removes all jobs that are in a final state (completed, cancelled, or failed).
+   * Only removes jobs that are not currently in the queue or actively running.
+   * @returns The number of jobs that were cleared.
+   */
+  async clearCompletedJobs(): Promise<number> {
+    const completedStatuses = [
+      PipelineJobStatus.COMPLETED,
+      PipelineJobStatus.CANCELLED,
+      PipelineJobStatus.FAILED,
+    ];
+
+    let clearedCount = 0;
+    const jobsToRemove: string[] = [];
+
+    // Find all jobs that can be cleared
+    for (const [jobId, job] of this.jobMap.entries()) {
+      if (completedStatuses.includes(job.status)) {
+        jobsToRemove.push(jobId);
+        clearedCount++;
+      }
+    }
+
+    // Remove the jobs from the map
+    for (const jobId of jobsToRemove) {
+      this.jobMap.delete(jobId);
+    }
+
+    if (clearedCount > 0) {
+      logger.info(`🧹 Cleared ${clearedCount} completed job(s) from the queue`);
+    } else {
+      logger.debug("No completed jobs to clear");
+    }
+
+    return clearedCount;
+  }
+
   // --- Private Methods ---
 
   /**
