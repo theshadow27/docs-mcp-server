@@ -62,6 +62,14 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     }
   }
 
+  /**
+   * Processes a single queue item by fetching its content and processing it through pipelines.
+   * @param item - The queue item to process.
+   * @param options - Scraper options including headers for HTTP requests.
+   * @param _progressCallback - Optional progress callback (not used here).
+   * @param signal - Optional abort signal for request cancellation.
+   * @returns An object containing the processed document and extracted links.
+   */
   protected override async processItem(
     item: QueueItem,
     options: ScraperOptions,
@@ -71,10 +79,11 @@ export class WebScraperStrategy extends BaseScraperStrategy {
     const { url } = item;
 
     try {
-      // Define fetch options, passing both signal and followRedirects
+      // Define fetch options, passing signal, followRedirects, and headers
       const fetchOptions = {
         signal,
         followRedirects: options.followRedirects,
+        headers: options.headers, // Forward custom headers
       };
 
       // Pass options to fetcher
