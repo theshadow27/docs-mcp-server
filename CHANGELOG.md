@@ -1,3 +1,21 @@
+# [1.17.0](https://github.com/arabold/docs-mcp-server/compare/v1.16.1...v1.17.0) (2025-05-26)
+
+
+### Bug Fixes
+
+* **cli:** display help when an invalid command is passed ([3a5d879](https://github.com/arabold/docs-mcp-server/commit/3a5d8799f7895c6865ef1babb4645275748f3fcc))
+* **pipeline:** ensure waitForJobCompletion resolves for cancelled jobs ([a39bb2b](https://github.com/arabold/docs-mcp-server/commit/a39bb2bdb6d94f722e73646734014144d192e851)), closes [#137](https://github.com/arabold/docs-mcp-server/issues/137)
+
+
+### Features
+
+* **cli:** support custom HTTP headers for fetch-url command ([1000630](https://github.com/arabold/docs-mcp-server/commit/1000630e517233b3b93884d14ad8c7bb9d675b65))
+* forward custom HTTP headers to Playwright in HtmlPlaywrightMiddleware ([3d956c2](https://github.com/arabold/docs-mcp-server/commit/3d956c28aa6ac60527f1b7b28395848a7d42654e))
+* implement immediate UI feedback for version deletion and job cancellation ([0fe63a6](https://github.com/arabold/docs-mcp-server/commit/0fe63a6f2b1fa78d7fd9f097b5edb14fd27213fe))
+* **scraper:** add support for custom HTTP headers via CLI and propagate to fetcher ([a0778aa](https://github.com/arabold/docs-mcp-server/commit/a0778aa6efb1b3163223644dabd742207df7093a)), closes [#139](https://github.com/arabold/docs-mcp-server/issues/139)
+* **ui, jobs:** robust HTMX/Alpine job queue actions, fix global htmx, and add clear-completed API ([8c8c094](https://github.com/arabold/docs-mcp-server/commit/8c8c094fa84073e8b7aacc494729848424b41e98))
+* **web:** support custom HTTP headers in scrape job form ([48a832a](https://github.com/arabold/docs-mcp-server/commit/48a832a4ba2abf393f2b3558aaf160fba48bff50))
+
 ## [1.16.1](https://github.com/arabold/docs-mcp-server/compare/v1.16.0...v1.16.1) (2025-05-25)
 
 
