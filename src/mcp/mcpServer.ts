@@ -382,7 +382,7 @@ ${r.content}\n`,
   // Fetch URL tool
   server.tool(
     "fetch_url",
-    "Fetch a single URL and convert its content to Markdown. Use this tool to read the content of any web page.",
+    "Fetch a single URL and convert its content to Markdown. This tool simply retrieves and converts content - it does NOT support prompts or AI processing. For content analysis, fetch the content first, then analyze it separately.",
     {
       url: z.string().url().describe("URL to fetch and convert to Markdown."),
       followRedirects: z

@@ -9,6 +9,7 @@ import { MarkdownPipeline } from "../scraper/pipelines/MarkdownPipeline";
 import { ScrapeMode } from "../scraper/types";
 import { ScraperError } from "../utils/errors";
 import { logger } from "../utils/logger";
+import { isPlaywrightAvailable } from "../utils/playwrightCheck";
 import { ToolError } from "./errors";
 
 export interface FetchUrlToolOptions {
@@ -53,6 +54,11 @@ export class FetchUrlTool {
    */
   private readonly fetchers: ContentFetcher[];
 
+  /**
+   * Cached result of Playwright availability check to avoid repeated checks
+   */
+  private static playwrightAvailable: boolean | null = null;
+
   constructor(httpFetcher: HttpFetcher, fileFetcher: FileFetcher) {
     this.fetchers = [httpFetcher, fileFetcher];
   }
@@ -64,7 +70,21 @@ export class FetchUrlTool {
    * @throws {ToolError} If fetching or processing fails
    */
   async execute(options: FetchUrlToolOptions): Promise<string> {
-    const { url, scrapeMode = ScrapeMode.Auto, headers } = options;
+    let { url, scrapeMode = ScrapeMode.Auto, headers } = options;
+
+    // If scrapeMode is Auto, check Playwright availability
+    if (scrapeMode === ScrapeMode.Auto) {
+      // Check cache first
+      if (FetchUrlTool.playwrightAvailable === null) {
+        FetchUrlTool.playwrightAvailable = await isPlaywrightAvailable(3000);
+      }
+
+      // If Playwright is not available, fall back to fetch mode
+      if (!FetchUrlTool.playwrightAvailable) {
+        logger.info("🔄 Playwright not available, using fetch mode instead");
+        scrapeMode = ScrapeMode.Fetch;
+      }
+    }
 
     const canFetchResults = this.fetchers.map((f) => f.canFetch(url));
     const fetcherIndex = canFetchResults.findIndex((result) => result === true);
