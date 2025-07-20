@@ -37,6 +37,7 @@ export interface ScrapeToolOptions {
      * - 'fetch': Use a simple DOM parser (faster, less JS support).
      * - 'playwright': Use a headless browser (slower, full JS support).
      * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
+     * - 'github-markdown': Fetch raw markdown files directly from GitHub repositories (GitHub URLs only).
      * @default ScrapeMode.Auto
      */
     scrapeMode?: ScrapeMode;
@@ -118,6 +119,23 @@ export class ScrapeTool {
     }
 
     internalVersion = internalVersion.toLowerCase();
+
+    // Validate scrapeMode if github-markdown is specified
+    if (scraperOptions?.scrapeMode === ScrapeMode.GitHubMarkdown) {
+      try {
+        const parsedUrl = new URL(url);
+        if (!parsedUrl.hostname.includes("github.com")) {
+          throw new Error(
+            "The 'github-markdown' scrape mode can only be used with GitHub URLs (github.com)",
+          );
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("github-markdown")) {
+          throw error;
+        }
+        throw new Error(`Invalid URL for github-markdown mode: ${url}`);
+      }
+    }
 
     // Remove any existing documents for this library/version
     await this.docService.removeAllDocuments(library, internalVersion);

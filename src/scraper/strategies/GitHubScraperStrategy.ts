@@ -1,9 +1,12 @@
 import type { ProgressCallback } from "../../types";
 import type { ScraperOptions, ScraperProgress, ScraperStrategy } from "../types";
+import { ScrapeMode } from "../types";
+import { GitHubMarkdownStrategy } from "./GitHubMarkdownStrategy";
 import { WebScraperStrategy } from "./WebScraperStrategy";
 
 export class GitHubScraperStrategy implements ScraperStrategy {
   private defaultStrategy: WebScraperStrategy;
+  private markdownStrategy: GitHubMarkdownStrategy;
 
   canHandle(url: string): boolean {
     const { hostname } = new URL(url);
@@ -49,6 +52,8 @@ export class GitHubScraperStrategy implements ScraperStrategy {
       },
       shouldFollowLink,
     });
+
+    this.markdownStrategy = new GitHubMarkdownStrategy();
   }
 
   private getRepoPath(url: URL): string {
@@ -68,7 +73,12 @@ export class GitHubScraperStrategy implements ScraperStrategy {
       throw new Error("URL must be a GitHub URL");
     }
 
-    // Pass signal down to the delegated strategy
-    await this.defaultStrategy.scrape(options, progressCallback, signal);
+    // Use markdown strategy if scrapeMode is github-markdown
+    if (options.scrapeMode === ScrapeMode.GitHubMarkdown) {
+      await this.markdownStrategy.scrape(options, progressCallback, signal);
+    } else {
+      // Use default web scraping strategy for other modes
+      await this.defaultStrategy.scrape(options, progressCallback, signal);
+    }
   }
 }

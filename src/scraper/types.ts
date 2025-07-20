@@ -7,6 +7,7 @@ export enum ScrapeMode {
   Fetch = "fetch",
   Playwright = "playwright",
   Auto = "auto",
+  GitHubMarkdown = "github-markdown",
 }
 
 /**
@@ -52,6 +53,7 @@ export interface ScraperOptions {
    * - 'fetch': Use a simple DOM parser (faster, less JS support).
    * - 'playwright': Use a headless browser (slower, full JS support).
    * - 'auto': Automatically select the best strategy (currently defaults to 'playwright').
+   * - 'github-markdown': Fetch raw markdown files directly from GitHub repositories (GitHub URLs only).
    * @default ScrapeMode.Auto
    */
   scrapeMode?: ScrapeMode;
