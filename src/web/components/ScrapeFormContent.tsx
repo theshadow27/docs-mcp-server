@@ -252,7 +252,11 @@ const ScrapeFormContent = () => (
                       </li>
                       <li>
                         'Playwright' uses a headless browser (slower but better
-                        for JS-heavy sites).
+                        for JS-heavy sites),
+                      </li>
+                      <li>
+                        'GitHub Markdown' fetches raw .md files directly from
+                        GitHub repos (GitHub URLs only).
                       </li>
                     </ul>
                   </div>
@@ -269,6 +273,7 @@ const ScrapeFormContent = () => (
               </option>
               <option value={ScrapeMode.Fetch}>Fetch</option>
               <option value={ScrapeMode.Playwright}>Playwright</option>
+              <option value={ScrapeMode.GitHubMarkdown}>GitHub Markdown</option>
             </select>
           </div>
           <div>
